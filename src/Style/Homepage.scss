@@ -1,0 +1,41 @@
+.portrait {
+  background: linear-gradient(
+      rgba(147, 146, 146, 0.75),
+      rgba(147, 146, 146, 0.75)
+    ),
+    url('../../public/moi.webp');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  height: 100vh;
+  background-repeat: no-repeat;
+  position: relative;
+  align-items: center;
+  color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  font-size: larger;
+  text-shadow: 3px 3px 5px rgb(68, 67, 67);
+  h1 {
+    font-size: 3em;
+    margin: 0 0 0 100px;
+    .blue-stronger {
+      background: linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.85),
+        rgba(52, 95, 138, 0.85),
+        rgba(0, 0, 0, 0.85)
+      );
+      background-size: 200%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      animation: gradientMove 3s infinite alternate;
+      text-shadow: none;
+    }
+    @keyframes gradientMove {
+      to {
+        background-position: 200% center;
+      }
+    }
+  }
+}

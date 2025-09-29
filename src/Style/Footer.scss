@@ -1,0 +1,51 @@
+footer {
+  background-color: rgba($color: #e5e8ea, $alpha: 0.75);
+  color: #2f2c2c;
+  text-align: center;
+  padding: 30px;
+  display: flex;
+  gap: 20px;
+  flex-direction: column;
+  p {
+    margin: 0;
+  }
+  ul {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 20px;
+    li {
+      list-style: none;
+      a {
+        text-decoration: none;
+        border: 3px solid rgba($color: #2f2c2c, $alpha: 0.75);
+        border-radius: 50%;
+        padding: 10px;
+        .mail::before {
+          font-family: 'Font Awesome 5 Free';
+          content: '\f0e0';
+          font-weight: 900;
+          font-style: normal;
+          color: rgba($color: #2f2c2c, $alpha: 0.75);
+        }
+        .linkedIn::before {
+          font-family: 'Font Awesome 5 Brands';
+          content: '\f08c';
+          font-weight: 900;
+          font-style: normal;
+          color: rgba($color: #2f2c2c, $alpha: 0.75);
+        }
+        .github::before {
+          font-family: 'Font Awesome 5 Brands';
+          content: '\f09b';
+          font-weight: 900;
+          font-style: normal;
+          color: rgba($color: #2f2c2c, $alpha: 0.75);
+        }
+        &:hover {
+          box-shadow: 0px 0px 3px 3px rgba($color: #345f8a, $alpha: 0.3);
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+article {
+  width: 75%;
+  height: 50vh;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-self: center;
+  .up {
+    display: flex;
+    flex-direction: row;
+    height: 50%;
+    align-items: center;
+    .kasa-app {
+      width: 50px;
+      position: absolute;
+      &::before {
+        font-family: 'Font Awesome 5 Free';
+        content: '\f015';
+        font-weight: 500;
+        font-style: normal;
+        font-size: 30px;
+        color: rgba($color: #ff6060, $alpha: 0.75);
+      }
+      &:hover::before {
+        color: rgba($color: #ff6060, $alpha: 1);
+        text-shadow: 0px 0px 3px rgba($color: #345f8a, $alpha: 0.3);
+        content: 'GitHub du projet';
+        background-color: rgba($color: #ffffff, $alpha: 0.75);
+        font-size: 20px;
+        transition: all 3s ease-in-out;
+        max-width: 10px;
+        cursor: pointer;
+        margin-left: 10px;
+        border-radius: 5px;
+        padding: 2px;
+        white-space: nowrap;
+      }
+    }
+
+    img {
+      width: 66%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .technos {
+      display: flex;
+      height: 100%;
+      background-color: beige;
+      color: #ff6060;
+    }
+  }
+  .down {
+    border-top: 2px solid #ff6060;
+    height: 50%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: beige;
+    color: #ff6060;
+  }
+}
