@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "title": "Projet Kasa",
+    "image": "/moi.webp",
+    "imageAlt": "Image du projet Kasa",
+    "description": "Détails du projet One.",
+    "technos": [
+      {
+        "name": "React",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg",
+        "color": "#61DBFB",
+        "level": "60"
+      },
+      {
+        "name": "HTML5",
+        "icon": "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg",
+        "color": "#e34f26",
+        "level": "70"
+      },
+      {
+        "name": "CSS3",
+        "icon": "https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg",
+        "color": "#3883a9",
+        "level": "80"
+      }
+    ]
+  }
+]

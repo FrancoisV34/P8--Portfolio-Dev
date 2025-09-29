@@ -1,10 +1,11 @@
 article {
-  width: 75%;
-  height: 50vh;
+  width: 80vw;
+  height: 75vh;
   margin: 0;
   display: flex;
   flex-direction: column;
   justify-self: center;
+  background-color: rgba($color: #e5e8ea, $alpha: 0.75);
   .up {
     display: flex;
     flex-direction: row;
@@ -38,15 +39,40 @@ article {
     }
 
     img {
-      width: 66%;
+      width: 50%;
       height: 100%;
       object-fit: cover;
     }
     .technos {
       display: flex;
       height: 100%;
-      background-color: beige;
+      background-color: rgba($color: #e5e8ea, $alpha: 0.75);
       color: #ff6060;
+      width: 40vw;
+      div {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 33%;
+        img {
+          object-fit: contain;
+        }
+        .competence-level {
+          height: 20px;
+          width: 80%;
+          border-radius: 7px;
+          display: block;
+          .level {
+            height: 100%;
+            justify-self: flex-start;
+          }
+        }
+        span {
+          margin: 10px;
+          font-weight: bold;
+        }
+      }
     }
   }
   .down {
@@ -55,7 +81,7 @@ article {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    background-color: beige;
+    background-color: rgba($color: #e5e8ea, $alpha: 0.75);
     color: #ff6060;
   }
 }
