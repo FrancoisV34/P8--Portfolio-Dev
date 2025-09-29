@@ -2,6 +2,7 @@ import React from 'react';
 import '../Style/Homepage.scss';
 import ProjetOne from './ProjetOne';
 import ProjetTwo from './ProjetTwo';
+import Project from '../Components/Project';
 
 export default function Homepage() {
   return (
@@ -22,8 +23,7 @@ export default function Homepage() {
       </div>
       <div className="homepage-projets">
         <h2>Mes projets</h2>
-        <ProjetOne />
-        <ProjetTwo />
+        <Project />
       </div>
     </>
   );

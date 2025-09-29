@@ -36,7 +36,9 @@ export default function Project() {
                       }}
                     ></div>
                   </div>
-                  <span>{techno.name}</span>
+                  <span>
+                    {techno.name} : {techno.level}%
+                  </span>
                 </div>
               ))}
             </div>

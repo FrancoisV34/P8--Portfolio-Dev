@@ -2,7 +2,7 @@
   {
     "id": 1,
     "title": "Projet Kasa",
-    "image": "/moi.webp",
+    "image": "/icons/Kasa-home.webp",
     "imageAlt": "Image du projet Kasa",
     "description": "Détails du projet One.",
     "technos": [
