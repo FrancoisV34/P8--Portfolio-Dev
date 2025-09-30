@@ -1,10 +1,41 @@
 [
   {
     "id": 1,
-    "title": "Projet Kasa",
+    "title": "Kasa-App",
     "image": "/icons/Kasa-home.webp",
     "imageAlt": "Image du projet Kasa",
-    "description": "Détails du projet One.",
+    "description": "Description du projet Kasa",
+    "bgColor": "#FF6060",
+    "fontColor": "#ff6060",
+    "technos": [
+      {
+        "name": "React",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg",
+        "color": "#61DBFB",
+        "level": "60"
+      },
+      {
+        "name": "HTML5",
+        "icon": "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg",
+        "color": "#e34f26",
+        "level": "70"
+      },
+      {
+        "name": "CSS3",
+        "icon": "https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg",
+        "color": "#3883a9",
+        "level": "80"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Architecte Sophie Bluel",
+    "image": "/icons/Sophie-bluel.webp",
+    "imageAlt": "Image du projet Sophie Bluel",
+    "description": "Description du projet Sophie Bluel",
+    "bgColor": "#1D6154",
+    "fontColor": "#93532f",
     "technos": [
       {
         "name": "React",

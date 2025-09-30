@@ -5,9 +5,12 @@ export default function Project() {
   return (
     <>
       {projects.map((project) => (
-        <article>
+        <article
+          style={{ '--backgroundColor': project.bgColor }}
+          key={project.id}
+        >
           <div className="up">
-            <i className="kasa-app"></i>
+            <i className="kasa-app" style={{ color: project.fontColor }}></i>
             <img
               src={project.image}
               alt={project.imageAlt}
@@ -15,7 +18,11 @@ export default function Project() {
             />
             <div className="technos">
               {project.technos.map((techno, index) => (
-                <div className={techno.name} key={index}>
+                <div
+                  className={techno.name}
+                  key={index}
+                  style={{ border: '1px solid var(--backgroundColor)' }}
+                >
                   <img
                     key={index}
                     src={techno.icon}
@@ -36,14 +43,17 @@ export default function Project() {
                       }}
                     ></div>
                   </div>
-                  <span>
+                  <span style={{ color: project.fontColor }}>
                     {techno.name} : {techno.level}%
                   </span>
                 </div>
               ))}
             </div>
           </div>
-          <div className="down">
+          <div className="down" style={{ '--fontColor': project.fontColor }}>
+            <button className="button-description">
+              {project.description} <i className="fleche"></i>
+            </button>
             Ici seront présents 1 menu déroulant avec la descritpion du projet +
             1 menu lisatnt les compétences utilisées pour la réalisation du
             projet.
