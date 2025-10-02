@@ -27,9 +27,7 @@ export default function Project() {
                     alt={techno.name}
                     className={techno.name}
                   />
-                  <span style={{ color: project.fontColor }}>
-                    {techno.name}
-                  </span>
+                  <span>{techno.name}</span>
                 </div>
               ))}
             </div>

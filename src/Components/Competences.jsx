@@ -4,9 +4,9 @@ import '../Style/Competences.scss';
 export default function Competences() {
   return (
     <>
-      {competences.map((competence) => (
-        <ul>
-          <li>
+      <ul>
+        {competences.map((competence, index) => (
+          <li key={index}>
             <div className="competence">
               <img
                 className="comp-logo"
@@ -28,8 +28,8 @@ export default function Competences() {
               </div>
             </div>
           </li>
-        </ul>
-      ))}
+        ))}
+      </ul>
     </>
   );
 }

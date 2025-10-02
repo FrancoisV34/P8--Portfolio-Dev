@@ -7,7 +7,10 @@ export default function Footer() {
       <div className="socials">
         <ul>
           <li>
-            <a href="mailto:francois.vittecoq@osteopathe-eso.fr">
+            <a
+              href="mailto:francois.vittecoq@osteopathe-eso.fr"
+              aria-label="Envoyez moi un mail"
+            >
               <i className="mail"></i>
             </a>
           </li>
@@ -17,6 +20,7 @@ export default function Footer() {
               className="linkedIn"
               target="_blank"
               rel="noreferrer"
+              aria-label="Lien vers mon LinkedIn"
             >
               <i className="linkedIn"></i>
             </a>
@@ -26,6 +30,7 @@ export default function Footer() {
               href="https://github.com/FrancoisV34"
               target="_blank"
               rel="noreferrer"
+              aria-label="Lien vers mon GitHub"
             >
               <i className="github"></i>
             </a>

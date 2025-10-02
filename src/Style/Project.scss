@@ -1,6 +1,7 @@
 article {
   width: 40vw;
-  height: 60vh;
+  height: auto;
+  max-height: 60vh;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -61,7 +62,7 @@ article {
     .technos {
       display: flex;
       height: 100%;
-      color: #ff6060;
+      color: #fff;
       width: 40vw;
       justify-content: center;
       div {
@@ -98,7 +99,7 @@ article {
     }
   }
   .down {
-    border-top: 2px solid var(--fontColor);
+    border-top: 2px solid #fff;
     height: 50%;
     max-height: 50%;
     display: flex;

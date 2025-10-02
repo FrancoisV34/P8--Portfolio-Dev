@@ -30,6 +30,12 @@
     "color": "#f7df1e"
   },
   {
+    "nom": "JSON",
+    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/json/json-original.svg",
+    "niveau": "60%",
+    "color": "rgb(65, 65, 65)"
+  },
+  {
     "nom": "Git",
     "niveau": "50%",
     "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/git/git-original.svg",

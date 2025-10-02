@@ -18,8 +18,8 @@ export default function Homepage() {
           <strong className="blue-stronger">développeur web junior.</strong>
         </h1>
       </div>
-      {presentation.map((presentation) => (
-        <div className="homepage-pres" id="presentation">
+      {presentation.map((presentation, index) => (
+        <div className="homepage-pres" id="presentation" key={index}>
           <h2>Qui suis-je ?</h2>
           <p>{presentation.text}</p>
         </div>

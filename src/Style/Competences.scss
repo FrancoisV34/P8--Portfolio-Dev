@@ -1,48 +1,55 @@
 .competences {
   width: 80vw;
-  height: 60vh;
+  height: auto;
+  max-height: 60vh;
   margin: auto;
   overflow: auto;
   overflow-y: auto;
   .competences-list {
-    display: flex;
-    flex-direction: column;
-    li {
-      list-style: none;
-    }
-    .competence {
+    ul {
       display: flex;
-      flex-direction: row;
-      align-items: center;
-      max-height: 50px;
-      img {
-        width: 50px;
-        height: 100%;
-        object-fit: cover;
-        margin-right: 20px;
+      flex-direction: column;
+      gap: 10px;
+      li {
+        list-style: none;
       }
-      .competence-level {
-        height: 30px;
-        width: 80%;
-        border-radius: 7px;
-        background-color: rgba($color: #ffffff, $alpha: 0.8);
+      .competence {
         display: flex;
+        flex-direction: row;
         align-items: center;
-        justify-content: space-between;
-        color: black;
-        font-weight: 600;
-        &:hover {
-          box-shadow: 0 0 10px rgba(109, 109, 109, 0.15),
-            0 0 20px rgba(255, 255, 255, 0.3);
-        }
-        .level-bar {
+        max-height: 50px;
+        img {
+          width: 50px;
           height: 100%;
+          object-fit: cover;
+          margin-right: 20px;
+        }
+        .competence-level {
+          height: 30px;
+          width: 80%;
           border-radius: 7px;
-          transition: width 0.5s ease-in-out;
+          background-color: rgba($color: #ffffff, $alpha: 0.8);
           display: flex;
           align-items: center;
-          .nameandlevel {
-            margin-left: 20px;
+          justify-content: space-between;
+          color: black;
+          font-weight: 600;
+          transition: box-shadow 0.3s ease, transform 0.3s ease;
+          &:hover {
+            box-shadow: 0 0 10px rgba(109, 109, 109, 0.15),
+              0 0 20px rgba(255, 255, 255, 0.3);
+            transform: translateY(-5px);
+          }
+          .level-bar {
+            height: 100%;
+            border-radius: 7px;
+            transition: width 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            .nameandlevel {
+              margin-left: 20px;
+              text-shadow: 0px 0px 2px rgb(255, 255, 255);
+            }
           }
         }
       }
