@@ -42,14 +42,20 @@ export default function Homepage() {
       </section>
       <form action="" className="contact" id="contact">
         <label htmlFor="nom">Nom :</label>
-        <input type="text" id="nom" />
+        <input type="text" id="nom" placeholder="Votre nom :" />
         <label htmlFor="prenom">Prénom :</label>
-        <input type="text" id="prenom" />
+        <input type="text" id="prenom" placeholder="Votre prénom :" />
         <label htmlFor="email">Email :</label>
-        <input type="email" id="email" />
+        <input type="email" id="email" placeholder="Votre adresse mail :" />
         <label htmlFor="message">Message :</label>
-        <textarea id="message" rows="5"></textarea>
-        <button type="submit">Envoyer</button>
+        <textarea
+          id="message"
+          rows="5"
+          placeholder="Je souhaite vous contacter pour [...] : (n'oubliez pas de dire bonjour 😁)"
+        ></textarea>
+        <button type="submit" className="submit-btn">
+          Envoyer
+        </button>
       </form>
     </>
   );

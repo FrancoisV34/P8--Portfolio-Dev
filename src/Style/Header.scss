@@ -4,7 +4,7 @@ header {
   color: #2f2c2c;
   display: flex;
   justify-content: space-between;
-  padding: 0 100px 0 100px;
+  padding: 0 8% 0 8%;
   align-items: center;
   flex-direction: row;
   position: fixed;
@@ -14,13 +14,33 @@ header {
   max-width: -webkit-fill-available;
   z-index: 1000;
   backdrop-filter: blur(10px);
-  .fa-laptop::before {
-    font-weight: 900;
-    content: '💻';
-    color: #2f2c2c;
-    margin-right: 10px;
-    font-style: normal;
-    font-size: 23px;
+
+  @media (min-width: 768px) and (max-width: 1200px) {
+    padding: 0 5%;
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 5%;
+  }
+
+  h1 {
+    font-size: 20px;
+
+    @media (min-width: 768px) and (max-width: 1200px) {
+      font-size: 15px;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 10px;
+    }
+
+    .fa-laptop::before {
+      font-weight: 900;
+      content: '💻';
+      color: #2f2c2c;
+      margin-right: 10px;
+      font-style: normal;
+    }
   }
 
   nav {
@@ -29,16 +49,36 @@ header {
     ul {
       display: flex;
       flex-direction: row;
-      gap: 20px;
+      gap: 10px;
+      padding: 0;
+
+      @media (min-width: 768px) and (max-width: 1200px) {
+        gap: 5px;
+      }
+
+      @media (max-width: 768px) {
+        gap: 5px;
+      }
+
       li {
         list-style: none;
         a {
           padding: 10px;
           display: flex;
           flex-direction: row;
-          gap: 15px;
           text-decoration: none;
           color: #2f2c2c;
+
+          @media (min-width: 768px) and (max-width: 1200px) {
+            padding: 5px;
+            font-size: 14px;
+          }
+
+          @media (max-width: 768px) {
+            font-size: 10px;
+            padding: 0;
+          }
+
           &:hover {
             color: #ffffff;
             text-shadow: #2f2c2c 1px 1px 2px;
