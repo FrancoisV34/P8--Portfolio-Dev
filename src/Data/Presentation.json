@@ -1,5 +1,17 @@
 [
   {
-    "text": "Ostéopathe diplômé avec 6 ans d’expérience, je me suis reconverti en développement web après une formation intensive de 6 mois (niveau Bac+2). Autonome, rigoureux et passionné par la création de solutions web fonctionnelles et accessibles, je cherche aujourd’hui à intégrer une équipe technique pour monter en compétences et contribuer activement à des projets concrets."
+    "text": "Ostéopathe diplômé avec 6 ans d’expérience, je me suis reconverti en développement web après une formation intensive de 6 mois (niveau Bac+2). Autonome, rigoureux et passionné par la création de solutions web fonctionnelles et accessibles, je cherche aujourd’hui à intégrer une équipe technique pour monter en compétences et contribuer activement à des projets concrets.",
+    "parcoursData": [
+      {
+        "annee": "2025-",
+        "formation": "Diplôme de developpement web - OpenClassrooms - En ligne",
+        "experience": "Formation intensive de 6 mois en développement web, incluant HTML, CSS, SASS, JavaScript, React, Node.js, et Git."
+      },
+      {
+        "annee": "2019-2025",
+        "formation": "Diplôme d’Ostéopathe - Ecole Supérieure d’Ostéopathie (ESO) - Paris",
+        "experience": "Exercice en tant qu’ostéopathe dans un cabinet libéral à Vendargues (34)."
+      }
+    ]
   }
 ]

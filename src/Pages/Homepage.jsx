@@ -3,6 +3,7 @@ import '../Style/Homepage.scss';
 import Project from '../Components/Project';
 import presentation from '../Data/Presentation.json';
 import Competences from '../Components/Competences';
+import Parcours from '../Components/Parcours';
 
 export default function Homepage() {
   return (
@@ -30,9 +31,16 @@ export default function Homepage() {
           <Project />
         </section>
       </div>
-      <Competences />
-      <section className="parcours"></section>
-      <form action="" className="contact">
+      <h3 className="comp-title">Mes compétences</h3>
+      <section className="competences" id="competences">
+        <div className="competences-list">
+          <Competences />
+        </div>
+      </section>
+      <section className="parcours" id="parcours">
+        <Parcours />
+      </section>
+      <form action="" className="contact" id="contact">
         <label htmlFor="nom">Nom :</label>
         <input type="text" id="nom" />
         <label htmlFor="prenom">Prénom :</label>

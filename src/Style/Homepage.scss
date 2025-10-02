@@ -1,5 +1,12 @@
 main {
   background-color: black;
+  .comp-title {
+    color: #ffffff;
+    text-align: center;
+    font-size: 2em;
+    text-decoration: underline;
+    text-shadow: 1px 1px 3px rgb(185, 184, 184);
+  }
 }
 html {
   scroll-behavior: smooth;

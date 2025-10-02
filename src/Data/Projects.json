@@ -4,7 +4,7 @@
     "title": "Kasa-App",
     "image": "/icons/Kasa-home.webp",
     "imageAlt": "Image du projet Kasa",
-    "description": "Le projet Kasa est une application web de location immobilière qui permet aux utilisateurs de rechercher et de réserver des logements pour leurs vacances. L'application a été développée en utilisant React. Le but de ce projet était de mettre en pratique les compétences acquises en React, notamment la gestion des composants, le routage avec React Router, et la gestion des données avec des fichiers JSON.",
+    "description": "Le projet Kasa est une application web de location immobilière qui permet aux utilisateurs de rechercher et de réserver des logements pour leurs vacances. L'application a été développée en utilisant React. Le but de ce projet était de mettre en pratique les compétences acquises en React, notamment la gestion des composants, le routage avec React Router, et la gestion des données avec des fichiers JSON. Jusqu'à arriver à un site web fonctionnel, attrayant et facile à utiliser. Pour l'améliorer encore plus, je pourrai ajouter des fonctionnalités telles que la recherche avancée, qu'un utilisateur puisse se connecter et noter les logements.",
     "bgColor": "rgba(47,44,44,0.75)",
     "fontColor": "#ff6060",
     "technos": [
@@ -19,6 +19,12 @@
         "icon": "https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg",
         "color": "#3883a9",
         "level": "80"
+      },
+      {
+        "name": "JSON",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/json/json-original.svg",
+        "color": "#292929",
+        "level": "50"
       }
     ]
   },
@@ -27,7 +33,7 @@
     "title": "Architecte Sophie Bluel",
     "image": "/icons/Sophie-bluel.webp",
     "imageAlt": "Image du projet Sophie Bluel",
-    "description": "Le projet 'Architecte Sophie Bluel' est un site web vitrine pour une architecte. Le site présente les services offerts par l'architecte, ainsi que son portfolio de projets précédents. Le site a été développé en utilisant HTML, CSS et JavaScript. Le but de ce projet était de créer un site web attrayant et fonctionnel qui met en valeur le travail de l'architecte.",
+    "description": "Le projet 'Architecte Sophie Bluel' est un site web vitrine pour une architecte. Le site présente les services offerts par l'architecte, ainsi que son portfolio de projets précédents. Le site a été développé en utilisant HTML, CSS et JavaScript. Le but de ce projet était de créer un site web attrayant et fonctionnel qui met en valeur le travail de l'architecte. Nous pourrions l'améliorer en ajoutant la fonctionnalité de contact direct via un formulaire, ou en intégrant un système de gestion de contenu pour permettre à l'architecte de mettre à jour facilement son portfolio.",
     "bgColor": "rgba(47,44,44,0.75)",
     "fontColor": "#93532f",
     "technos": [

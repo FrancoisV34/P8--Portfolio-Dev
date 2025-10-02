@@ -1,31 +1,44 @@
 [
   {
-    "nom": "JavaScript",
-    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg",
-    "niveau": "80%"
-  },
-  {
-    "nom": "React",
-    "niveau": "70%"
+    "nom": "CSS3",
+    "niveau": "80%",
+    "color": "#3883a9",
+    "logo": "https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg"
   },
   {
     "nom": "HTML5",
-    "niveau": "90%"
+    "color": "#e34f26",
+    "logo": "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg",
+    "niveau": "75%"
   },
   {
-    "nom": "CSS3",
-    "niveau": "85%"
+    "nom": "React",
+    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg",
+    "color": "#61DBFB",
+    "niveau": "65%"
   },
   {
     "nom": "Sass",
-    "niveau": "70%"
+    "niveau": "65%",
+    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/sass/sass-original.svg",
+    "color": "#cc6699"
+  },
+  {
+    "nom": "JavaScript",
+    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg",
+    "niveau": "60%",
+    "color": "#f7df1e"
   },
   {
     "nom": "Git",
-    "niveau": "60%"
+    "niveau": "50%",
+    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/git/git-original.svg",
+    "color": "#f34f29"
   },
   {
     "nom": "Node.js",
-    "niveau": "40%"
+    "niveau": "40%",
+    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/nodejs/nodejs-original.svg",
+    "color": "#68a063"
   }
 ]

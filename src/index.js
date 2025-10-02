@@ -6,6 +6,7 @@ import reportWebVitals from './reportWebVitals';
 import Homepage from './Pages/Homepage';
 import Layout from './Components/Layout';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import Cv from './Pages/Cv';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -13,10 +14,18 @@ root.render(
     <Router>
       <Routes>
         <Route
-          path="/*"
+          path="/"
           element={
             <Layout>
               <Homepage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/cv"
+          element={
+            <Layout>
+              <Cv />
             </Layout>
           }
         />

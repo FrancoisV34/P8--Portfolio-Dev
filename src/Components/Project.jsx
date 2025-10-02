@@ -27,20 +27,6 @@ export default function Project() {
                     alt={techno.name}
                     className={techno.name}
                   />
-                  <div
-                    className="competence-level"
-                    style={{
-                      border: `2px solid ${techno.color}`,
-                    }}
-                  >
-                    <div
-                      className="level"
-                      style={{
-                        width: `${techno.level}%`,
-                        backgroundColor: `${techno.color}`,
-                      }}
-                    ></div>
-                  </div>
                   <span style={{ color: project.fontColor }}>
                     {techno.name}
                   </span>

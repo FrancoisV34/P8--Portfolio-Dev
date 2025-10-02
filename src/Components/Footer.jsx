@@ -12,12 +12,21 @@ export default function Footer() {
             </a>
           </li>
           <li>
-            <a href="" className="linkedIn">
+            <a
+              href="https://www.linkedin.com/in/françois-vittecoq-689350307/"
+              className="linkedIn"
+              target="_blank"
+              rel="noreferrer"
+            >
               <i className="linkedIn"></i>
             </a>
           </li>
           <li>
-            <a href="">
+            <a
+              href="https://github.com/FrancoisV34"
+              target="_blank"
+              rel="noreferrer"
+            >
               <i className="github"></i>
             </a>
           </li>

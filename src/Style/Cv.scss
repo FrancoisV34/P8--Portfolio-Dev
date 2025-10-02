@@ -1,0 +1,39 @@
+main {
+  .cv {
+    color: white;
+    padding-top: 80px;
+    text-align: center;
+    h1 {
+      font-size: 2em;
+      text-decoration: underline;
+      text-shadow: 1px 1px 3px rgb(185, 184, 184);
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 1.2em;
+      line-height: 1.5em;
+      width: 60vw;
+      margin: 20px auto;
+    }
+    .download-div {
+      padding: 20px;
+
+      .download-link {
+        font-size: 2em;
+        line-height: 1.5em;
+        width: 60vw;
+        margin: 20px auto;
+        color: white;
+        text-decoration: underline;
+        &:hover {
+          text-decoration: underline;
+          background-color: white;
+          color: black;
+          padding: 5px;
+          border-radius: 5px;
+          text-shadow: 1px 1px 3px rgb(185, 184, 184);
+        }
+      }
+    }
+  }
+}
