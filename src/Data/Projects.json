@@ -4,8 +4,8 @@
     "title": "Kasa-App",
     "image": "/icons/Kasa-home.webp",
     "imageAlt": "Image du projet Kasa",
-    "description": "Description du projet Kasa",
-    "bgColor": "#FF6060",
+    "description": "Le projet Kasa est une application web de location immobilière qui permet aux utilisateurs de rechercher et de réserver des logements pour leurs vacances. L'application a été développée en utilisant React. Le but de ce projet était de mettre en pratique les compétences acquises en React, notamment la gestion des composants, le routage avec React Router, et la gestion des données avec des fichiers JSON.",
+    "bgColor": "rgba(47,44,44,0.75)",
     "fontColor": "#ff6060",
     "technos": [
       {
@@ -13,12 +13,6 @@
         "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg",
         "color": "#61DBFB",
         "level": "60"
-      },
-      {
-        "name": "HTML5",
-        "icon": "https://raw.githubusercontent.com/devicons/devicon/master/icons/html5/html5-original.svg",
-        "color": "#e34f26",
-        "level": "70"
       },
       {
         "name": "CSS3",
@@ -33,14 +27,14 @@
     "title": "Architecte Sophie Bluel",
     "image": "/icons/Sophie-bluel.webp",
     "imageAlt": "Image du projet Sophie Bluel",
-    "description": "Description du projet Sophie Bluel",
-    "bgColor": "#1D6154",
+    "description": "Le projet 'Architecte Sophie Bluel' est un site web vitrine pour une architecte. Le site présente les services offerts par l'architecte, ainsi que son portfolio de projets précédents. Le site a été développé en utilisant HTML, CSS et JavaScript. Le but de ce projet était de créer un site web attrayant et fonctionnel qui met en valeur le travail de l'architecte.",
+    "bgColor": "rgba(47,44,44,0.75)",
     "fontColor": "#93532f",
     "technos": [
       {
-        "name": "React",
-        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg",
-        "color": "#61DBFB",
+        "name": "Javascript",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg",
+        "color": "#f7df1e",
         "level": "60"
       },
       {

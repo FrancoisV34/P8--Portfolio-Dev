@@ -1,0 +1,31 @@
+[
+  {
+    "nom": "JavaScript",
+    "logo": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg",
+    "niveau": "80%"
+  },
+  {
+    "nom": "React",
+    "niveau": "70%"
+  },
+  {
+    "nom": "HTML5",
+    "niveau": "90%"
+  },
+  {
+    "nom": "CSS3",
+    "niveau": "85%"
+  },
+  {
+    "nom": "Sass",
+    "niveau": "70%"
+  },
+  {
+    "nom": "Git",
+    "niveau": "60%"
+  },
+  {
+    "nom": "Node.js",
+    "niveau": "40%"
+  }
+]

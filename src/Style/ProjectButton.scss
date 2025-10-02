@@ -1,0 +1,19 @@
+article .down .description {
+  background-color: #ffffff;
+  border-radius: 15px;
+  color: var(--backgroundColor);
+  width: 75%;
+  transition: max-height 0.5s ease, padding 0.4s ease;
+  overflow: hidden;
+  max-height: 0;
+}
+article .down .description.open {
+  padding: 10px;
+  margin-bottom: 10px;
+  max-height: 500px;
+  overflow-y: auto;
+  font-size: 0.8em;
+  p {
+    margin: 0;
+  }
+}

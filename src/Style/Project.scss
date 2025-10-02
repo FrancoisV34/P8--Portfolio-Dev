@@ -1,17 +1,28 @@
 article {
-  width: 80vw;
-  height: 75vh;
+  width: 40vw;
+  height: 60vh;
+  max-height: 60vh;
   margin: 0;
   display: flex;
   flex-direction: column;
   justify-self: center;
   background-color: var(--backgroundColor);
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.08),
+    0 0 20px rgba(109, 109, 109, 0.15);
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(109, 109, 109, 0.3),
+      0 0 40px rgba(255, 255, 255, 0.5);
+  }
   .up {
     display: flex;
     flex-direction: row;
     height: 50%;
     align-items: center;
-    background-color: rgba($color: #ffffff, $alpha: 0.95);
+    background-color: rgba($color: #ffffff, $alpha: 0.15);
+    border-radius: 10px 10px 0 0;
     .kasa-app {
       width: 50px;
       position: absolute;
@@ -22,19 +33,23 @@ article {
         font-weight: 900;
         font-style: normal;
         font-size: 20px;
+        color: var(--color);
       }
       &:hover::before {
-        text-shadow: 0px 0px 3px rgba($color: #345f8a, $alpha: 0.3);
         content: 'GitHub du projet';
-        background-color: rgba($color: #ffffff, $alpha: 0.75);
+        background-color: rgba($color: #000, $alpha: 1);
         font-size: 20px;
         transition: all 3s ease-in-out;
         max-width: 10px;
         cursor: pointer;
         margin-left: 10px;
+        border-width: 2px;
+        border-style: solid;
+        border-color: var(--fontColor);
         border-radius: 5px;
-        padding: 2px;
+        padding: 8px;
         white-space: nowrap;
+        color: white;
       }
     }
 
@@ -42,13 +57,14 @@ article {
       width: 50%;
       height: 100%;
       object-fit: cover;
+      border-radius: 10px 0 0 0;
     }
     .technos {
       display: flex;
       height: 100%;
       color: #ff6060;
       width: 40vw;
-      justify-content: space-between;
+      justify-content: center;
       div {
         display: flex;
         flex-direction: column;
@@ -83,19 +99,34 @@ article {
   .down {
     border-top: 2px solid var(--fontColor);
     height: 50%;
+    max-height: 50%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    background-color: rgba($color: #ffffff, $alpha: 0.95);
+    align-items: center;
+    background-color: rgba($color: #ffffff, $alpha: 0.15);
     color: var(--fontColor);
+    border-radius: 0 0 10px 10px;
+    text-align: center;
+    .title {
+      color: #fff;
+      margin: 10px;
+    }
     .button-description {
-      width: 200px;
-      height: 50px;
-      border: 2px solid #ff6060;
+      width: 75%;
+      height: 30px;
+      min-height: 30px;
+      border: 2px solid var(--backgroundColor);
       border-radius: 25px;
-      .fleche {
-        font-family: 'Font Awesome 5 Free';
-        content: '\f107';
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 1em;
+      font-weight: 700;
+      color: var(--backgroundColor);
+      .fleche::after {
+        font-family: 'Font Awesome 7 Free';
+        content: '\2b';
         font-weight: 900;
         font-style: normal;
         margin-left: 10px;

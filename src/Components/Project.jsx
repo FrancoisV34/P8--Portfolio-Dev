@@ -1,5 +1,7 @@
 import '../Style/Project.scss';
+import '../Style/ProjectButton.scss';
 import projects from '../Data/Projects.json';
+import Button from './Button';
 
 export default function Project() {
   return (
@@ -10,7 +12,7 @@ export default function Project() {
           key={project.id}
         >
           <div className="up">
-            <i className="kasa-app" style={{ color: project.fontColor }}></i>
+            <i className="kasa-app" style={{ '--color': project.bgColor }}></i>
             <img
               src={project.image}
               alt={project.imageAlt}
@@ -18,11 +20,7 @@ export default function Project() {
             />
             <div className="technos">
               {project.technos.map((techno, index) => (
-                <div
-                  className={techno.name}
-                  key={index}
-                  style={{ border: '1px solid var(--backgroundColor)' }}
-                >
+                <div className={techno.name} key={index}>
                   <img
                     key={index}
                     src={techno.icon}
@@ -32,7 +30,7 @@ export default function Project() {
                   <div
                     className="competence-level"
                     style={{
-                      border: `3px solid ${techno.color}`,
+                      border: `2px solid ${techno.color}`,
                     }}
                   >
                     <div
@@ -44,19 +42,15 @@ export default function Project() {
                     ></div>
                   </div>
                   <span style={{ color: project.fontColor }}>
-                    {techno.name} : {techno.level}%
+                    {techno.name}
                   </span>
                 </div>
               ))}
             </div>
           </div>
           <div className="down" style={{ '--fontColor': project.fontColor }}>
-            <button className="button-description">
-              {project.description} <i className="fleche"></i>
-            </button>
-            Ici seront présents 1 menu déroulant avec la descritpion du projet +
-            1 menu lisatnt les compétences utilisées pour la réalisation du
-            projet.
+            <h2 className="title">{project.title}</h2>
+            <Button project={project} />
           </div>
         </article>
       ))}

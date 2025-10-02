@@ -13,10 +13,16 @@ export default function Header() {
             <a href="/">Accueil</a>
           </li>
           <li>
-            <a href="/presentation">Présentation</a>
+            <a href="#presentation">Présentation</a>
           </li>
           <li>
-            <a href="/projets">Projets</a>
+            <a href="#projets">Projets</a>
+          </li>
+          <li>
+            <a href="/competences">compétences</a>
+          </li>
+          <li>
+            <a href="/parcours">Parcours</a>
           </li>
           <li>
             <a href="/contact">Contact</a>
