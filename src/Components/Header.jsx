@@ -27,7 +27,7 @@ export default function Header() {
       <nav>
         <ul>
           <li>
-            <a href="/">Accueil</a>
+            <Link to="/">Accueil</Link>
           </li>
           <li>
             <a href="/#presentation" onClick={handleScroll('presentation')}>
