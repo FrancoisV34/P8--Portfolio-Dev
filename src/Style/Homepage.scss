@@ -158,4 +158,23 @@ html {
         'Helvetica Neue', sans-serif;
     }
   }
+  .submit-btn {
+    margin-top: 20px;
+    width: 50%;
+    height: 40px;
+    border-radius: 7px;
+    background-color: rgba($color: #fff, $alpha: 0.9);
+    color: #2f2c2c;
+    font-size: 0.8em;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.08),
+      0 0 20px rgba(109, 109, 109, 0.15);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+
+    &:hover {
+      cursor: pointer;
+      transform: translateY(-3px);
+      box-shadow: 0 0 10px rgba(109, 109, 109, 0.3),
+        0 0 20px rgba(255, 255, 255, 0.5);
+    }
+  }
 }
