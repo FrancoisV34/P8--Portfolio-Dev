@@ -14,7 +14,7 @@ export default function Project() {
           <div className="up">
             <i className="kasa-app" style={{ '--color': project.bgColor }}></i>
             <img
-              src={project.image}
+              src={`${process.env.PUBLIC_URL}${project.image}`}
               alt={project.imageAlt}
               className="cap-ecran-projet"
             />
