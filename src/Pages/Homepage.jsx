@@ -8,7 +8,7 @@ import Parcours from '../Components/Parcours';
 export default function Homepage() {
   return (
     <>
-      <div className="portrait">
+      <div className="portrait" id="accueil">
         <h1>
           Bienvenue sur mon <br />
           portfolio de developpeur.
