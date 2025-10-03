@@ -1,17 +1,19 @@
 import '../Style/Header.scss';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export default function Header() {
   const navigate = useNavigate();
 
   const handleScroll = (anchor) => (e) => {
     e.preventDefault();
-    if (window.location.pathname !== '/') {
+    if (window.location.hash !== '#/') {
       navigate('/');
+
       setTimeout(() => {
         document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth' });
-      }, 50);
+      }, 100);
     } else {
       document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth' });
     }
@@ -53,7 +55,7 @@ export default function Header() {
             </a>
           </li>
           <li>
-            <a href="/cv">Mon CV</a>
+            <Link to="/cv">Mon CV</Link>
           </li>
         </ul>
       </nav>
