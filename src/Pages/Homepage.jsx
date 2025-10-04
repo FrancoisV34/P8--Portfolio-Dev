@@ -4,6 +4,7 @@ import Project from '../Components/Project';
 import presentation from '../Data/Presentation.json';
 import Competences from '../Components/Competences';
 import Parcours from '../Components/Parcours';
+import ContactForm from '../Components/Form';
 
 export default function Homepage() {
   return (
@@ -40,23 +41,8 @@ export default function Homepage() {
       <section className="parcours" id="parcours">
         <Parcours />
       </section>
-      <form action="" className="contact" id="contact">
-        <label htmlFor="nom">Nom :</label>
-        <input type="text" id="nom" placeholder="Votre nom :" />
-        <label htmlFor="prenom">Prénom :</label>
-        <input type="text" id="prenom" placeholder="Votre prénom :" />
-        <label htmlFor="email">Email :</label>
-        <input type="email" id="email" placeholder="Votre adresse mail :" />
-        <label htmlFor="message">Message :</label>
-        <textarea
-          id="message"
-          rows="5"
-          placeholder="Je souhaite vous contacter pour [...] : (n'oubliez pas de dire bonjour 😁) NB: cette fonctionnalité sera bientôt en place et pourra m'envoyer un mail directement en reprenant les infos de ce formulaire en cliquant sur le bouton envoyer juste en dessous 👇"
-        ></textarea>
-        <button type="submit" className="submit-btn">
-          Envoyer
-        </button>
-      </form>
+
+      <ContactForm />
     </>
   );
 }

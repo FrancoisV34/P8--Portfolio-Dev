@@ -13,19 +13,7 @@ export default function Competences() {
                 src={competence.logo}
                 alt={competence.nom}
               ></img>
-              <div className="competence-level">
-                <div
-                  className="level-bar"
-                  style={{
-                    width: competence.niveau,
-                    backgroundColor: competence.color,
-                  }}
-                >
-                  <span className="nameandlevel">
-                    {competence.nom} : {competence.niveau}
-                  </span>
-                </div>
-              </div>
+              <span className="nameandlevel">{competence.nom}</span>
             </div>
           </li>
         ))}

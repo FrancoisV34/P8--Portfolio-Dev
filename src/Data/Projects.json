@@ -15,8 +15,8 @@
         "level": "60"
       },
       {
-        "name": "CSS3",
-        "icon": "https://raw.githubusercontent.com/devicons/devicon/master/icons/css3/css3-original.svg",
+        "name": "SASS",
+        "icon": "https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/sass/sass-original.svg",
         "color": "#3883a9",
         "level": "80"
       },
