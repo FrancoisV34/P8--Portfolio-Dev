@@ -1,29 +1,34 @@
 .competences {
-  width: 80vw;
-  height: 350px;
-  max-height: 60vh;
+  width: 100vw;
+  height: 300px;
+  max-height: 40vh;
   margin: auto;
   overflow: hidden;
   overflow-y: auto;
   margin-bottom: 50px;
   .competences-list {
-    ul {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    height: 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+
+    .banner {
       display: flex;
-      flex-direction: row;
-      gap: 10px;
-      height: 20vh;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      li {
-        list-style: none;
-        width: 20%;
-      }
+      animation: scrollBanner 20s linear infinite;
+      justify-content: flex-start;
+      height: 100%;
+
       .competence {
         display: flex;
         flex-direction: column;
         align-items: center;
-        height: 100%;
+        height: 80%;
         gap: 20px;
+        color: #fff;
+
         img {
           height: 100%;
           object-fit: cover;
@@ -36,5 +41,14 @@
         }
       }
     }
+  }
+}
+
+@keyframes scrollBanner {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
   }
 }

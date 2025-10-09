@@ -44,6 +44,14 @@ export default function ContactForm() {
         placeholder="Votre adresse mail :"
         required
       />
+      <label htmlFor="object">Objet du message :</label>
+      <input
+        type="text"
+        name="Object"
+        id="email"
+        placeholder="De quoi voulez-vous me parler ?"
+        required
+      />
 
       <label>Message :</label>
       <textarea

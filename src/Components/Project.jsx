@@ -12,7 +12,12 @@ export default function Project() {
           key={project.id}
         >
           <div className="up">
-            <i className="kasa-app" style={{ '--color': project.bgColor }}></i>
+            <a href={project.link} target="_blank" rel="noopener noreferrer">
+              <i
+                className="kasa-app"
+                style={{ '--color': project.bgColor }}
+              ></i>
+            </a>
             <img
               src={`${process.env.PUBLIC_URL}${project.image}`}
               alt={project.imageAlt}
