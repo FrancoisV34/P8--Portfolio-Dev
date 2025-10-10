@@ -16,7 +16,9 @@ export default function Homepage() {
           <br />
           Je suis François,
           <br />
-          <strong className="blue-stronger">développeur web junior.</strong>
+          <strong className="blue-stronger">
+            développeur web React junior.
+          </strong>
         </h1>
       </div>
       {presentation.map((presentation, index) => (

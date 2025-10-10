@@ -1,12 +1,9 @@
 .parcours {
   width: 80vw;
   margin: auto;
-  color: white;
-  background-color: rgba($color: #ffffff, $alpha: 0.15);
+  color: rgba(0, 0, 0, 0.75);
   padding: 10px;
   border-radius: 10px;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.08),
-    0 0 20px rgba(109, 109, 109, 0.15);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 
   &:hover {
@@ -17,7 +14,6 @@
   h2 {
     text-align: center;
     font-size: 2em;
-    text-decoration: underline;
     text-shadow: 1px 1px 3px rgb(185, 184, 184);
     margin: 0 0 20px 0;
   }
@@ -25,6 +21,9 @@
     margin: auto;
     font-size: 1.5em;
     font-weight: 500;
+    li {
+      list-style: none;
+    }
 
     @media (min-width: 768px) and (max-width: 1200px) {
       font-size: 1.2em;

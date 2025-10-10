@@ -1,153 +1,155 @@
-article {
-  width: 40vw;
+.article-display {
+  width: 100vw;
   height: auto;
   max-height: 60vh;
   margin: 0;
   display: flex;
-  flex-direction: column;
-  justify-self: center;
-  background-color: var(--backgroundColor);
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.08),
-    0 0 20px rgba(109, 109, 109, 0.15);
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 
-  @media (max-width: 1200px) {
-    width: 80vw;
+  &.row {
+    flex-direction: row;
   }
 
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(109, 109, 109, 0.3),
-      0 0 40px rgba(255, 255, 255, 0.5);
+  &.row-reverse {
+    flex-direction: row-reverse;
   }
-  .up {
-    display: flex;
-    flex-direction: row;
-    height: 50%;
-    align-items: center;
-    background-color: rgba($color: #ffffff, $alpha: 0.15);
-    border-radius: 10px 10px 0 0;
-    .kasa-app {
-      width: 50px;
-      position: absolute;
-      transform: translateX(10px);
-      &::before {
-        font-family: 'Font Awesome 7 Free';
-        content: '\f0c1'; /* Unicode de l'icône link */
-        font-weight: 900;
-        font-style: normal;
-        font-size: 20px;
-        color: var(--color);
-      }
-      &:hover::before {
-        content: 'GitHub du projet';
-        background-color: rgba($color: #000, $alpha: 1);
-        font-size: 20px;
-        transition: all 3s ease-in-out;
-        max-width: 10px;
-        cursor: pointer;
-        margin-left: 10px;
-        border-width: 2px;
-        border-style: solid;
-        border-color: var(--fontColor);
-        border-radius: 5px;
-        padding: 8px;
-        white-space: nowrap;
-        color: white;
-      }
+
+  @media (max-width: 1200px) {
+    width: 100vw;
+  }
+
+  .project-preview {
+    height: 100%;
+    width: 40%;
+    .left-radius {
+      border-radius: 100px 0 0 100px;
+    }
+
+    .right-radius {
+      border-radius: 0 100px 100px 0;
     }
 
     img {
-      width: 50%;
+      width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 10px 0 0 0;
-    }
-    .technos {
-      display: flex;
-      height: 100%;
-      color: #fff;
-      width: 40vw;
-      justify-content: center;
-
-      @media (max-width: 768px) {
-        font-size: 14px;
-      }
-
-      div {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        width: 33%;
-
-        img {
-          object-fit: contain;
-          height: 50%;
-        }
-        .competence-level {
-          height: 20px;
-          width: 80%;
-          border-radius: 7px;
-          display: block;
-          transition: width 0.5s ease-in-out;
-          &:hover {
-            box-shadow: 0px 0px 5px 2px rgba($color: #000000, $alpha: 0.1);
-          }
-          .level {
-            height: 100%;
-            justify-self: flex-start;
-            transition: width 0.5s ease-in-out;
-          }
-        }
-        span {
-          margin: 10px;
-          font-weight: bold;
-        }
-      }
     }
   }
-  .down {
-    border-top: 2px solid #fff;
-    height: 50%;
-    max-height: 50%;
+  .project-description {
+    width: 60%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: rgba($color: #ffffff, $alpha: 0.15);
-    color: var(--fontColor);
-    border-radius: 0 0 10px 10px;
-    text-align: center;
-    overflow-y: auto;
-    .title {
-      color: #fff;
-      margin: 20px;
+    .title-and-link {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    .project-title {
+      text-align: center;
+      font-size: 1.5em;
+      margin: 20px 0 20px 0;
     }
     .button-description {
-      width: 75%;
+      width: 30%;
       height: 30px;
-      min-height: 30px;
-      border: 2px solid var(--backgroundColor);
       border-radius: 25px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 20px;
-      font-size: 1em;
-      font-weight: 700;
-      color: var(--backgroundColor);
-
-      @media (max-width: 1200px) {
-        font-size: 0.8em;
+      border: 2px solid rgba(0, 0, 0, 0.75);
+    }
+    p {
+      width: 75%;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.75);
+    }
+    .technos {
+      margin: 20px 0 20px 0;
+      max-width: 50%;
+      div {
+        max-width: 33%;
       }
+      span {
+        font-size: 1em;
+        font-weight: bold;
+        color: rgba(0, 0, 0, 0.75);
+      }
+    }
+  }
+  .project-link-icon {
+    width: 50px;
+    position: absolute;
+    transform: translateX(10px);
+    &::before {
+      font-family: 'Font Awesome 7 Free';
+      content: '\f0c1';
+      font-weight: 900;
+      font-style: normal;
+      font-size: 20px;
+      color: var(--color);
+    }
+    &:hover::before {
+      content: 'GitHub du projet';
+      background-color: rgba($color: #000, $alpha: 0.85);
+      font-size: 14px;
+      transition: all 3s ease-in-out;
+      max-width: 10px;
+      cursor: pointer;
+      margin-left: 10px;
+      border-width: 2px;
+      border-style: solid;
+      border-color: var(--fontColor);
+      border-radius: 5px;
+      padding: 8px;
+      white-space: nowrap;
+      color: white;
+    }
+  }
 
-      .fleche::after {
-        font-family: 'Font Awesome 7 Free';
-        content: '\2b';
-        font-weight: 900;
-        font-style: normal;
-        margin-left: 10px;
+  img {
+    width: 50%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px 0 0 0;
+  }
+  .technos {
+    display: flex;
+    height: 100%;
+    color: #fff;
+    width: 40vw;
+    justify-content: center;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+    }
+
+    div {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 33%;
+
+      img {
+        object-fit: contain;
+        height: 50%;
+      }
+      .competence-level {
+        height: 20px;
+        width: 80%;
+        border-radius: 7px;
+        display: block;
+        transition: width 0.5s ease-in-out;
+        &:hover {
+          box-shadow: 0px 0px 5px 2px rgba($color: #000000, $alpha: 0.1);
+        }
+        .level {
+          height: 100%;
+          justify-self: flex-start;
+          transition: width 0.5s ease-in-out;
+        }
+      }
+      span {
+        margin: 10px;
+        font-weight: bold;
       }
     }
   }

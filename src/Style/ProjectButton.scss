@@ -1,4 +1,4 @@
-article .down .description {
+.article-display .project-description .description {
   background-color: #ffffff;
   border-radius: 15px;
   color: var(--backgroundColor);
@@ -8,7 +8,7 @@ article .down .description {
   max-height: 0;
   margin-bottom: 50px;
 }
-article .down .description.open {
+.article-display .project-description .description.open {
   padding: 10px;
   margin-bottom: 10px;
   max-height: 500px;

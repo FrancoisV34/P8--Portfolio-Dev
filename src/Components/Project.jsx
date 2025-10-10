@@ -1,28 +1,45 @@
 import '../Style/Project.scss';
 import '../Style/ProjectButton.scss';
 import projects from '../Data/Projects.json';
-import Button from './Button';
 
 export default function Project() {
   return (
     <>
-      {projects.map((project) => (
+      {projects.map((project, index) => (
         <article
           style={{ '--backgroundColor': project.bgColor }}
           key={project.id}
+          className={`article-display ${
+            index % 2 === 0 ? 'row-reverse' : 'row'
+          }`}
         >
-          <div className="up">
-            <a href={project.link} target="_blank" rel="noopener noreferrer">
-              <i
-                className="kasa-app"
-                style={{ '--color': project.bgColor }}
-              ></i>
-            </a>
+          <div className="project-preview">
             <img
               src={`${process.env.PUBLIC_URL}${project.image}`}
               alt={project.imageAlt}
-              className="cap-ecran-projet"
+              className={`cap-ecran-projet ${
+                index % 2 === 0 ? 'left-radius' : 'right-radius'
+              }`}
             />
+          </div>
+          <div className="project-description">
+            <div className="title-and-link">
+              <h3 className="project-title">
+                {project.title}{' '}
+                <a
+                  href={project.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i
+                    className="project-link-icon"
+                    style={{ '--color': project.bgColor }}
+                  ></i>
+                </a>
+              </h3>
+            </div>
+            <p>{project.description}</p>
+
             <div className="technos">
               {project.technos.map((techno, index) => (
                 <div className={techno.name} key={index}>
@@ -36,10 +53,6 @@ export default function Project() {
                 </div>
               ))}
             </div>
-          </div>
-          <div className="down" style={{ '--fontColor': project.fontColor }}>
-            <h2 className="title">{project.title}</h2>
-            <Button project={project} />
           </div>
         </article>
       ))}

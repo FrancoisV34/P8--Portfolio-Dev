@@ -58,7 +58,7 @@ export default function ContactForm() {
         name="message"
         id="message"
         rows="5"
-        placeholder="Je souhaite vous contacter pour [...] : (n'oubliez pas de dire bonjour 😁) NB: cette fonctionnalité sera bientôt en place et pourra m'envoyer un mail directement en reprenant les infos de ce formulaire en cliquant sur le bouton envoyer juste en dessous 👇"
+        placeholder="Je souhaite vous contacter pour [...] : (n'oubliez pas de dire bonjour 😁)"
         required
       />
 

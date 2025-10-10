@@ -7,9 +7,17 @@ export default function Competences() {
       <div className="banner">
         {competences.concat(competences).map((competence, index) => (
           <div className="competence" key={index}>
-            <span className="nameandlevel" style={{ color: '#fff' }}>
-              {competence.nom}
-            </span>
+            <span className="nameandlevel">{competence.nom}</span>
+            <img
+              className="comp-logo"
+              src={competence.logo}
+              alt={competence.nom}
+            ></img>
+          </div>
+        ))}
+        {competences.concat(competences).map((competence, index) => (
+          <div className="competence" key={index}>
+            <span className="nameandlevel">{competence.nom}</span>
             <img
               className="comp-logo"
               src={competence.logo}

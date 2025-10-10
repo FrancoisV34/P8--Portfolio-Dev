@@ -14,9 +14,7 @@ export default function Button({ project }) {
         <button className="button-description" onClick={handleClick}>
           {project.title} <i className="fleche"></i>
         </button>
-        <div className={`description ${open ? 'open' : ''}`}>
-          <p>{project.description}</p>
-        </div>
+        <div className={`description ${open ? 'open' : ''}`}></div>
       </React.Fragment>
     </>
   );
