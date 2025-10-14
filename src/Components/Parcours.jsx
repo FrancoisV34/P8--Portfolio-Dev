@@ -16,7 +16,7 @@ export default function Parcours() {
             {parcours.formation} :
             <ul className="annee-experience">
               <li className="data">
-                {parcours.annee} , {parcours.experience}
+                {parcours.annee}: {parcours.experience}
               </li>
             </ul>
           </li>
