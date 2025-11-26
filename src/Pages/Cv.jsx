@@ -20,7 +20,7 @@ export default function Cv() {
         ></iframe>
         <div style={{ marginTop: '1rem' }} className="download-div">
           <a
-            href={`${process.env.PUBLIC_URL}/Vittecoq.pdf`}
+            href={`${process.env.PUBLIC_URL}/CVVittecoq.pdf`}
             download="CV-Francois-Vittecoq.pdf"
             className="download-link"
           >
