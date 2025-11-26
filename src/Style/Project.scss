@@ -6,12 +6,34 @@
   display: flex;
   transition: box-shadow 0.3s ease, transform 0.3s ease;
 
+  @media (max-width: 768px) {
+    margin-bottom: 100px;
+  }
+
   &.row {
     flex-direction: row;
+    @media (max-width: 768px) {
+      flex-direction: column-reverse;
+      width: 100%;
+      margin-top: 100px;
+      div {
+        align-items: center;
+        width: 100%;
+      }
+    }
   }
 
   &.row-reverse {
     flex-direction: row-reverse;
+    @media (max-width: 768px) {
+      flex-direction: column-reverse;
+      width: 100%;
+      margin-bottom: 100px;
+      div {
+        align-items: center;
+        width: 100%;
+      }
+    }
   }
 
   @media (max-width: 1200px) {
@@ -19,7 +41,6 @@
   }
 
   .project-preview {
-    height: 100%;
     width: 40%;
     .left-radius {
       border-radius: 100px 0 0 100px;
@@ -44,11 +65,18 @@
       display: flex;
       flex-direction: row;
       align-items: center;
+      @media (max-width: 768px) {
+        width: 100%;
+        display: block;
+      }
     }
     .project-title {
       text-align: center;
       font-size: 1.5em;
       margin: 20px 0 20px 0;
+      @media (max-width: 768px) {
+        font-size: 1.2em;
+      }
     }
     .button-description {
       width: 30%;

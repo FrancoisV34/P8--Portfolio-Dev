@@ -10,7 +10,7 @@ export default function Cv() {
           Vous pouvez consulter mon CV ci-dessous ou le télécharger en PDF :
         </p>
         <iframe
-          src={`${process.env.PUBLIC_URL}/Vittecoq.pdf`}
+          src={`${process.env.PUBLIC_URL}/CVVittecoq.pdf`}
           title="CV de François Vittecoq"
           style={{
             width: '100%',
