@@ -1,0 +1,25 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "duration": {
+    "instant":   { "$value": "80ms",   "$type": "duration" },
+    "fast":      { "$value": "150ms",  "$type": "duration" },
+    "base":      { "$value": "250ms",  "$type": "duration" },
+    "slow":      { "$value": "400ms",  "$type": "duration" },
+    "slower":    { "$value": "700ms",  "$type": "duration" },
+    "cinematic": { "$value": "1200ms", "$type": "duration" }
+  },
+  "easing": {
+    "linear":    { "$value": "linear",                                  "$type": "cubicBezier" },
+    "out":       { "$value": "cubic-bezier(0.22, 1, 0.36, 1)",          "$type": "cubicBezier" },
+    "in":        { "$value": "cubic-bezier(0.64, 0, 0.78, 0)",          "$type": "cubicBezier" },
+    "in-out":    { "$value": "cubic-bezier(0.65, 0, 0.35, 1)",          "$type": "cubicBezier" },
+    "spring":    { "$value": "cubic-bezier(0.34, 1.56, 0.64, 1)",       "$type": "cubicBezier" }
+  },
+  "scroll": {
+    "lenis": {
+      "duration": { "$value": 1.2, "$type": "number", "$description": "Lenis main duration (seconds)" },
+      "easing":   { "$value": "t => Math.min(1, 1.001 - Math.pow(2, -10 * t))", "$type": "string", "$description": "Lenis easing function (as JS expression)" }
+    },
+    "scrubSmoothing": { "$value": 1, "$type": "number", "$description": "ScrollTrigger scrub lag smoothing" }
+  }
+}

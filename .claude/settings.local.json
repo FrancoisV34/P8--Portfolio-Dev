@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:support.claude.com)",
+      "WebFetch(domain:www.anthropic.com)",
+      "Bash(mkdir -p /tmp/claude-design-extract)",
+      "Read(//tmp/**)",
+      "Bash(cp \"/Users/fv/.claude/projects/-Users-fv-Desktop-Projet-P8--Portfolio-Dev/ef203fd3-991c-4e17-97f6-e0ae6fc9c580/tool-results/webfetch-1776749956408-ubbxjl.bin\" ./archive.gz)",
+      "Bash(gunzip -k archive.gz)",
+      "Read(//private/tmp/claude-design-extract/**)",
+      "Bash(tar -xf archive)",
+      "Bash(npm run *)"
+    ]
+  }
+}

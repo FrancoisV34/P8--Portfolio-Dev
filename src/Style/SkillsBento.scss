@@ -1,0 +1,114 @@
+@use './tokens';
+@use './reveal';
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.skills-bento {
+  background-color: oklch(0 0 0);
+  color: oklch(0.97 0 0);
+  padding: 120px 40px;
+  border-top: 1px solid oklch(0.12 0 0);
+
+  @media (max-width: 768px) {
+    padding: 72px 24px;
+  }
+
+  .eyebrow {
+    color: oklch(0.40 0 0);
+  }
+
+  &__inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  &__title {
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 64px;
+    max-width: 600px;
+  }
+
+  &__grid {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media (max-width: 520px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__card {
+    background-color: oklch(0.08 0 0);
+    border: 1px solid oklch(0.14 0 0);
+    border-radius: 16px;
+    padding: 28px;
+    transition: transform 200ms var(--ease-out),
+      background-color 200ms var(--ease-out),
+      opacity var(--dur-slower) var(--ease-out);
+
+    &:hover {
+      transform: translateY(-4px);
+    }
+
+    &.is-large {
+      grid-column: span 2;
+
+      @media (max-width: 520px) {
+        grid-column: span 1;
+      }
+    }
+
+    &.is-accent {
+      background-color: var(--accent-on-light);
+      border-color: transparent;
+      color: oklch(0.97 0 0);
+    }
+  }
+
+  &__icon {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--accent-on-dark);
+  }
+
+  &__card.is-accent &__icon {
+    color: oklch(0.97 0 0);
+  }
+
+  &__card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+  }
+
+  &__card-desc {
+    font-size: 13px;
+    line-height: 1.5;
+    color: oklch(0.45 0 0);
+  }
+
+  &__card.is-accent &__card-desc {
+    color: oklch(0.88 0 0);
+  }
+}

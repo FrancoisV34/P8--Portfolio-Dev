@@ -1,0 +1,238 @@
+@use './tokens';
+@use './reveal';
+
+.project-section {
+  padding: 120px 40px;
+  border-top: 1px solid transparent;
+
+  @media (max-width: 768px) {
+    padding: 72px 24px;
+  }
+
+  &--light {
+    background-color: oklch(0.97 0 0);
+    color: oklch(0.10 0 0);
+    border-top-color: oklch(0.88 0 0);
+  }
+
+  &--dark {
+    background-color: oklch(0.04 0 0);
+    color: oklch(0.95 0 0);
+    border-top-color: oklch(0.14 0 0);
+  }
+
+  &__grid {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+      gap: 40px;
+    }
+  }
+
+  &[data-flow='rtl'] &__grid {
+    direction: rtl;
+
+    > * {
+      direction: ltr;
+    }
+  }
+
+  &__media {
+    min-width: 0;
+  }
+
+  &__image,
+  &__placeholder {
+    aspect-ratio: 4 / 3;
+    width: 100%;
+    border-radius: 16px;
+    object-fit: cover;
+  }
+
+  &--light &__image,
+  &--light &__placeholder {
+    border: 1px solid oklch(0.88 0 0);
+    background-color: oklch(0.90 0 0);
+  }
+
+  &--dark &__image,
+  &--dark &__placeholder {
+    border: 1px solid oklch(0.14 0 0);
+    background-color: oklch(0.10 0 0);
+  }
+
+  &__placeholder {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  &__stripes {
+    position: absolute;
+    inset: 0;
+    opacity: 0.5;
+  }
+
+  &--light &__stripes {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      oklch(0.86 0 0) 10px,
+      oklch(0.86 0 0) 20px
+    );
+  }
+
+  &--dark &__stripes {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      oklch(0.12 0 0) 10px,
+      oklch(0.12 0 0) 20px
+    );
+  }
+
+  &__placeholder-label {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 16px;
+  }
+
+  &--light &__placeholder-label {
+    color: oklch(0.52 0 0);
+  }
+
+  &--dark &__placeholder-label {
+    color: oklch(0.48 0 0);
+  }
+
+  &__placeholder-mark {
+    display: block;
+    font-size: 32px;
+    margin-bottom: 8px;
+    opacity: 0.4;
+  }
+
+  &__body {
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+    margin: 24px 0 20px;
+  }
+
+  &__desc {
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    max-width: 480px;
+    margin-bottom: 32px;
+  }
+
+  &--light &__desc {
+    color: oklch(0.38 0 0);
+  }
+
+  &--dark &__desc {
+    color: oklch(0.60 0 0);
+  }
+
+  &__technos {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 36px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 100px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    transition: transform 200ms var(--ease-spring);
+
+    &:hover {
+      transform: scale(1.04);
+    }
+
+    &:focus-visible {
+      outline: 2px solid currentColor;
+      outline-offset: 3px;
+    }
+  }
+
+  &--light &__cta {
+    background-color: var(--accent-on-light);
+    color: oklch(0.97 0 0);
+  }
+
+  &--dark &__cta {
+    background-color: var(--accent-on-dark);
+    color: oklch(0.08 0 0);
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  .project-section--light & {
+    background-color: oklch(0.89 0 0);
+    border: 1px solid oklch(0.88 0 0);
+    color: oklch(0.52 0 0);
+  }
+
+  .project-section--dark & {
+    background-color: oklch(0.12 0 0);
+    border: 1px solid oklch(0.14 0 0);
+    color: oklch(0.48 0 0);
+  }
+}
+
+.techno-chip {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+
+  .project-section--light & {
+    background-color: oklch(0.89 0 0);
+    border: 1px solid oklch(0.88 0 0);
+    color: oklch(0.10 0 0);
+  }
+
+  .project-section--dark & {
+    background-color: oklch(0.12 0 0);
+    border: 1px solid oklch(0.14 0 0);
+    color: oklch(0.95 0 0);
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "shadow": {
+    "xs":    { "$value": "0 1px 2px oklch(0 0 0 / 0.04)",                                            "$type": "shadow" },
+    "sm":    { "$value": "0 2px 6px oklch(0 0 0 / 0.06)",                                            "$type": "shadow" },
+    "md":    { "$value": "0 8px 24px oklch(0 0 0 / 0.08)",                                           "$type": "shadow" },
+    "lg":    { "$value": "0 20px 50px oklch(0 0 0 / 0.12)",                                          "$type": "shadow" },
+    "xl":    { "$value": "0 30px 80px oklch(0 0 0 / 0.18)",                                          "$type": "shadow" },
+    "glass": { "$value": "0 8px 32px oklch(0 0 0 / 0.08), inset 0 1px 0 oklch(1 0 0 / 0.1)",         "$type": "shadow" },
+    "focus-ring": { "$value": "0 0 0 3px oklch(0.30 0.02 260 / 0.35)",                               "$type": "shadow" }
+  },
+  "blur": {
+    "sm":   { "$value": "8px",  "$type": "dimension" },
+    "md":   { "$value": "16px", "$type": "dimension" },
+    "lg":   { "$value": "24px", "$type": "dimension" },
+    "xl":   { "$value": "48px", "$type": "dimension" }
+  },
+  "opacity": {
+    "disabled": { "$value": 0.4, "$type": "number" },
+    "muted":    { "$value": 0.6, "$type": "number" },
+    "overlay":  { "$value": 0.5, "$type": "number" }
+  }
+}

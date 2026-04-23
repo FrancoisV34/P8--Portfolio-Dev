@@ -1,37 +1,64 @@
-main {
-  .cv {
-    color: white;
-    padding-top: 80px;
-    text-align: center;
-    h1 {
-      font-size: 2em;
-      text-shadow: 1px 1px 3px rgb(185, 184, 184);
-      margin-bottom: 20px;
-    }
-    p {
-      font-size: 1.2em;
-      line-height: 1.5em;
-      width: 60vw;
-      margin: 20px auto;
-    }
-    .download-div {
-      padding: 20px;
+@use './tokens';
 
-      .download-link {
-        font-size: 2em;
-        line-height: 1.5em;
-        width: 60vw;
-        margin: 20px auto;
-        color: white;
-        &:hover {
-          text-decoration: underline;
-          background-color: white;
-          color: black;
-          padding: 5px;
-          border-radius: 5px;
-          text-shadow: 1px 1px 3px rgb(185, 184, 184);
-        }
-      }
+body:has(.cv) {
+  background-color: oklch(0.97 0 0);
+}
+
+.cv {
+  min-height: 100vh;
+  padding: 140px 40px 80px;
+  max-width: 900px;
+  margin: 0 auto;
+  background-color: oklch(0.97 0 0);
+  color: oklch(0.10 0 0);
+
+  @media (max-width: 768px) {
+    padding: 100px 20px 56px;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: oklch(0.45 0 0);
+    margin-bottom: 32px;
+  }
+
+  iframe {
+    border-radius: 16px;
+    border: 1px solid oklch(0.88 0 0);
+    background-color: oklch(0.93 0 0);
+  }
+
+  .download-div {
+    margin-top: 24px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .download-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 100px;
+    background-color: var(--accent-on-light);
+    color: oklch(0.97 0 0);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    transition: transform 200ms var(--ease-spring);
+
+    &:hover {
+      transform: scale(1.04);
     }
   }
 }

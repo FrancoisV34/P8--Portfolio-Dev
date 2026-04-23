@@ -1,0 +1,129 @@
+@use './tokens';
+@use './reveal';
+
+.parcours {
+  background-color: oklch(0.97 0 0);
+  color: oklch(0.10 0 0);
+  padding: 120px 40px;
+  border-top: 1px solid oklch(0.88 0 0);
+
+  @media (max-width: 768px) {
+    padding: 72px 24px;
+  }
+
+  .eyebrow {
+    color: oklch(0.52 0 0);
+  }
+
+  &__inner {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  &__title {
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 72px;
+  }
+
+  &__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
+
+  &__line {
+    position: absolute;
+    left: 15px;
+    top: 8px;
+    bottom: 0;
+    width: 1px;
+    background: oklch(0.85 0 0);
+  }
+
+  &__item {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 24px;
+    margin-bottom: 52px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  &__dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-top: 6px;
+    margin-left: 10px;
+    border: 2px solid oklch(0.97 0 0);
+    box-shadow: 0 0 0 1px oklch(0.75 0 0);
+    position: relative;
+    z-index: 1;
+
+    &--alternance {
+      background: var(--accent-on-light);
+      box-shadow: 0 0 0 1px var(--accent-on-light), 0 0 0 5px oklch(0.30 0.02 260 / 0.15);
+    }
+
+    &--formation {
+      background: var(--accent-on-light);
+    }
+
+    &--projet {
+      background: oklch(0.20 0 0);
+    }
+
+    &--reconversion {
+      background: oklch(0.50 0 0);
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  &__year {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: oklch(0.52 0 0);
+  }
+
+  &__type {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(0.65 0 0);
+  }
+
+  &__item-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: oklch(0.10 0 0);
+    margin-bottom: 4px;
+  }
+
+  &__org {
+    font-size: 13px;
+    font-weight: 500;
+    color: oklch(0.52 0 0);
+    margin-bottom: 10px;
+  }
+
+  &__desc {
+    font-size: 15px;
+    line-height: 1.6;
+    color: oklch(0.38 0 0);
+  }
+}
