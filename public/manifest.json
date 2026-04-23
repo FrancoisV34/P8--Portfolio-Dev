@@ -1,6 +1,8 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "F. Vittecoq",
+  "name": "François Vittecoq — Dev & orchestrateur IA",
+  "description": "Portfolio de François Vittecoq, développeur web et orchestrateur IA. React, agents IA, Claude Code, automatisation.",
+  "lang": "fr-FR",
   "icons": [
     {
       "src": "icon.png",
@@ -18,8 +20,9 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/P8--Portfolio-Dev/",
+  "scope": "/P8--Portfolio-Dev/",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#0b0b0f",
+  "background_color": "#0b0b0f"
 }

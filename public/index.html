@@ -2,29 +2,204 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <link rel="icon" type="image/png" href="%PUBLIC_URL%/icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <link
-      rel="apple-touch-icon"
-      type="image/png"
-      href="%PUBLIC_URL%/icon.png"
+    <meta name="theme-color" content="#0b0b0f" />
+
+    <!-- Primary SEO -->
+    <title>François Vittecoq — Dev &amp; orchestrateur IA | Claude Code · React · Agents IA</title>
+    <meta
+      name="description"
+      content="François Vittecoq, développeur web et orchestrateur IA. Alternant dev IA, référent IA et formateur Claude Code chez LundiMatin (Montpellier). React, agents IA, automatisation de workflows, tests, sécurité."
     />
+    <meta name="author" content="François Vittecoq" />
+    <meta name="keywords" content="François Vittecoq, dev IA, orchestrateur IA, agents IA, Claude Code, formateur Claude Code, développeur React, React, Node.js, LundiMatin, alternant dev IA, Montpellier, automatisation workflows, portfolio développeur" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <link rel="canonical" href="https://francoisv34.github.io/P8--Portfolio-Dev/" />
+
+    <!-- Open Graph / LinkedIn / Slack -->
+    <meta property="og:type" content="profile" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:site_name" content="Portfolio François Vittecoq" />
+    <meta property="og:title" content="François Vittecoq — Dev &amp; orchestrateur IA" />
+    <meta property="og:description" content="Développeur web + orchestrateur IA. Alternant dev IA, référent IA et formateur Claude Code chez LundiMatin. React, agents IA, automatisation, sécurité." />
+    <meta property="og:url" content="https://francoisv34.github.io/P8--Portfolio-Dev/" />
+    <meta property="og:image" content="https://francoisv34.github.io/P8--Portfolio-Dev/moi.webp" />
+    <meta property="og:image:alt" content="Portrait de François Vittecoq, dev et orchestrateur IA" />
+    <meta property="profile:first_name" content="François" />
+    <meta property="profile:last_name" content="Vittecoq" />
+
+    <!-- Twitter / X -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="François Vittecoq — Dev &amp; orchestrateur IA" />
+    <meta name="twitter:description" content="Développeur React + orchestrateur IA. Formateur Claude Code chez LundiMatin. Agents IA, automatisation, tests, sécurité." />
+    <meta name="twitter:image" content="https://francoisv34.github.io/P8--Portfolio-Dev/moi.webp" />
+    <meta name="twitter:image:alt" content="Portrait de François Vittecoq" />
+
+    <!-- Icons / Manifest -->
+    <link rel="icon" type="image/png" href="%PUBLIC_URL%/icon.png" />
+    <link rel="apple-touch-icon" type="image/png" href="%PUBLIC_URL%/icon.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+    <!-- Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="image" href="%PUBLIC_URL%/moi.webp" fetchpriority="high" />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <title>Portfolio de François Vittecoq - Developpeur Web</title>
-    <meta
-      name="description"
-      content="Portfolio de François Vittecoq, développeur web spécialisé en JavaScript, React et Node.js. Découvrez mes projets et compétences."
-    />
+
+    <!-- SPA GitHub Pages redirect support (rafgraph/spa-github-pages) -->
+    <script type="text/javascript">
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&');
+            })
+            .join('?');
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash
+          );
+        }
+      })(window.location);
+    </script>
+
+    <!-- JSON-LD: Person -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "François Vittecoq",
+      "givenName": "François",
+      "familyName": "Vittecoq",
+      "jobTitle": "Développeur web & orchestrateur IA",
+      "description": "Développeur React et orchestrateur IA. Alternant dev IA, référent IA et formateur Claude Code chez LundiMatin.",
+      "url": "https://francoisv34.github.io/P8--Portfolio-Dev/",
+      "image": "https://francoisv34.github.io/P8--Portfolio-Dev/moi.webp",
+      "email": "mailto:fra.vittecoq@gmail.com",
+      "sameAs": [
+        "https://github.com/FrancoisV34",
+        "https://linkedin.com/in/francoisvittecoq"
+      ],
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Montpellier",
+        "addressRegion": "Occitanie",
+        "addressCountry": "FR"
+      },
+      "worksFor": {
+        "@type": "Organization",
+        "name": "LundiMatin",
+        "description": "Éditeur ERP/CRM omnicanal (Montpellier)"
+      },
+      "alumniOf": [
+        {
+          "@type": "EducationalOrganization",
+          "name": "OpenClassrooms",
+          "description": "Diplôme de Développeur Web (2025)"
+        },
+        {
+          "@type": "EducationalOrganization",
+          "name": "École Supérieure d'Ostéopathie (ESO)",
+          "description": "Diplôme d'Ostéopathe (2025)"
+        }
+      ],
+      "knowsAbout": [
+        "Orchestration d'agents IA",
+        "Claude Code",
+        "Model Context Protocol (MCP)",
+        "React",
+        "JavaScript",
+        "Node.js",
+        "SASS",
+        "Automatisation de workflows",
+        "Tests (unit, intégration, E2E)",
+        "Sécurité OWASP",
+        "Accessibilité WCAG"
+      ],
+      "knowsLanguage": ["fr", "en"]
+    }
+    </script>
+
+    <!-- JSON-LD: WebSite -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Portfolio François Vittecoq",
+      "url": "https://francoisv34.github.io/P8--Portfolio-Dev/",
+      "inLanguage": "fr-FR",
+      "author": { "@type": "Person", "name": "François Vittecoq" }
+    }
+    </script>
+
+    <!-- JSON-LD: ProfilePage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ProfilePage",
+      "dateCreated": "2025-01-01",
+      "dateModified": "2026-04-23",
+      "mainEntity": {
+        "@type": "Person",
+        "name": "François Vittecoq",
+        "url": "https://francoisv34.github.io/P8--Portfolio-Dev/"
+      }
+    }
+    </script>
+
+    <!-- JSON-LD: FAQ (GEO — citations ChatGPT / Perplexity / Claude) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Qui est François Vittecoq ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "François Vittecoq est un développeur web et orchestrateur IA basé à Montpellier. Il est alternant développeur IA, référent IA et formateur Claude Code chez LundiMatin, éditeur ERP/CRM omnicanal."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Quelles technologies utilise François Vittecoq ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Stack principale : React, JavaScript, SASS, Node.js. Côté IA : Claude Code, orchestration d'agents, Model Context Protocol (MCP), automatisation de workflows. Il pratique les tests unit / intégration / E2E, la sécurité OWASP et l'accessibilité WCAG."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Quel est le positionnement de François Vittecoq ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "François Vittecoq se positionne à parts égales comme développeur web et orchestrateur IA : il conçoit des interfaces React soignées et automatise des workflows avec des agents IA, en intégrant sécurité et tests de non-régression dès la conception."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Comment contacter François Vittecoq ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Par email à fra.vittecoq@gmail.com, via LinkedIn (linkedin.com/in/francoisvittecoq) ou GitHub (github.com/FrancoisV34)."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <noscript>
+      Ce portfolio nécessite JavaScript. François Vittecoq — développeur web et orchestrateur IA à Montpellier. Contact : fra.vittecoq@gmail.com
+    </noscript>
     <div id="root"></div>
   </body>
 </html>

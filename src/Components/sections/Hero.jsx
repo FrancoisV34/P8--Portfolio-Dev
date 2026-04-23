@@ -30,17 +30,19 @@ export default function Hero() {
       <div className="hero__inner">
         <p className="hero__eyebrow reveal">Portfolio — 2026</p>
 
-        <h2 className="hero__name reveal">François Vittecoq</h2>
+        <p className="hero__name reveal">François Vittecoq</p>
 
         <h1 className="hero__title reveal">
+          <span className="sr-only">François Vittecoq, </span>
           <span>Dev &amp;</span>
           <span>orchestrateur IA.</span>
         </h1>
 
         <p className="hero__sub reveal">
-          Je conçois des interfaces React soignées et j'automatise des workflows
-          avec des agents IA. Sécurité, tests de non-régression (unit,
-          intégration, E2E) et best practices intégrés dès la conception.
+          Développeur React et orchestrateur d'agents IA. Alternant dev IA,
+          référent IA et formateur Claude Code chez LundiMatin (Montpellier).
+          Sécurité, tests de non-régression (unit, intégration, E2E) et best
+          practices intégrés dès la conception.
         </p>
 
         <div className="hero__ctas reveal">
