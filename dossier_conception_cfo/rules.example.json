@@ -1,0 +1,45 @@
+{
+  "strategyMode": "MAX_WEALTH",
+  "rules": [
+    {
+      "id": "security-target",
+      "type": "FILL_TARGET",
+      "priority": 100,
+      "params": {
+        "bucket": "EMERGENCY",
+        "targetCents": 2000000
+      }
+    },
+    {
+      "id": "speculative-cap",
+      "type": "MAX_BUCKET_PERCENT",
+      "priority": 90,
+      "params": {
+        "bucket": "SPECULATIVE",
+        "maxPercent": 5
+      }
+    },
+    {
+      "id": "app2-trigger",
+      "type": "PROJECT_TRIGGER",
+      "priority": 70,
+      "params": {
+        "project": "App2",
+        "metric": "App1.monthlyRevenueCents",
+        "gte": 100000
+      }
+    },
+    {
+      "id": "base-allocation",
+      "type": "PERCENT_ALLOCATION",
+      "priority": 50,
+      "params": {
+        "INVESTMENTS": 35,
+        "BUSINESS": 25,
+        "EQUIPMENT": 15,
+        "PROJECTS": 10,
+        "OPPORTUNITY_CASH": 15
+      }
+    }
+  ]
+}

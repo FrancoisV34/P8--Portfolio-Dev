@@ -1,9 +1,11 @@
 # Brief pour Claude Design
 
+Mise à jour du 8 septembre 2026 : ce brief concerne uniquement les contenus publics du portfolio. Le CFO/GoMining et ses données réelles restent privés, accessibles à François seul ; aucune démo publique ni donnée financière à joindre à ce brief.
+
 Prompt initial à coller dans Claude Design quand on crée le projet. Accompagner de :
 - Ce dossier `design-system/` complet (docs + JSON tokens).
 - Screenshots apple.com (4-5 pages produits, capturer hero + 2-3 sections pinned).
-- Photo `public/moi.webp` du portrait.
+- Photo `public/moi.jpeg` du portrait actuel.
 - Screenshots du site actuel (pour "before → after").
 
 ---
@@ -12,7 +14,7 @@ Prompt initial à coller dans Claude Design quand on crée le projet. Accompagne
 
 > **Contexte** : Je suis François Vittecoq, développeur web React junior. Je refonds mon portfolio personnel. La direction visuelle cible est **Apple Marketing (apple.com)** — scroll storytelling cinématique, typographie XXL, fonds noirs/blancs purs, une seule couleur d'accent, sections pinned qui animent au scroll.
 >
-> **Stack technique** : Vite + React 19 + TypeScript + Tailwind CSS v4 + shadcn/ui (Radix) + GSAP/ScrollTrigger + Lenis. Le design system est fourni en pièce jointe (`design-system/`) : tokens sémantiques (couleurs OKLCH, échelle typo Apple-like, espacement 4pt, motion presets).
+> **Stack technique** : React Router en mode framework + React + TypeScript + Node.js, Tailwind et shadcn/ui. GSAP/ScrollTrigger pour le portfolio selon les besoins ; Lenis facultatif. Le design system est fourni en pièce jointe (`design-system/`) : tokens sémantiques (couleurs OKLCH, échelle typo Apple-like, espacement 4pt, motion presets). L'espace financier privé partage les composants visuels mais ne fait pas partie de ce brief public.
 >
 > **Ce que je te demande** :
 > 1. Propose 3 variations de **hero section** (fullscreen) en respectant les tokens. Inspiration : apple.com/airpods-pro hero. Inclure un **monogramme FV** (badge compact) haut-gauche.
@@ -44,7 +46,7 @@ Prompt initial à coller dans Claude Design quand on crée le projet. Accompagne
 > - Projets actuels : Kasa-App (React + SASS), Portfolio Architecte Sophie Bluel (JS + HTML/CSS).
 > - Compétences : React, JavaScript, SASS/CSS, HTML5, Git, responsive, accessibilité.
 >
-> **Livrable souhaité** : code React + Tailwind directement copiable dans `src/components/sections/`, compatible avec les tokens du design system fourni. Respecter les path aliases `@/components`, `@/lib/cn`, `@/data/*`.
+> **Livrable souhaité** : code React + Tailwind pour les sections publiques du futur dossier `app/components/sections/`, compatible avec les tokens du design system fourni. Les alias seront alignés sur le socle React Router lors de l'implémentation.
 
 ---
 

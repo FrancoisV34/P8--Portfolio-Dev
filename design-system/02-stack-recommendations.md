@@ -1,106 +1,83 @@
-# 02 — Stack & librairies recommandées
+# 02 — Stack et bibliothèques retenues
 
-Stack choisie après exploration et validation François. Chaque ligne a une raison précise.
+Mise à jour après les choix de François du 8 septembre 2026. Cible commune au portfolio public et au CFO/GoMining privé. Depuis le 9 septembre, le socle React Router/TypeScript/Node est porté sur `refacto` ; les bibliothèques financières ci-dessous seront ajoutées avec leurs modules. Voir [le suivi](../dossier_conception_cfo/18_MIGRATION_SOCLE.md).
 
-## Build & langage
+Référence : [décisions design](00-decisions.md) et [registre CFO](../dossier_conception_cfo/16_ARBITRAGES_STACK_PROJET.md).
 
-| Lib | Version cible | Pourquoi |
+## Application, build et langage
+
+| Élément | Choix | Rôle |
 |---|---|---|
-| **Vite** | 5.x | HMR instantané, build rapide, remplace CRA (abandonné). |
-| **React** | 19 | Server Components pas nécessaires ici mais hooks + `use` natifs. |
-| **TypeScript** | 5.x strict | Fiabilité + auto-complétion, indispensable pour un refacto propre. |
-| **React Router** | 7 | Déjà en place, on garde. |
+| Framework | React Router en mode framework | Routes, données serveur, mutations, rendu serveur et pages publiques prérendues selon besoin |
+| Interface | React | Portfolio, formulaires, dashboard et simulateurs |
+| Langage | TypeScript strict | Types du domaine, unités financières et interfaces |
+| Build | Vite via React Router | Remplacer CRA dans le futur socle |
+| Serveur | Node.js | Héberger l'application et ses services métier |
+| Hébergement | Serveur avec stockage persistant ; Fly.io à évaluer | Conserver SQLite durablement et l'accès financier privé |
 
-## Styling
+La finance est réservée à François, unique utilisateur autorisé. Aucun secret ni jeu de données financières réelles ne doit être incorporé aux assets publics. Le cadre Astro initial est remplacé ; aucune seconde application n'est prévue.
 
-| Lib | Pourquoi |
-|---|---|
-| **Tailwind CSS v4** | CSS-first, tokens via `@theme`, OKLCH par défaut, 5× plus rapide. Match parfait avec shadcn/ui. |
-| **PostCSS + Autoprefixer** | Intégré à Tailwind v4. |
-| **clsx** + **tailwind-merge** | Composition propre des classes conditionnelles (via `cn()` helper). |
-| **tw-animate-css** | Remplace `tailwindcss-animate` (deprecated). Exigé par shadcn/ui v4. |
+Les versions stables compatibles seront choisies lors de l'implémentation. Les numéros présents dans les anciennes recettes ne constituent pas un verrou.
 
-## Composants
+## Données et domaine financier
 
-| Lib | Pourquoi |
-|---|---|
-| **shadcn/ui** | Pas une lib — des composants copiés dans `src/components/ui/`. Full contrôle, pas de dette. |
-| **Radix UI Primitives** | Sous-jacent à shadcn. Accessibilité (ARIA, focus trap, keyboard nav) gratuite. |
-| **Lucide React** | Icônes épurées, cohérentes, proche SF Symbols. Remplace FontAwesome. |
-
-## Animation & scroll
-
-| Lib | Pourquoi |
-|---|---|
-| **GSAP** (gratuit en 2025+) | Standard industrie. Timelines, easings pro, ScrollTrigger. |
-| **@gsap/react** | Hook `useGSAP()` pour cleanup propre avec React. |
-| **ScrollTrigger** | Pinning, scrubbing, progress — le moteur des patterns Apple. |
-| **Lenis** (`@studio-freight/lenis`) | Scroll inertiel soyeux. Intégration ScrollTrigger via ticker. |
-| **Motion** (ex-Framer Motion) | Optionnel — pour les micro-interactions UI (hover, tap, layout). Complément à GSAP. |
-
-> **Note coexistence GSAP + Lenis** : Lenis émet un événement `scroll` qu'on branche sur `ScrollTrigger.update`, et on pousse `lenis.raf` dans `gsap.ticker`. Code dans `04-motion-principles.md`.
-
-## Formulaires & validation
-
-| Lib | Pourquoi |
-|---|---|
-| **React Hook Form** | Perf + DX supérieure aux `useState` actuels dans `Form.jsx`. |
-| **Zod** | Schémas de validation typés, inférence TS. |
-| **@hookform/resolvers** | Pont entre RHF et Zod. |
-| **EmailJS** | Déjà en place, on garde — fonctionne côté client sans backend. |
-
-## PDF
-
-| Lib | Pourquoi |
-|---|---|
-| **@react-pdf-viewer/core** | Déjà en place, fonctionne. On garde pour l'affichage du CV. |
-| Alternative : lien direct vers `/CV.pdf` | Plus léger si le viewer embarqué n'est pas critique. |
-
-## Qualité du code
-
-| Lib | Pourquoi |
-|---|---|
-| **ESLint** (flat config) | Règles React + TS + a11y. |
-| **eslint-plugin-jsx-a11y** | Accessibilité (obligatoire pour ce projet). |
-| **Prettier** | Formatage auto. |
-| **Husky** + **lint-staged** | Pre-commit checks. |
-| **Vitest** + **@testing-library/react** | Remplace Jest (intégré Vite). |
-| **Playwright** (optionnel) | E2E pour valider les animations scroll. |
-
-## SEO & perf
-
-| Lib | Pourquoi |
-|---|---|
-| **react-helmet-async** | Meta tags par page (titre, OG, Twitter). |
-| **vite-plugin-image-optimizer** | Compression webp/avif automatique à la build. |
-| **web-vitals** | Déjà présent, à connecter à un endpoint (Sentry / console). |
-
-## Déploiement
-
-| Option | Pour | Contre |
+| Élément | Choix | Rôle |
 |---|---|---|
-| **GitHub Pages** (actuel, `gh-pages`) | Gratuit, branché | Pas de SSR, hash-router only avec router 7 |
-| **Vercel** ⭐ | Build Vite natif, preview deploys, analytics, custom domain gratuit | — |
-| **Cloudflare Pages** | Gratuit, CDN global rapide | Moins de DX |
+| Base | SQLite | Données financières et sessions côté serveur |
+| Pilote | better-sqlite3 | Accès SQLite depuis Node |
+| Requêtes et migrations | Drizzle + Drizzle Kit | Schéma typé et migrations, derrière les repositories |
+| Précision | decimal.js | Conversions, TH, BTC et taux avec arrondis explicites |
+| Validation | Zod | Validation des entrées côté serveur et dans les formulaires |
+| Authentification | Better Auth | Session du compte unique, inscriptions désactivées |
 
-**Reco** : migrer vers **Vercel** — preview deploys sur chaque PR, analytics Core Web Vitals gratuits, zéro config.
+La compatibilité Drizzle/better-sqlite3/SQLite est documentée officiellement. [Drizzle et SQLite](https://orm.drizzle.team/docs/sqlite/get-started-sqlite).
 
-## Ce qu'on **retire**
+Le moteur CFO et les calculs de simulation restent indépendants des composants React. L'argent EUR est conservé en centimes, avec des conventions distinctes pour BTC et TH.
 
-- ❌ `react-scripts` (CRA) — mort depuis 2023.
-- ❌ `@fortawesome/fontawesome-free` — remplacé par Lucide.
-- ❌ `pdfjs-dist` (utilisé directement ?) — fourni par `@react-pdf-viewer/core` si besoin.
-- ❌ Les 9 fichiers SCSS séparés — remplacés par Tailwind + tokens CSS.
+## Styles et composants
 
-## Coût mental
+- Tailwind et shadcn/ui, avec les tokens graphite existants.
+- Primitives shadcn cohérentes entre composants ; les recettes Radix existantes restent la référence de départ, à vérifier avec la version retenue.
+- Lucide React pour les icônes prévues par la refonte.
+- clsx, tailwind-merge et utilitaires nécessaires aux composants effectivement retenus.
+- Layout public pour le portfolio et layout privé pour la finance.
+- Tableau HTML pour les petites listes fixes ; TanStack Table lorsque tri, filtres ou pagination sont utiles.
+- Recharts pour les graphiques financiers, avec les composants graphiques shadcn.
 
-Stack à 15 libs mais toutes **nécessaires et standards**. Pas de dépendance exotique. Tout documenté en français/anglais, grosse communauté.
+L'identité graphique est partagée ; les données privées ne transitent jamais par les contenus publics. La lecture des séries financières peut être aidée par des motifs ou une palette de données à cadrer, en conservant l'accent graphite.
 
-## Sources
+## Formulaires
 
-- [shadcn/ui Tailwind v4 docs](https://ui.shadcn.com/docs/tailwind-v4)
-- [shadcn/ui Theming](https://ui.shadcn.com/docs/theming)
-- [Design Tokens That Scale (Tailwind v4)](https://www.maviklabs.com/blog/design-tokens-tailwind-v4-2026/)
-- [Lenis — darkroomengineering](https://github.com/darkroomengineering/lenis)
-- [GSAP + Lenis sync patterns](https://gsap.com/community/forums/topic/40426-patterns-for-synchronizing-scrolltrigger-and-lenis-in-reactnext/)
-- [Vite React TS best practices 2026](https://dev.to/denivladislav/set-up-a-new-react-project-vite-typescript-eslint-prettier-and-pre-commit-hooks-3abn)
+React Hook Form + Zod pour les formulaires complexes, avec le resolver adapté. Les formulaires simples peuvent utiliser les mécanismes du framework.
+
+EmailJS reste prévu pour le contact du portfolio conformément à la décision initiale ; son formulaire historique n'est pas actuellement monté sur la nouvelle page d'accueil. Il ne traite aucune donnée financière.
+
+## Animation
+
+- CSS pour les interactions de la finance.
+- GSAP, ScrollTrigger et le hook React associé pour les besoins narratifs du portfolio.
+- Lenis et Motion facultatifs, seulement si les interactions retenues les justifient ; ne pas reprendre automatiquement le nom de paquet des anciennes recettes.
+- Respect de prefers-reduced-motion.
+- Aucun fournisseur global d'animation imposé à l'espace financier.
+
+Les recettes de [motion](04-motion-principles.md) concernent le portfolio et doivent être adaptées au socle retenu.
+
+## CV et contenu public
+
+Le CV de référence reste public/CVVittecoq.pdf. Le code actuel utilise une iframe et un lien de téléchargement : une bibliothèque de lecture PDF ne sera ajoutée que si une fonctionnalité retenue l'exige.
+
+Le blog demeure prévu dans les décisions design ; Markdown/MDX ou CMS sera décidé lorsque ce chantier sera engagé. Les métadonnées seront gérées avec les capacités du framework. Optimisation des images à définir dans la future chaîne de build.
+
+## Qualité
+
+- ESLint, règles TypeScript/React/accessibilité et Prettier.
+- Vitest + Testing Library pour le domaine et les composants pertinents.
+- Playwright pour la connexion, le refus d'accès privé, les transactions et les simulations.
+- Vérifications de persistance, migrations et restauration SQLite.
+- Les fixtures synthétiques de tests sont isolées des données réelles et ne créent pas de démonstration publique.
+
+## Déploiement futur
+
+Node + volume persistant confirmé. Fly.io constitue la piste à évaluer : vérifier le coût de l'organisation, son éventuelle exonération sous 5 $, le dimensionnement et les sauvegardes avant mise en service. Vercel et GitHub Pages ne sont plus les cibles de l'application financière.
+
+Voir [le cadrage Fly.io](../dossier_conception_cfo/16_ARBITRAGES_STACK_PROJET.md). Aucune migration, installation ou publication pendant l'étape actuelle de conception.

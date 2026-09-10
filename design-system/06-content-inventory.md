@@ -50,7 +50,7 @@ type Project = {
 
 | Actuel | Devient | Notes |
 |---|---|---|
-| `Header.jsx` + scroll-to-anchor manuel | `Header` avec `NavigationMenu` shadcn + Lenis `scrollTo` | Nav sticky avec blur bg |
+| `Header.jsx` + scroll-to-anchor manuel | `Header` avec `NavigationMenu` shadcn, scroll natif ou Lenis si retenu | Nav sticky avec blur bg |
 | `Footer.jsx` | `Footer` minimaliste | Liens sociaux + copyright |
 | `Button.jsx` | shadcn `Button` (variants) | — |
 | `Competences.jsx` | Section Bento | Grid animée |
@@ -65,12 +65,12 @@ type Project = {
 
 - Homepage : `https://francoisv34.github.io/P8--Portfolio-Dev/`
 - Email de contact (EmailJS) : **à retrouver** dans `Form.jsx` (clés d'API)
-- Scripts de deploy `gh-pages` : adapter ou remplacer selon décision Vercel vs GH Pages
+- Scripts de deploy `gh-pages` : remplacer lors de la migration vers le serveur Node avec stockage persistant ; Fly.io à évaluer
 
 ## Décisions François (2026-04-20) — voir `00-decisions.md`
 
 - [x] CV officiel : `CVVittecoq.pdf` (l'autre est supprimé).
-- [x] Hosting : **Vercel**.
+- [x] Hosting : **serveur Node + stockage persistant ; Fly.io à évaluer** (mise à jour du 8 septembre 2026, remplace Vercel).
 - [x] Logo : **monogramme FV** (à générer avec Claude Design).
 - [x] Accent : **graphite sombre**.
 - [x] Projets : **sections pinned sur la home** (pas de routes détail).

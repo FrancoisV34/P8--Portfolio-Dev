@@ -1,4 +1,85 @@
-Bienvenue sur mon Portfolio Personnel de développeur web.
+# Portfolio François Vittecoq et CFO privé
+
+Une application avec un portfolio public et, à terme, un espace financier entièrement privé réservé à François. Priorité de réalisation : budget, puis GoMining et patrimoine.
+
+## État sur `refacto`
+
+Le premier lot porte l’accueil et le CV sur **React Router 8 en mode framework, React 19, TypeScript strict et Node 24**. Les styles SCSS actuels sont conservés. SQLite/Drizzle, les conventions monétaires et le compte privé unique sont installés. L’accès à `/finance` exige une session propriétaire ; les écrans de budget sont la prochaine étape.
+
+La production actuelle reste sur son déploiement existant. Aucun push ou déploiement n’a été effectué. Cette nouvelle application nécessite un serveur Node ; les anciens scripts GitHub Pages ont été retirés.
+
+## Lancer le projet
+
+Avec Node 24 et npm 11 :
+
+```sh
+npm ci
+npm run dev
+```
+
+Ouvrir http://localhost:5173. `npm run dev` et `npm start` chargent `.env` s’il existe. `.env.example` fournit `SITE_URL`, l’origine utilisée dans les métadonnées et le sitemap. Sa valeur par défaut est `http://localhost:5173` ; la remplacer par le domaine HTTPS choisi avant un déploiement.
+
+Pour vérifier le serveur de production local :
+
+```sh
+npm run build
+HOST=127.0.0.1 PORT=3000 SITE_URL=http://localhost:3000 npm start
+```
+
+Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`. `/login` est la seule entrée du compte privé. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire.
+
+## Vérifier une modification
+
+```sh
+npm run check
+npm run build
+npx playwright install chromium
+npm run test:e2e
+npm run test:dev
+```
+
+`check` lance les types, ESLint et les tests unitaires/intégration Vitest. Playwright démarre et arrête son propre serveur de production sur le port 4173 ; il faut avoir construit l’application auparavant. Les profils ordinateur et mobile utilisent Chromium. `test:dev` vérifie le blocage des fichiers privés et l’accès public sur un serveur Vite séparé, port 4174. Les tests ne contiennent aucune donnée financière personnelle.
+
+## Activer le compte privé en local
+
+Copier `.env.example` vers `.env`, puis renseigner un secret d’au moins 32 caractères, l’adresse e-mail propriétaire et le nom affiché. Le fichier `.env` reste ignoré par Git.
+
+```sh
+npm run db:migrate
+npm run auth:bootstrap
+npm run dev
+```
+
+`auth:bootstrap` demande le mot de passe dans le terminal sans l’afficher et crée le seul compte autorisé. Il refuse de créer un second compte. Pour choisir un nouveau mot de passe, utiliser `npm run auth:reset-password` : les sessions existantes sont alors révoquées. La connexion se fait ensuite sur `/login`.
+
+## Base financière locale
+
+```sh
+npm run db:migrate
+npm run db:check
+```
+
+Ces commandes créent ou mettent à jour `data/development.sqlite`, sans ajouter de données de démonstration. Les migrations sont explicites ; elles ne sont pas exécutées pendant une requête HTTP. `DATABASE_PATH` permet de choisir un fichier `.sqlite` ou `.db` privé et est obligatoire en production. Les tests utilisent exclusivement des bases temporaires distinctes. Ne jamais placer la base dans `public/` ou `build/client/`.
+
+Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les tables du compte privé et le journal de transactions seront ajoutés avec les prochains lots. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
+
+## Organisation
+
+- `app/routes/` : pages publiques, routes financières réservées et ressources HTTP.
+- `app/Components/`, `app/Style/`, `app/Data/` : contenu public et styles portés.
+- `app/.server/` et `app/lib/*.server.ts` : base, repositories et code serveur.
+- `app/lib/finance/` : unités monétaires et dates, sans dépendance à React.
+- `drizzle/` : migrations et snapshots du schéma.
+- `tests/` : vérifications unitaires et navigateur.
+- `src/` : anciens composants inactifs conservés comme référence pendant la refonte.
+
+Tailwind/shadcn, les formulaires budgétaires, graphiques et moteurs financiers seront intégrés avec les prochains lots. Les secrets, bases locales et sauvegardes sont exclus de Git. Le dossier de conception contient des paramètres personnels ; il est exclu du serveur de développement et des fichiers servis en production.
+
+Références : [roadmap](dossier_conception_cfo/13_ROADMAP.md), [sécurité](SECURITY.md), [authentification](dossier_conception_cfo/20_AUTHENTIFICATION_COMPTE_UNIQUE.md), [arbitrages](dossier_conception_cfo/17_DECISIONS_REALISATION.md), [suivi de migration](dossier_conception_cfo/18_MIGRATION_SOCLE.md), [stack validée](dossier_conception_cfo/16_ARBITRAGES_STACK_PROJET.md), [GoMining](dossier_conception_cfo/15_GOMINING_STRATEGIE_SIMULATION.md), [design system](design-system/README.md).
+
+## Présentation initiale — octobre 2025
+
+Le texte ci-dessous conserve l'intention d'origine du portfolio ; les choix techniques actuels sont ceux du cadrage ci-dessus.
 
 Au 3 octobre 2025, ce n'est qu'un début, je sais qu'il me reste énormément de points à améliorer.
 

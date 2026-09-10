@@ -46,5 +46,18 @@ build/
 .DS_Store
 .vscode/
 .env*
+!.env.example
 
+# React Router et vérifications locales
+.react-router/
+playwright-report/
+test-results/
 
+# Données financières et sauvegardes locales
+/data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+/tests/dev/private-fixture-*/
+/tests/auth-e2e/*.sqlite*

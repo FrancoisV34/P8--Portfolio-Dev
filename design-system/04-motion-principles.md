@@ -1,5 +1,7 @@
 # 04 — Motion Principles
 
+Cadrage du 8 septembre 2026 : les recettes ci-dessous concernent le portfolio public. La finance privée utilise des interactions CSS sobres. GSAP reste disponible pour les besoins narratifs ; Lenis/Motion sont facultatifs, et les anciens noms de paquets/exemples devront être vérifiés avant utilisation. Voir [la stack retenue](02-stack-recommendations.md).
+
 Comment on anime, concrètement. Référence pour l'implémentation et pour Claude Design.
 
 ## Règles du jeu

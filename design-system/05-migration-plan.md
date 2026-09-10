@@ -1,157 +1,97 @@
-# 05 — Plan de migration CRA → Vite + TS
+# 05 — Plan de migration CRA → React Router en mode framework + TypeScript
 
-Étapes ordonnées, chacune autonome et testable. On ne casse pas le site existant — on construit en parallèle.
+Plan de conception mis à jour le 8 septembre 2026 après validation de François. Il remplace le plan de SPA Vite avec déploiement Vercel. **L'implémentation aura lieu plus tard.**
 
-## Stratégie globale
+Références : [décisions](00-decisions.md), [stack](02-stack-recommendations.md) et [roadmap CFO](../dossier_conception_cfo/13_ROADMAP.md).
 
-Deux options :
-- **A) Refacto progressif** — créer un nouveau dossier `src-v2/`, migrer page par page, basculer à la fin. *Plus sûr.*
-- **B) Clean-slate** — partir d'un nouveau projet Vite + TS, porter le contenu, remplacer entièrement. *Plus rapide, plus propre.*
+Depuis le 9 septembre 2026, la [roadmap détaillée commune](../dossier_conception_cfo/13_ROADMAP.md) fait référence pour les lots, les dépendances et l'ordre d'exécution. Le présent plan décrit les travaux techniques à inclure ; son ordre d'étapes sera adapté au [choix interactif de François](../dossier_conception_cfo/17_DECISIONS_REALISATION.md). Le port fonctionnel du portfolio est précoce, la finition visuelle et le blog peuvent être réalisés plus tard.
 
-**Reco** : option **B (clean-slate)** — le projet actuel a trop de CSS legacy et un `App.js` encore à l'état CRA template. Rebâtir est plus rapide que nettoyer. On garde le repo git, juste on remplace `src/`.
+## Résultat attendu
 
----
+Une application React Router servie par Node :
+- portfolio, CV et futur blog publics ;
+- CFO et GoMining entièrement privés ;
+- François seul utilisateur autorisé, inscriptions désactivées ;
+- données réelles dans SQLite sur stockage persistant ;
+- aucune démonstration publique dans cette phase.
 
-## Étape 0 — Prérequis
+## Étape 0 — Préparer le chantier
 
-- [ ] Brancher sur `feat/refacto-vite` (ne pas toucher `main` tant que pas validé).
-- [ ] Backup du `src/` actuel → `src-legacy/` (gardé pendant la migration pour copier le contenu).
-- [ ] Décider du domaine final (GitHub Pages actuel vs Vercel). Si Vercel : créer le projet, pointer vers le repo.
+- Faire l'inventaire du contenu et des composants à porter.
+- Identifier les changements locaux de François et les préserver.
+- Travailler sur une branche ou un checkout de migration dédié.
+- Garder le portfolio opérationnel jusqu'à la validation du nouveau socle.
+- Choisir les versions stables compatibles et compléter les décisions de domaine/hébergement au moment utile.
 
-## Étape 1 — Bootstrap Vite + TS
+## Étape 1 — Créer le socle React Router
 
-```bash
-npm create vite@latest . -- --template react-ts
-# écrase package.json — sauvegarder d'abord les scripts deploy existants
-```
+- React Router en mode framework, React, TypeScript strict et outillage Vite du framework.
+- Un serveur Node pour les pages et services métier.
+- Routes et layouts distincts pour le public, la connexion et la finance.
+- Métadonnées et prérendu éventuel limités aux contenus publics.
+- Modules de base, auth et accès aux données strictement côté serveur.
 
-- [ ] Installer Tailwind v4 : `npm i -D tailwindcss @tailwindcss/vite`
-- [ ] Ajouter `@tailwindcss/vite` au plugin Vite dans `vite.config.ts`
-- [ ] Créer `src/styles/globals.css` avec `@import "tailwindcss";` + import des tokens
-- [ ] Créer `src/styles/tokens.css` (copier les blocs `@theme inline` de `03-design-tokens.md`)
+## Étape 2 — Porter le design system
 
-## Étape 2 — shadcn/ui
+- Tailwind, composants shadcn nécessaires, tokens graphite, typographie et espacement existants.
+- Composants communs de boutons, champs, dialogues et tableaux.
+- Navigation du portfolio séparée de la navigation financière.
+- Lucide pour les icônes prévues.
+- Accessibilité, focus et reduced motion dès les premiers composants.
 
-```bash
-npx shadcn@latest init
-# choisir : TypeScript, style "new-york" (plus proche Apple), base color "neutral"
-```
+## Étape 3 — Persistance et compte unique
 
-- [ ] Installer les premiers composants : `npx shadcn add button card dialog input label textarea sheet navigation-menu`
-- [ ] Adapter les tokens shadcn pour matcher ceux du `03-design-tokens.md` (remplacer les couleurs par défaut).
+- SQLite, Drizzle, better-sqlite3 et migrations.
+- Compléter le schéma métier avec Better Auth et les extensions nécessaires.
+- Créer le seul compte autorisé par une procédure serveur contrôlée.
+- Désactiver les inscriptions et vérifier la session ainsi que l'identité du propriétaire sur chaque point d'accès financier.
+- Établir les conventions EUR/BTC/TH et le calcul décimal.
+- Prévoir sauvegarde, restauration et séparation entre bases de développement, tests et production.
 
-## Étape 3 — Qualité & tooling
+## Étape 4 — Porter le portfolio public
 
-- [ ] ESLint flat config : `eslint.config.js` avec `@eslint/js`, `typescript-eslint`, `eslint-plugin-react`, `eslint-plugin-jsx-a11y`, `eslint-plugin-react-hooks`.
-- [ ] Prettier : `.prettierrc` (print-width 100, singleQuote true, trailingComma all).
-- [ ] Husky + lint-staged :
-  ```json
-  "lint-staged": {
-    "*.{ts,tsx}": ["eslint --fix", "prettier --write"],
-    "*.{json,md,css}": ["prettier --write"]
-  }
-  ```
-- [ ] Path aliases : `@/` → `src/` dans `tsconfig.json` + `vite.config.ts`.
+- Accueil : hero, sections projets, compétences, parcours et contact.
+- CV : conserver public/CVVittecoq.pdf, iframe et téléchargement selon les besoins retenus.
+- EmailJS pour le formulaire de contact prévu.
+- Blog : choisir le format de contenu avant sa réalisation.
+- Préserver la structure de projets sur la home et l'identité graphique validée.
 
-## Étape 4 — Structure du src
+## Étape 5 — Construire le CFO par étapes
 
-```
-src/
-├── main.tsx
-├── App.tsx
-├── routes/                    ← router config
-├── pages/
-│   ├── Home.tsx
-│   ├── Cv.tsx
-│   └── Project.tsx            ← page détail par projet (nouveau)
-├── components/
-│   ├── ui/                    ← shadcn (ne pas toucher sauf tokens)
-│   ├── layout/                ← Header, Footer, Nav
-│   └── sections/              ← Hero, Projects, Skills, Parcours, Contact
-├── providers/
-│   └── ScrollProvider.tsx     ← Lenis + GSAP
-├── data/
-│   ├── projects.ts            ← typé, ex-Projects.json
-│   ├── skills.ts
-│   └── presentation.ts
-├── hooks/
-│   └── useReducedMotion.ts
-├── lib/
-│   ├── cn.ts                  ← helper clsx + tailwind-merge
-│   └── motion.ts
-├── styles/
-│   ├── globals.css
-│   └── tokens.css
-└── assets/                    ← images optimisées
-```
+Suivre les lots L07 à L16 de la roadmap commune dans l'ordre arbitré : budget/transactions, GoMining, patrimoine, business, projets/objectifs, registre réglementaire, moteur CFO, simulations globales et actualisation réglementaire. GoMining peut être livré avant le CFO global ; le registre manuel vérifié précède les calculs fiscaux qui en dépendent.
 
-## Étape 5 — Motion & scroll
+Les modèles déterministes, hypothèses historisées et vérifications métier précèdent l'intelligence avancée. Les données et projections restent privées.
 
-- [ ] `npm i gsap @gsap/react @studio-freight/lenis`
-- [ ] Créer `src/providers/ScrollProvider.tsx` (code dans `04-motion-principles.md`)
-- [ ] Wrapper l'app dans `<ScrollProvider>`.
-- [ ] Implémenter 1 section pilote (Hero) avec fade-in staggered pour valider.
-- [ ] Implémenter 1 section Project pinned pour valider le scrub.
+## Étape 6 — Visualisations et animations
 
-## Étape 6 — Port du contenu
+- Recharts pour le patrimoine et les sources de croissance GoMining.
+- TanStack Table pour les écrans nécessitant filtres/tri/pagination ; tableau HTML pour les jalons fixes.
+- CSS pour la finance.
+- GSAP/ScrollTrigger selon les interactions narratives retenues sur le portfolio.
+- Lenis/Motion seulement si un besoin validé le justifie, sans intégration globale imposée.
 
-Ordre recommandé (du moins risqué au plus complexe) :
-1. **Données** : JSON → TS typés (`projects.ts` avec type `Project`).
-2. **Layout** : Header + Footer avec shadcn `NavigationMenu`.
-3. **Page CV** : on garde `@react-pdf-viewer/core` ou on simplifie en iframe + bouton download.
-4. **Page Home — Hero** : grand titre + bg photo + fade-in.
-5. **Section Présentation** : typo, animation d'entrée.
-6. **Section Projets** : pattern Apple pinned. Chaque projet = section à part entière.
-7. **Section Compétences** : bento grid avec tags.
-8. **Section Parcours** : timeline animée au scroll.
-9. **Section Contact** : form RHF + Zod, EmailJS.
+## Étape 7 — Vérifier avant mise en service
 
-## Étape 7 — SEO & meta
+- Vitest : règles, montants, unités, dette et invariants GoMining.
+- Intégration : repositories, migrations, API et persistance.
+- Playwright : portfolio public, connexion du propriétaire, refus d'accès privé et d'inscription, transactions et simulations.
+- Vérifier l'absence de données financières dans les assets, réponses publiques et caches partagés.
+- Contrôler liens, images, accessibilité et performance du portfolio.
+- Tester la restauration d'une sauvegarde privée.
 
-- [ ] `npm i react-helmet-async` + ajouter `<Helmet>` par page.
-- [ ] Open Graph image (1200x630) + Twitter card — à générer.
-- [ ] `sitemap.xml` + `robots.txt` à mettre à jour.
-- [ ] Lighthouse ≥ 95 sur toutes les catégories avant merge.
+## Étape 8 — Préparer puis réaliser l'hébergement
 
-## Étape 8 — Déploiement
+- Évaluer Fly.io : organisation, coût avant remise, éventuelle exonération et trafic attendu du portfolio.
+- Construire l'application Node et placer SQLite sur un volume persistant.
+- Définir la taille de Machine, la région, les paramètres de démarrage/arrêt et la tolérance aux interruptions.
+- Définir sauvegardes hors du volume, secrets serveur et domaine.
+- Tester démarrage, redéploiement, persistance des données et restauration avant la bascule.
 
-Si Vercel :
-- [ ] Connecter le repo.
-- [ ] `vercel.json` si besoin de rewrites pour le router.
-- [ ] Configurer le domaine custom.
-- [ ] Activer Web Vitals analytics.
+Cette étape est future ; le présent document ne déclenche aucun provisionnement ni achat.
 
-Si on reste GitHub Pages :
-- [ ] Garder `gh-pages`.
-- [ ] Config du `base` Vite à `/P8--Portfolio-Dev/` dans `vite.config.ts`.
-- [ ] Script `deploy` adapté.
+## Étape 9 — Nettoyer après validation
 
-## Étape 9 — Nettoyage
-
-- [ ] Supprimer `src-legacy/`.
-- [ ] Supprimer les anciennes dépendances inutilisées (FontAwesome, pdfjs-dist si non utilisé).
-- [ ] Mettre à jour le README principal.
-- [ ] Tag release `v2.0.0`.
-
-## Timing estimé
-
-| Étape | Temps |
-|---|---|
-| 1–4 (setup) | 3–4h |
-| 5 (motion pilote) | 2–3h |
-| 6 (port contenu) | 6–10h |
-| 7 (SEO) | 1–2h |
-| 8 (deploy) | 1–2h |
-| 9 (cleanup) | 1h |
-| **Total** | **~14–22h** |
-
-Faisable sur 3-4 sessions de travail.
-
-## Risques & mitigations
-
-| Risque | Mitigation |
-|---|---|
-| Perte de contenu au port | Garder `src-legacy/` jusqu'à la fin + diff visuel page par page |
-| Router GitHub Pages qui casse (hash vs history) | Tester avec `base` Vite correct, ou basculer Vercel |
-| GSAP + Lenis qui lag sur low-end | Respecter `prefers-reduced-motion`, limiter le nb de ScrollTriggers |
-| Police non chargée → FOUT | Préloader la font, utiliser `font-display: swap` |
+- Retirer CRA et les dépendances devenues inutilisées.
+- Supprimer les doublons de contenu seulement après vérification de leur remplacement.
+- Mettre à jour README, scripts et documentation d'exploitation.
+- Conserver la démonstration publique et le partage des finances hors du périmètre actuel.

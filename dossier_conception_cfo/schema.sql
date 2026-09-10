@@ -1,0 +1,23 @@
+PRAGMA foreign_keys = ON;
+PRAGMA journal_mode = WAL;
+
+CREATE TABLE economic_entities (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, name TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE accounts (id TEXT PRIMARY KEY, entity_id TEXT NOT NULL REFERENCES economic_entities(id), name TEXT NOT NULL, type TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'EUR', is_active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
+CREATE TABLE categories (id TEXT PRIMARY KEY, parent_id TEXT REFERENCES categories(id), name TEXT NOT NULL, kind TEXT NOT NULL);
+CREATE TABLE transactions (id TEXT PRIMARY KEY, account_id TEXT NOT NULL REFERENCES accounts(id), category_id TEXT REFERENCES categories(id), occurred_at TEXT NOT NULL, period TEXT NOT NULL, amount_cents INTEGER NOT NULL, direction TEXT NOT NULL, capital_nature TEXT, project_id TEXT, label TEXT NOT NULL, notes TEXT, created_at TEXT NOT NULL);
+CREATE INDEX idx_transactions_period ON transactions(period);
+CREATE TABLE assets (id TEXT PRIMARY KEY, entity_id TEXT NOT NULL REFERENCES economic_entities(id), type TEXT NOT NULL, name TEXT NOT NULL, value_cents INTEGER NOT NULL, valuation_date TEXT NOT NULL);
+CREATE TABLE liabilities (id TEXT PRIMARY KEY, entity_id TEXT NOT NULL REFERENCES economic_entities(id), type TEXT NOT NULL, name TEXT NOT NULL, balance_cents INTEGER NOT NULL, interest_rate REAL, monthly_payment_cents INTEGER, valuation_date TEXT NOT NULL);
+CREATE TABLE businesses (id TEXT PRIMARY KEY, entity_id TEXT NOT NULL REFERENCES economic_entities(id), legal_form TEXT, tax_regime TEXT, vat_regime TEXT, started_at TEXT);
+CREATE TABLE products (id TEXT PRIMARY KEY, business_id TEXT NOT NULL REFERENCES businesses(id), name TEXT NOT NULL, status TEXT NOT NULL, launched_at TEXT, archived_at TEXT);
+CREATE TABLE product_metrics (id TEXT PRIMARY KEY, product_id TEXT NOT NULL REFERENCES products(id), period TEXT NOT NULL, revenue_cents INTEGER NOT NULL DEFAULT 0, mrr_cents INTEGER NOT NULL DEFAULT 0, costs_cents INTEGER NOT NULL DEFAULT 0, maintenance_minutes INTEGER NOT NULL DEFAULT 0, UNIQUE(product_id, period));
+CREATE TABLE projects (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, status TEXT NOT NULL, priority INTEGER NOT NULL, target_cost_cents INTEGER, expected_roi REAL, confidence REAL, condition_json TEXT, next_action TEXT, created_at TEXT NOT NULL);
+CREATE TABLE goals (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, category TEXT NOT NULL, target_value_cents INTEGER, target_date TEXT, priority INTEGER NOT NULL, status TEXT NOT NULL, condition_json TEXT);
+CREATE TABLE cfo_rules (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, priority INTEGER NOT NULL, params_json TEXT NOT NULL, is_enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
+CREATE TABLE cfo_runs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, strategy_mode TEXT NOT NULL, available_cash_cents INTEGER NOT NULL, context_json TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE cfo_decisions (id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES cfo_runs(id), rule_id TEXT REFERENCES cfo_rules(id), bucket TEXT NOT NULL, amount_cents INTEGER NOT NULL, explanation TEXT NOT NULL, payload_json TEXT);
+CREATE TABLE regulatory_values (id TEXT PRIMARY KEY, key TEXT NOT NULL, jurisdiction TEXT NOT NULL DEFAULT 'FR', activity_type TEXT, value_json TEXT NOT NULL, valid_from TEXT NOT NULL, valid_to TEXT, source_name TEXT NOT NULL, source_url TEXT NOT NULL, retrieved_at TEXT, verified_at TEXT, confidence REAL NOT NULL DEFAULT 1.0);
+CREATE TABLE external_api_cache (id TEXT PRIMARY KEY, provider TEXT NOT NULL, cache_key TEXT NOT NULL UNIQUE, payload_json TEXT NOT NULL, fetched_at TEXT NOT NULL, expires_at TEXT);
+CREATE TABLE scenarios (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, horizon_months INTEGER NOT NULL, engine_version TEXT NOT NULL, inputs_json TEXT NOT NULL, created_at TEXT NOT NULL);
+CREATE TABLE scenario_results (id TEXT PRIMARY KEY, scenario_id TEXT NOT NULL REFERENCES scenarios(id), period TEXT NOT NULL, cash_cents INTEGER NOT NULL, investments_cents INTEGER NOT NULL, business_cash_cents INTEGER NOT NULL, debt_cents INTEGER NOT NULL, net_worth_cents INTEGER NOT NULL, result_json TEXT);
+CREATE TABLE monthly_snapshots (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, period TEXT NOT NULL, income_cents INTEGER NOT NULL, expenses_cents INTEGER NOT NULL, net_worth_cents INTEGER NOT NULL, investments_cents INTEGER NOT NULL, business_revenue_cents INTEGER NOT NULL, data_json TEXT, UNIQUE(user_id, period));
