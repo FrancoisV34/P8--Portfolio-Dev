@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { monthOf, parseCalendarDate, parseMonth } from '../../lib/finance/dates.ts';
 import { euroCents, sumEuroCents } from '../../lib/finance/units.ts';
 import type { FinanceDatabase } from '../db/connection.ts';
-import { accounts, categories, economicEntities, monthlyBudgets, transactions } from '../db/schema.ts';
+import { accounts, categories, economicEntities, monthlyBudgets, recurringCommitments, transactions } from '../db/schema.ts';
 
 const name = z.string().trim().min(1).max(100);
 const note = z.string().trim().max(240);
@@ -13,6 +13,7 @@ const categoryUpdateInput = categoryInput.extend({ id: z.uuid(), isActive: z.boo
 const transactionInput = z.object({
   accountId: z.uuid(), categoryId: z.uuid(), kind: z.enum(['income', 'expense']),
   amountCents: z.number().int().positive().max(Number.MAX_SAFE_INTEGER), occurredOn: z.string(), note,
+  recurringCommitmentId: z.uuid().nullable().optional(),
 }).strict();
 const transactionUpdateInput = transactionInput.extend({ id: z.uuid() }).strict();
 const transferInput = z.object({
@@ -50,6 +51,17 @@ export function budgetRepository(db: FinanceDatabase, ownerId: string) {
     if (kind) where.push(eq(categories.kind, kind));
     return db.select().from(categories).where(and(...where)).get();
   }
+  function assertCommitment(id: string | null | undefined, categoryId: string, occurredOn: string) {
+    if (!id) return null;
+    const commitment = db.select().from(recurringCommitments).where(and(
+      eq(recurringCommitments.id, id), eq(recurringCommitments.ownerId, ownerId), eq(recurringCommitments.categoryId, categoryId),
+    )).get();
+    const period = monthOf(parseCalendarDate(occurredOn));
+    if (!commitment || commitment.startPeriod > period || (commitment.endPeriod !== null && commitment.endPeriod < period)) {
+      throw new Error('Engagement introuvable.');
+    }
+    return commitment.id;
+  }
   function assertAccount(id: string, occurredOn: string) {
     const account = ownedAccounts([id]).find((candidate) => candidate.id === id);
     if (!account || !account.isActive || occurredOn < account.openingDate) throw new Error('Compte introuvable.');
@@ -75,11 +87,12 @@ export function budgetRepository(db: FinanceDatabase, ownerId: string) {
       const category = ownedCategory(values.categoryId, values.kind);
       if (!category) throw new Error('Catégorie introuvable.');
       assertAccount(values.accountId, occurredOn);
+      const recurringCommitmentId = values.kind === 'expense' ? assertCommitment(values.recurringCommitmentId, category.id, occurredOn) : null;
       const amountCents = euroCents(values.kind === 'income' ? values.amountCents : -values.amountCents);
       const timestamp = now();
       return db.insert(transactions).values({
         id: randomUUID(), ownerId, accountId: values.accountId, categoryId: category.id,
-        kind: values.kind, amountCents, occurredOn, note: values.note, createdAt: timestamp, updatedAt: timestamp,
+        kind: values.kind, amountCents, occurredOn, note: values.note, recurringCommitmentId, createdAt: timestamp, updatedAt: timestamp,
       }).returning().get();
     },
     updateTransaction(input: z.input<typeof transactionUpdateInput>) {
@@ -90,10 +103,11 @@ export function budgetRepository(db: FinanceDatabase, ownerId: string) {
       if (!category) throw new Error('Catégorie introuvable.');
       const occurredOn = parseCalendarDate(values.occurredOn);
       assertAccount(values.accountId, occurredOn);
+      const recurringCommitmentId = values.kind === 'expense' ? assertCommitment(values.recurringCommitmentId, category.id, occurredOn) : null;
       return db.update(transactions).set({
         accountId: values.accountId, categoryId: category.id, kind: values.kind,
         amountCents: euroCents(values.kind === 'income' ? values.amountCents : -values.amountCents),
-        occurredOn, note: values.note, updatedAt: now(),
+        occurredOn, note: values.note, recurringCommitmentId, updatedAt: now(),
       }).where(and(eq(transactions.id, values.id), eq(transactions.ownerId, ownerId))).returning().get();
     },
     createTransfer(input: CreateTransfer) {
@@ -122,9 +136,10 @@ export function budgetRepository(db: FinanceDatabase, ownerId: string) {
     },
     listTransactions(period: string) {
       const range = periodBounds(period);
-      return db.select({ transaction: transactions, accountName: accounts.name, categoryName: categories.name })
+      return db.select({ transaction: transactions, accountName: accounts.name, categoryName: categories.name, commitmentName: recurringCommitments.name })
         .from(transactions).innerJoin(accounts, eq(transactions.accountId, accounts.id))
         .leftJoin(categories, eq(transactions.categoryId, categories.id))
+        .leftJoin(recurringCommitments, eq(transactions.recurringCommitmentId, recurringCommitments.id))
         .where(and(eq(transactions.ownerId, ownerId), gte(transactions.occurredOn, range.start), lt(transactions.occurredOn, range.end)))
         .orderBy(desc(transactions.occurredOn), desc(transactions.createdAt)).limit(250).all();
     },

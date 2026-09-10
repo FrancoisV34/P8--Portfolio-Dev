@@ -45,13 +45,67 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D03 | Réalisé pour le démarrage local | Connexion et récupération du compte | Compte local avec récupération serveur ; connexion par une identité externe explicitement autorisée | Parcours de connexion et dépendance à un fournisseur ; toujours un seul utilisateur |
 | D04 | Avant première mise en ligne | Moment d'essayer Fly.io | Après le premier module utile ; après budget + GoMining + patrimoine ; conserver d'abord un usage local plus long | Temps avant usage en ligne ; L06 reste obligatoire avant données réelles en ligne |
 | D05 | Avant L07 | Historique initial à saisir | Soldes d'ouverture et mois courant ; reprise de quelques mois ; reprise annuelle | Charge de saisie et disponibilité des moyennes historiques |
-| D06 | Avant L09 | BTC accumulés avant 10 TH | Les conserver ; les réinvestir aussi après franchissement du seuil | Solde BTC et TH acquis à la bascule |
-| D07 | Avant L09 | Pas de calcul GoMining | Mensuel simplifié ; journalier avec restitution mensuelle | Fidélité de la capitalisation et définition du moment de bascule |
+| D11 | Validé : L08 | Réserve et engagements mensuels | Réserve calculée depuis des comptes sélectionnés ; réserve saisie séparément ; cible en mois de dépenses | Évite la duplication de solde et précise le rapprochement prévu/réel |
+| D06 | Validé : L09 | BTC accumulés avant 10 TH | Conserver le stock ; le réinvestir aussi au franchissement du seuil, selon un choix enregistré par scénario | Solde BTC et TH acquis à la bascule |
+| D07 | Validé : L09 | Pas de calcul GoMining | Mensuel simplifié ; journalier avec restitution mensuelle | Fidélité de la capitalisation et définition du moment de bascule |
+| D12 | Validé : L09 | Moment des apports et réinvestissements | Début de mois ; fin de mois | Effet sur les récompenses et le franchissement du seuil |
+| D13 | Validé : L09 | Raccordement de l’apport GoMining au budget | Catégorie de dépense facultative par scénario ; intégration automatique au budget et au journal | Visibilité sans confondre hypothèse, budget et mouvement réel |
+| D14 | Validé : L09 | Conservation des hypothèses GoMining | Historique immuable complet ; version courante seule ; duplication manuelle | Traçabilité des décisions et conservation des scénarios |
+| D15 | Validé : L09 | Utilisation d’une ancienne hypothèse | Dupliquer un scénario ; appliquer au scénario courant comme nouvelle révision ; consultation seule | Revenir à une hypothèse sans réécrire l’historique |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
 
 D10 sera découpé en petites questions lorsque les mesures techniques seront disponibles. Aucune donnée secrète n'est demandée dans ce journal.
+
+## D11 — Réserve de sécurité et engagements mensuels
+
+**État : validé le 10 septembre 2026 — option recommandée.**
+
+La réserve de sécurité est une cible en euros comparée au total des soldes des comptes sélectionnés ; elle ne duplique ni ne saisit un solde séparé. Les engagements mensuels définissent seulement un prévu (catégorie de dépense, montant, jour et période de validité). Ils ne génèrent aucune transaction. Un paiement réel est pris en compte uniquement lorsqu’une transaction de dépense de même catégorie est explicitement reliée à l’engagement.
+
+Cette décision rend chaque montant explicable, conserve les mouvements réels dans le journal et évite un rapprochement automatique ambigu par catégorie.
+
+## D06 — Sort des BTC accumulés au seuil de 10 TH
+
+**État : validé le 10 septembre 2026 — choix par scénario.**
+
+Chaque scénario GoMining permettra de sélectionner l’une des deux politiques suivantes :
+
+- conserver le stock de BTC accumulé avant 10 TH ;
+- réinvestir également ce stock au franchissement de 10 TH.
+
+Dans les deux cas, les récompenses générées après le seuil suivent le réinvestissement automatique. Le réglage est une hypothèse de simulation modifiable ; il ne crée ni ne modifie une transaction réelle. Les résultats doivent montrer distinctement BTC conservés, BTC réinvestis et TH acquis à la bascule.
+
+## D07 — Pas de calcul GoMining
+
+**État : validé le 10 septembre 2026 — mensuel simplifié.**
+
+Les apports, récompenses, coûts et réinvestissements seront calculés une fois par mois et restitués dans la même granularité. Le moteur ne prétendra donc pas produire une capitalisation journalière ; le moment des opérations à l’intérieur du mois est fixé par D12.
+
+## D12 — Moment des apports et réinvestissements
+
+**État : validé le 10 septembre 2026 — fin de mois.**
+
+Chaque période calcule d’abord la récompense nette avec la puissance disponible au début du mois. Les apports personnels, puis les BTC réinvestissables, achètent la puissance à la fin de cette période et produisent donc leurs premiers effets le mois suivant. Cette convention prudente s’applique également au mois de franchissement de 10 TH.
+
+## D13 — Raccordement GoMining au budget
+
+**État : validé le 10 septembre 2026 — option A, catégorie facultative.**
+
+Un scénario peut être lié à une catégorie de dépense existante, par exemple « GoMining ». Pour la période affichée, son apport mensuel est alors montré séparément comme un prévu. Il ne modifie ni le montant du budget mensuel, ni le réalisé, et ne génère jamais une transaction. Le lien est facultatif, modifiable, et limité côté serveur comme dans SQLite à une catégorie de dépense appartenant au propriétaire.
+
+## D14 — Conservation des hypothèses GoMining
+
+**État : validé le 10 septembre 2026 — option A, historique immuable.**
+
+Chaque création ou modification enregistre une révision complète des hypothèses et de ses paliers. Les révisions sont consultables en lecture seule ; elles ne peuvent être ni modifiées ni supprimées. En conséquence, la suppression d’un scénario n’est plus proposée, afin de préserver son historique. Une modification crée toujours une nouvelle révision.
+
+## D15 — Utilisation d’une ancienne hypothèse GoMining
+
+**État : validé le 10 septembre 2026 — option B, restauration versionnée.**
+
+Depuis une ancienne version, François peut appliquer ses hypothèses au scénario courant. Cette action ne modifie jamais l’ancienne version : elle crée une nouvelle révision complète, avec les paliers restaurés. Le serveur vérifie que le scénario et la version appartiennent au propriétaire, puis revalide la catégorie de budget éventuellement référencée.
 
 ## D02 — Support Git confirmé
 
@@ -132,5 +186,9 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-09 | D02 — Méthode et démarrage | « va y commence la ! » | Migration directe du socle sur `refacto` lancée ; D03 présenté pour la suite |
 | 2026-09-09 | D03 — Connexion locale | Reprise du chantier ; mise en œuvre de l’option locale recommandée | Better Auth, compte unique provisionné par commande serveur, session et déconnexion testées |
 | 2026-09-09 | D05 — Historique budgétaire initial | « A » | Soldes d’ouverture datés + transactions du mois courant ; L07–L08 peuvent démarrer sans reprise artificielle |
+| 2026-09-10 | D11 — Réserve et engagements | « oui je valide go faire comme ca » | Réserve issue des comptes sélectionnés ; engagements mensuels prévus et paiements explicitement rattachés ; L08 terminé localement |
+| 2026-09-10 | D06 — BTC accumulés à 10 TH | « c'est exactement ça ! parfait » | Politique enregistrable par scénario : conserver le stock ou le réinvestir aussi au seuil ; récompenses après seuil réinvesties automatiquement |
+| 2026-09-10 | D07 — Pas de calcul GoMining | « A » | Calcul mensuel simplifié retenu pour les projections et leur restitution |
+| 2026-09-10 | D12 — Moment des apports | « A » | Apports et réinvestissements pris en compte à la fin de chaque mois |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

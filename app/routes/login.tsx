@@ -1,22 +1,15 @@
 import { Form, Link, redirect, useActionData, useLoaderData } from 'react-router';
 import { getAuth } from '../.server/auth/auth.server.ts';
 import { authIsConfigured } from '../.server/auth/config.ts';
-import { requireOwner } from '../.server/auth/owner.server.ts';
 import './login.scss';
 
 type ActionData = { message: string } | undefined;
 
 export async function loader({ request }: { request: Request }) {
   const url = new URL(request.url);
-  if (url.search) throw redirect('/login');
+  if (url.search) throw redirect('/co');
   if (!authIsConfigured()) return { ready: false };
-  try {
-    await requireOwner(request);
-    throw redirect('/finance');
-  } catch (error) {
-    if (error instanceof Response && error.status === 401) return { ready: true };
-    throw error;
-  }
+  return { ready: true };
 }
 
 export async function action({ request }: { request: Request }) {
@@ -26,7 +19,7 @@ export async function action({ request }: { request: Request }) {
   const password = String(formData.get('password') ?? '');
   if (!email || !password) return { message: 'Renseigne ton adresse e-mail et ton mot de passe.' };
 
-  const { auth } = getAuth();
+  const { auth, config } = getAuth();
   const response = await auth.api.signInEmail({
     body: { email, password, rememberMe: false },
     headers: request.headers,
@@ -34,8 +27,17 @@ export async function action({ request }: { request: Request }) {
   });
   if (!response.ok) return { message: 'Identifiants incorrects ou accès non autorisé.' };
 
+  const cookies = response.headers.getSetCookie?.() ?? [];
+  const sessionHeaders = new Headers(request.headers);
+  sessionHeaders.set('cookie', cookies.map((cookie) => cookie.split(';', 1)[0]).join('; '));
+  const session = await auth.api.getSession({ headers: sessionHeaders });
+  if (!session || session.user.email.trim().toLowerCase() !== config.FINANCE_OWNER_EMAIL) {
+    await auth.api.signOut({ headers: sessionHeaders, asResponse: true });
+    return { message: 'Identifiants incorrects ou accès non autorisé.' };
+  }
+
   const headers = new Headers({ Location: '/finance' });
-  for (const cookie of response.headers.getSetCookie?.() ?? []) headers.append('Set-Cookie', cookie);
+  for (const cookie of cookies) headers.append('Set-Cookie', cookie);
   return redirect('/finance', { headers });
 }
 

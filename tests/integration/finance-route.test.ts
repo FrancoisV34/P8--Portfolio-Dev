@@ -42,8 +42,25 @@ function request(method = 'GET', form?: FormData, requestOrigin = origin) {
 }
 
 describe('route finance privée', () => {
+  it('redirige une lecture directe sans session vers /co, sans URL de retour ni contenu privé', async () => {
+    let response: unknown;
+    try { await loader({ request: new Request(`${origin}/finance`), params: {} }); } catch (error) { response = error; }
+    expect(response).toBeInstanceOf(Response);
+    expect(response).toMatchObject({ status: 302 });
+    expect((response as Response).headers.get('location')).toBe('/co');
+    expect((response as Response).headers.get('cache-control')).toContain('no-store');
+  });
+
+  it('refuse toujours une mutation sans session côté serveur', async () => {
+    const form = new FormData();
+    form.set('intent', 'createEntity');
+    form.set('name', 'Entité interdite');
+    form.set('type', 'personal');
+    await expect(action({ request: new Request(`${origin}/finance`, { method: 'POST', body: form, headers: { origin } }) })).rejects.toMatchObject({ status: 401 });
+  });
+
   it('charge le dashboard vide du propriétaire sans exposer de donnée par URL', async () => {
-    await expect(loader({ request: request(), params: {} })).resolves.toMatchObject({ name: 'Propriétaire route de test', dashboard: { transactionCount: 0 } });
+    await expect(loader({ request: request(), params: {} })).resolves.toMatchObject({ name: 'Propriétaire route de test', dashboard: { transactionCount: 0 }, planning: { reserve: null, commitments: [] } });
   });
 
   it('refuse une mutation provenant d’une autre origine avant toute écriture', async () => {
@@ -62,5 +79,21 @@ describe('route finance privée', () => {
     const response = await action({ request: new Request(`${origin}/finance/accounts.data?period=2026-09`, { method: 'POST', body: form, headers: { cookie, origin } }) });
     expect(response).toMatchObject({ status: 302, headers: expect.any(Headers) });
     await expect(loader({ request: request(), params: {} })).resolves.toMatchObject({ entities: [expect.objectContaining({ name: 'Entité synthétique' })] });
+  });
+
+  it('enregistre un scénario GoMining côté serveur sans créer de transaction financière', async () => {
+    const category = new FormData();
+    category.set('intent', 'createCategory');
+    category.set('name', 'GoMining synthétique');
+    category.set('kind', 'expense');
+    await expect(action({ request: request('POST', category) })).resolves.toMatchObject({ status: 302 });
+    const loadedBeforeScenario = await loader({ request: request(), params: {} });
+    const budgetCategory = loadedBeforeScenario.categories.find((item) => item.name === 'GoMining synthétique');
+    if (!budgetCategory) throw new Error('Catégorie de test absente.');
+    const form = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createGoMiningScenario', name: 'Scénario synthétique', startPeriod: '2026-09', horizonMonths: '12', initialHashrateMilliTh: '1000', initialAccumulatedSats: '0', efficiencyMilliWattsPerTh: '12000', monthlyNetRewardSatsPerTh: '0', pricePerMilliTh: '1,00', btcPrice: '10000,00', phaseOne: '1,00', phaseTwo: '1,00', phaseThree: '1,00' })) form.set(key, value);
+    form.set('budgetCategoryId', budgetCategory.id);
+    await expect(action({ request: request('POST', form) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: request(), params: {} })).resolves.toMatchObject({ gomining: [expect.objectContaining({ scenario: expect.objectContaining({ name: 'Scénario synthétique', revision: 1, budgetCategoryId: budgetCategory.id }), versions: [expect.objectContaining({ revision: 1 })] })], gominingBudgetPlans: [expect.objectContaining({ categoryId: budgetCategory.id, contributionCents: 100 })], transactions: [] });
   });
 });

@@ -4,7 +4,7 @@ Une application avec un portfolio public et, à terme, un espace financier enti�
 
 ## État sur `refacto`
 
-Le premier lot porte l’accueil et le CV sur **React Router 8 en mode framework, React 19, TypeScript strict et Node 24**. Les styles SCSS actuels sont conservés. SQLite/Drizzle, les conventions monétaires et le compte privé unique sont installés. L’accès à `/finance` exige une session propriétaire ; les écrans de budget sont la prochaine étape.
+Le premier lot porte l’accueil et le CV sur **React Router 8 en mode framework, React 19, TypeScript strict et Node 24**. Les styles SCSS actuels sont conservés. SQLite/Drizzle, les conventions monétaires et le compte privé unique sont installés. L’accès à `/finance` exige une session propriétaire ; le budget local couvre comptes, journal, prévus/réalisés, réserve issue de comptes sélectionnés et engagements mensuels explicitement rapprochés des paiements. GoMining ajoute des scénarios mensuels privés, une révision immuable à chaque changement et, à titre indicatif, peut afficher l’apport d’un scénario dans une catégorie de budget sans modifier ce budget ni créer de transaction.
 
 La production actuelle reste sur son déploiement existant. Aucun push ou déploiement n’a été effectué. Cette nouvelle application nécessite un serveur Node ; les anciens scripts GitHub Pages ont été retirés.
 
@@ -26,7 +26,7 @@ npm run build
 HOST=127.0.0.1 PORT=3000 SITE_URL=http://localhost:3000 npm start
 ```
 
-Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`. `/login` est la seule entrée du compte privé. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire.
+Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`. `/co` est la seule entrée du compte privé. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire.
 
 ## Vérifier une modification
 
@@ -50,7 +50,9 @@ npm run auth:bootstrap
 npm run dev
 ```
 
-`auth:bootstrap` demande le mot de passe dans le terminal sans l’afficher et crée le seul compte autorisé. Il refuse de créer un second compte. Pour choisir un nouveau mot de passe, utiliser `npm run auth:reset-password` : les sessions existantes sont alors révoquées. La connexion se fait ensuite sur `/login`.
+`auth:bootstrap` demande le mot de passe dans le terminal sans l’afficher et crée le seul compte autorisé. Il refuse de créer un second compte. Pour choisir un nouveau mot de passe, utiliser `npm run auth:reset-password` : les sessions existantes sont alors révoquées. La connexion se fait ensuite sur `/co`.
+
+En cas de connexion acceptée mais d’accès privé refusé, `npm run auth:status` indique uniquement si le compte correspondant au propriétaire configuré est présent ; il n’affiche ni e-mail, ni cookie, ni secret.
 
 ## Base financière locale
 

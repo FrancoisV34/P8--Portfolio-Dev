@@ -24,6 +24,10 @@ export function createAuth() {
       autoSignIn: false,
     },
     session: { expiresIn: 60 * 60 * 12, updateAge: 60 * 60 },
+    // Isole les sessions de l'espace financier des cookies Better Auth émis
+    // par d'anciennes versions locales. Le changement de préfixe impose une
+    // nouvelle connexion, sans réutiliser une session éventuellement ambiguë.
+    advanced: { cookiePrefix: 'fv-finance-v1' },
     rateLimit: {
       enabled: true,
       window: 60,

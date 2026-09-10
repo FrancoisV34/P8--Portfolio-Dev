@@ -48,7 +48,7 @@ Les trajectoires B et C sont conservées pour historique ; elles ne sont pas ret
 
 ## 4. Vue d'ensemble des lots
 
-Avancement du 10 septembre 2026 : **L00 établi, L02 validé localement et L04 réalisé** ([premier lot](18_MIGRATION_SOCLE.md)). **L03 est réalisé au minimum utile** : coque financière responsive, navigation, états vides et formulaires accessibles. **L05 reste partiellement réalisé** : SQLite, migrations, tables du compte, catégories, transactions et budgets mensuels, unités EUR/BTC et repositories côté serveur ; 54 tests unitaires/intégration passent. **L07 est réalisé localement** ; **L08 est entamé** avec le dashboard mensuel, les prévus/réalisés et l’absence d’historique explicitée. Les routes financières exigent désormais la session du propriétaire, ou restent fermées en `503` sans configuration. [Suivi SQLite et conventions](19_FONDATIONS_SQLITE.md), [authentification](20_AUTHENTIFICATION_COMPTE_UNIQUE.md).
+Avancement du 10 septembre 2026 : **L00 établi, L02 validé localement et L04 réalisé** ([premier lot](18_MIGRATION_SOCLE.md)). **L03 est réalisé au minimum utile** : coque financière responsive, navigation, états vides et formulaires accessibles. **L05 reste partiellement réalisé** : SQLite, migrations, tables du compte, catégories, transactions, budgets, réserve, engagements et scénarios GoMining, unités EUR/BTC et repositories côté serveur. **L07 et L08 sont réalisés localement** : le dashboard mensuel, les prévus/réalisés, la réserve calculée depuis les comptes sélectionnés et les engagements explicitement rapprochés des paiements sont disponibles, sans historique inventé. **L09 est entamé** : l’écran privé de scénarios et le moteur mensuel déterministe couvrent D06, D07 et D12 avec des données synthétiques de test uniquement ; les jalons détaillés et le raccordement budgétaire restent à ajouter. Les routes financières exigent désormais la session du propriétaire, ou restent fermées en `503` sans configuration. [Suivi SQLite et conventions](19_FONDATIONS_SQLITE.md), [authentification](20_AUTHENTIFICATION_COMPTE_UNIQUE.md).
 
 Charge relative : **S** = lot ciblé ; **M** = plusieurs écrans ou une logique métier substantielle ; **L** = lot à découper en plusieurs incréments. Ce ne sont ni des estimations calendaires ni des promesses de durée.
 
@@ -237,7 +237,7 @@ Travail :
 
 **Décision D05 :** soldes d’ouverture datés + mois courant. La saisie manuelle est acquise ; un import CSV resterait un ajout ultérieur à décider. Les soldes d’ouverture ne constituent ni un revenu ni une dépense du mois.
 
-**Réalisation locale, 10 septembre 2026 :** comptes, catégories, journal et transferts atomiques sont disponibles dans l’espace privé. Le dashboard du mois affiche revenus, dépenses, surplus, soldes et budgets de dépenses prévu/réel. Il n’invente aucune tendance ou donnée historique. La réserve de sécurité et les engagements récurrents restent à intégrer avant de déclarer L08 terminé.
+**Réalisation locale, 10 septembre 2026 :** comptes, catégories, journal et transferts atomiques sont disponibles dans l’espace privé. Le dashboard du mois affiche revenus, dépenses, surplus, soldes et budgets de dépenses prévu/réel. Il n’invente aucune tendance ou donnée historique. L08 ajoute la réserve de sécurité et les engagements mensuels selon D11.
 
 ### L08 — Budget et dashboard personnel
 
@@ -252,6 +252,8 @@ Travail :
 - gérer mois incomplets, historiques absents et périodes sans revenu.
 
 **Terminé lorsque :** chaque indicateur peut être expliqué par les données sources et les mouvements prévus ne sont pas confondus avec les paiements réels.
+
+**Réalisation locale, 10 septembre 2026 :** L08 est terminé. La réserve compare une cible saisie au total recalculé des comptes sélectionnés, à la fin de la période affichée. Les engagements mensuels ont une catégorie, un montant, un jour et une plage de validité ; ils ne créent jamais de mouvement. Un paiement est compté seulement lorsqu’une transaction de dépense de même catégorie lui est explicitement rattachée. Les contraintes SQLite et les repositories vérifient propriétaire, catégorie, période et intégrité des liens. Les données et l’absence de configuration restent privées et non mises en cache.
 
 **Livraison A :** première version budgétaire privée utilisable, avec L06 si elle est mise en ligne.
 
@@ -272,6 +274,18 @@ Travail :
 **Terminé lorsque :** transitions 12/13 et 36/37, seuil exact/jamais atteint, récompenses nulles, reliquats et égalités EUR/BTC/TH sont vérifiés. Chaque TH ajouté a une origine identifiable.
 
 Ce lot n'attend ni le portefeuille SaaS ni le moteur CFO global. Dans la trajectoire B, le raccordement au budget est une sous-tâche explicitement différée jusqu'à L07–L08.
+
+**Décision D06 validée, 10 septembre 2026 :** chaque scénario GoMining proposera un choix modifiable : conserver les BTC accumulés avant 10 TH, ou les réinvestir également au franchissement du seuil. Dans les deux cas, les récompenses produites après le seuil suivent le réinvestissement automatique. Ce choix ne crée aucune transaction réelle et n’altère pas les données observées.
+
+**Décision D07 validée, 10 septembre 2026 :** le moteur utilisera un pas mensuel simplifié. Les entrées, résultats et jalons sont donc exprimés par mois ; aucun calcul journalier implicite ne sera présenté comme une valeur observée.
+
+**Convention D12 validée, 10 septembre 2026 :** dans chaque mois simulé, les récompenses nettes sont d’abord calculées sur la puissance au début du mois ; les apports personnels et éventuels réinvestissements prennent effet à la fin du mois, pour la période suivante.
+
+**Décision D13 réalisée localement, 10 septembre 2026 :** chaque scénario peut lier facultativement ses apports à une catégorie de dépense du propriétaire. Le budget affiche alors l’apport du mois comme une indication distincte ; ni le prévu configuré, ni le réalisé, ni le journal de transactions ne sont modifiés automatiquement. Le lien est validé côté serveur et protégé par des déclencheurs SQLite contre une catégorie d’un autre propriétaire ou de nature incompatible.
+
+**Décision D14 réalisée localement, 10 septembre 2026 :** chaque création et chaque modification de scénario crée une révision complète des hypothèses et paliers. Les révisions sont consultables en lecture seule et des déclencheurs SQLite empêchent leur modification ou leur suppression. Pour préserver cette traçabilité, l’interface ne propose plus la suppression d’un scénario.
+
+**Décision D15 réalisée localement, 10 septembre 2026 :** une ancienne version peut être appliquée au scénario courant. Le résultat est toujours une nouvelle révision complète ; l’ancienne hypothèse reste intacte. La mutation est contrôlée côté serveur, avec vérification de propriété de la version et de la catégorie de budget restaurée.
 
 ### L10 — Patrimoine, investissements et dettes
 
@@ -450,8 +464,8 @@ La branche `refacto` est active ; D01 valide budget d'abord et D02 la migration 
 2. L02 réalisé et vérifié : portfolio porté. Cadrer maintenant les premiers parcours de L01.
 3. Réalisé au minimum utile : L03, coque financière et navigation du premier module.
 4. Réalisé : conventions L05, tables d'auth et L04 ; compléter L05 par les modèles des lots suivants.
-5. Réalisé localement selon D05 : comptes avec soldes d’ouverture datés, catégories, transactions et budget mensuel. Vérifier L06 avant toute mise en ligne et compléter L08 par réserve de sécurité et engagements récurrents.
-6. Démontrer J1 après cette complétion, puis préparer GoMining (L09) et patrimoine (L10). La finition du portfolio (L17) vient après les premiers livrables privés.
+5. Réalisé localement selon D05 et D11 : comptes avec soldes d’ouverture datés, catégories, transactions, budget mensuel, réserve et engagements récurrents. Vérifier L06 avant toute mise en ligne.
+6. Démontrer J1, puis préparer GoMining (L09) avec l’arbitrage D07 et patrimoine (L10). La finition du portfolio (L17) vient après les premiers livrables privés.
 
 Les lots suivants seront eux-mêmes découpés avant réalisation. Aucun besoin de trancher aujourd'hui toutes les règles fiscales, tous les graphiques ou tous les futurs écrans.
 

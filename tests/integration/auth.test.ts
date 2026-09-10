@@ -13,6 +13,7 @@ let auth: Awaited<ReturnType<typeof import('../../app/.server/auth/auth.server')
 let close: () => void;
 let requireOwner: typeof import('../../app/.server/auth/owner.server')['requireOwner'];
 let handler: typeof import('../../app/routes/api-auth')['action'];
+let loginAction: typeof import('../../app/routes/login')['action'];
 
 function request(path: string, method = 'POST', cookie?: string) {
   return new Request(`https://portfolio.example/api/auth${path}`, {
@@ -33,6 +34,7 @@ beforeAll(async () => {
   ({ auth, connection: { close } } = (await import('../../app/.server/auth/auth.server')).getAuth());
   ({ requireOwner } = await import('../../app/.server/auth/owner.server'));
   ({ action: handler } = await import('../../app/routes/api-auth'));
+  ({ action: loginAction } = await import('../../app/routes/login'));
 });
 
 afterAll(() => {
@@ -69,6 +71,13 @@ describe('compte financier unique', () => {
     const otherCookie = await signIn('other@example.test', 'mot-de-passe-test-456');
     await expect(requireOwner(request('/get-session', 'GET', ownerCookie))).resolves.toMatchObject({ user: { email: ownerEmail } });
     await expect(requireOwner(request('/get-session', 'GET', otherCookie))).rejects.toMatchObject({ status: 403 });
+    const { loader: loginLoader } = await import('../../app/routes/login');
+    await expect(loginLoader({ request: new Request('https://portfolio.example/co', { headers: { cookie: otherCookie } }) })).resolves.toEqual({ ready: true });
+    await expect(loginLoader({ request: new Request('https://portfolio.example/co', { headers: { cookie: ownerCookie } }) })).resolves.toEqual({ ready: true });
+    const form = new FormData();
+    form.set('email', 'other@example.test');
+    form.set('password', 'mot-de-passe-test-456');
+    await expect(loginAction({ request: new Request('https://portfolio.example/co', { method: 'POST', body: form, headers: { origin: 'https://portfolio.example' } }) })).resolves.toEqual({ message: 'Identifiants incorrects ou accès non autorisé.' });
   });
 
   it('restreint le handler HTTP à connexion, session et déconnexion', async () => {
