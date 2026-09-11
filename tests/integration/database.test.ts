@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from '../../app/.server/db/connection';
@@ -41,6 +41,28 @@ describe('persistance SQLite privée', () => {
     migrateDatabase(connection.db);
     expect(accountsRepository(connection.db, 'owner-test').listAccounts()).toEqual([account]);
     expect(connection.sqlite.pragma('quick_check', { simple: true })).toBe('ok');
+  });
+
+  it('fait évoluer un actif existant vers une position manuelle sans perte', () => {
+    const legacyDirectory = mkdtempSync(join(tmpdir(), 'portfolio-wealth-legacy-test-'));
+    const legacyMigrations = join(legacyDirectory, 'migrations');
+    mkdirSync(join(legacyMigrations, 'meta'), { recursive: true });
+    for (const filename of readdirSync('drizzle').filter((name) => /^000[0-8]_.*\.sql$/.test(name))) copyFileSync(join('drizzle', filename), join(legacyMigrations, filename));
+    const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')) as { entries: { idx: number }[] };
+    journal.entries = journal.entries.filter((entry) => entry.idx <= 8);
+    writeFileSync(join(legacyMigrations, 'meta', '_journal.json'), JSON.stringify(journal));
+    const legacy = openDatabase({ path: join(legacyDirectory, 'legacy.sqlite'), environment: 'test' });
+    try {
+      migrateDatabase(legacy.db, legacyMigrations);
+      const entity = accountsRepository(legacy.db, 'owner-legacy').createEntity({ name: 'Entité ancienne', type: 'personal' });
+      legacy.sqlite.prepare("insert into finance_wealth_assets (id, owner_id, entity_id, name, asset_class, quantity_description, contributed_cents, created_at, updated_at) values ('asset-legacy', 'owner-legacy', ?, 'Actif ancien', 'securities', '10 titres', 1234, '2026-09-10T00:00:00.000Z', '2026-09-10T00:00:00.000Z')").run(entity.id);
+      migrateDatabase(legacy.db);
+      expect(legacy.sqlite.prepare("select source, observed_btc_sats as observedBtcSats, contributed_cents as contributedCents from finance_wealth_assets where id = 'asset-legacy'").get()).toEqual({ source: 'manual', observedBtcSats: null, contributedCents: 1234 });
+      expect(legacy.sqlite.pragma('foreign_keys', { simple: true })).toBe(1);
+    } finally {
+      legacy.close();
+      rmSync(legacyDirectory, { recursive: true, force: true });
+    }
   });
 
   it('filtre les lectures et refuse un rattachement à une autre identité', () => {
@@ -203,6 +225,9 @@ describe('persistance SQLite privée', () => {
     expect(owner.dashboard('2026-09-30')).toMatchObject({ manualAssetCents: 12_500, debtCents: 50_000, assets: [expect.objectContaining({ valuation: expect.objectContaining({ valuedOn: '2026-09-15' }) })], debts: [expect.objectContaining({ balance: expect.objectContaining({ asOfDate: '2026-09-30' }) })] });
     expect(owner.dashboard('2026-10-31')).toMatchObject({ manualAssetCents: 13_000, debtCents: 49_500 });
     expect(other.dashboard('2026-10-31')).toMatchObject({ assets: [], debts: [], manualAssetCents: 0, debtCents: 0 });
+    const observedBtc = owner.createAsset({ entityId: ownerEntity.id, name: 'BTC GoMining observés', assetClass: 'crypto', source: 'gomining-observed-btc', observedBtcSats: 123_456, quantityDescription: '', contributedCents: 0, valuedOn: '2026-10-31', valueCents: 700, note: '' });
+    expect(owner.dashboard('2026-10-31')).toMatchObject({ manualAssetCents: 13_700, assets: expect.arrayContaining([expect.objectContaining({ asset: expect.objectContaining({ id: observedBtc.asset.id, source: 'gomining-observed-btc', observedBtcSats: 123_456 }) })]) });
+    expect(() => owner.createAsset({ entityId: ownerEntity.id, name: 'BTC GoMining en double', assetClass: 'crypto', source: 'gomining-observed-btc', observedBtcSats: 1, quantityDescription: '', contributedCents: 0, valuedOn: '2026-10-30', valueCents: 1, note: '' })).toThrow();
     expect(() => owner.createAsset({ entityId: otherEntity.id, name: 'Actif interdit', assetClass: 'other', quantityDescription: '', contributedCents: 0, valuedOn: '2026-09-01', valueCents: 0, note: '' })).toThrow('Entité introuvable');
     expect(() => other.addValuation({ assetId: asset.id, valuedOn: '2026-10-02', valueCents: 1, note: '' })).toThrow('Actif introuvable');
     expect(() => other.addDebtBalance({ debtId: debt.id, asOfDate: '2026-10-02', outstandingCents: 1, monthlyPaymentCents: 1, annualRateBasisPoints: 0, remainingMonths: 1 })).toThrow('Dette introuvable');
@@ -213,5 +238,7 @@ describe('persistance SQLite privée', () => {
     expect(() => rawValuation.run(asset.id)).toThrow('invalid wealth asset valuation');
     const rawDebtBalance = connection.sqlite.prepare("insert into finance_wealth_debt_balances (id, owner_id, debt_id, as_of_date, outstanding_cents, monthly_payment_cents, annual_rate_basis_points, remaining_months, created_at) values ('debt-cross-owner', 'other-test', ?, '2026-09-30', 100, 10, 0, 1, '2026-09-09T00:00:00.000Z')");
     expect(() => rawDebtBalance.run(debt.id)).toThrow('invalid wealth debt balance');
+    const rawObservedBtc = connection.sqlite.prepare("insert into finance_wealth_assets (id, owner_id, entity_id, name, asset_class, source, observed_btc_sats, quantity_description, contributed_cents, created_at, updated_at) values ('invalid-observed-btc', 'other-test', ?, 'BTC invalide', 'other', 'gomining-observed-btc', 1, '', 0, '2026-09-09T00:00:00.000Z', '2026-09-09T00:00:00.000Z')");
+    expect(() => rawObservedBtc.run(otherEntity.id)).toThrow();
   });
 });

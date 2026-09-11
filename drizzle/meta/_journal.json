@@ -64,6 +64,13 @@
       "when": 1789069025422,
       "tag": "0008_wealth-foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1789106190471,
+      "tag": "0009_gomining-observed-btc-wealth",
+      "breakpoints": true
     }
   ]
 }

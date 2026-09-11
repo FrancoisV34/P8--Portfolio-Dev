@@ -108,5 +108,9 @@ describe('route finance privée', () => {
     for (const [key, value] of Object.entries({ intent: 'createWealthDebt', entityId: entity.id, name: 'Dette patrimoniale synthétique', asOfDate: '2026-09-30', outstandingAmount: '100,00', monthlyPayment: '10,00', annualRate: '4,25', remainingMonths: '12' })) debt.set(key, value);
     await expect(action({ request: request('POST', debt) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: new Request(`${origin}/finance/wealth?period=2026-09`, { headers: { cookie } }), params: { '*': 'wealth' } })).resolves.toMatchObject({ section: 'wealth', wealth: { manualAssetCents: 1_200, debtCents: 10_000, assets: [expect.objectContaining({ asset: expect.objectContaining({ name: 'Placement patrimonial synthétique' }) })], debts: [expect.objectContaining({ debt: expect.objectContaining({ name: 'Dette patrimoniale synthétique' }) })] } });
+    const observedBtc = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createObservedGoMiningBtc', entityId: entity.id, observedBtcSats: '123456', valuedOn: '2026-09-30', valueAmount: '7,00', note: '' })) observedBtc.set(key, value);
+    await expect(action({ request: request('POST', observedBtc) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/wealth?period=2026-09`, { headers: { cookie } }), params: { '*': 'wealth' } })).resolves.toMatchObject({ wealth: { manualAssetCents: 1_900, assets: expect.arrayContaining([expect.objectContaining({ asset: expect.objectContaining({ source: 'gomining-observed-btc', observedBtcSats: 123_456 }) })]) } });
   });
 });

@@ -235,14 +235,16 @@ export const gominingScenarioVersions = sqliteTable('finance_gomining_scenario_v
 
 // Le patrimoine ne duplique jamais les liquidités du journal. Les actifs
 // manuels représentent donc uniquement des positions hors comptes, avec une
-// valorisation datée. GoMining reste une projection séparée et n'est pas une
-// valeur patrimoniale implicite.
+// valorisation datée. Une seule position BTC réellement observée chez GoMining
+// peut être déclarée ; elle reste indépendante de tout scénario de projection.
 export const wealthAssets = sqliteTable('finance_wealth_assets', {
   id: text('id').primaryKey(),
   ownerId: text('owner_id').notNull(),
   entityId: text('entity_id').notNull().references(() => economicEntities.id, { onDelete: 'restrict' }),
   name: text('name').notNull(),
   assetClass: text('asset_class', { enum: ['securities', 'crypto', 'real_estate', 'business', 'other'] }).notNull(),
+  source: text('source', { enum: ['manual', 'gomining-observed-btc'] }).notNull().default('manual'),
+  observedBtcSats: integer('observed_btc_sats'),
   quantityDescription: text('quantity_description').notNull().default(''),
   contributedCents: integer('contributed_cents').notNull().default(0),
   createdAt: text('created_at').notNull(),
@@ -250,7 +252,10 @@ export const wealthAssets = sqliteTable('finance_wealth_assets', {
 }, (table) => [
   index('finance_wealth_assets_owner_idx').on(table.ownerId),
   index('finance_wealth_assets_entity_idx').on(table.entityId),
+  uniqueIndex('finance_wealth_assets_owner_gomining_btc_unique').on(table.ownerId).where(sql`${table.source} = 'gomining-observed-btc'`),
   check('finance_wealth_assets_class', sql`${table.assetClass} in ('securities', 'crypto', 'real_estate', 'business', 'other')`),
+  check('finance_wealth_assets_source', sql`${table.source} in ('manual', 'gomining-observed-btc')`),
+  check('finance_wealth_assets_observed_btc', sql`(${table.source} = 'manual' and ${table.observedBtcSats} is null) or (${table.source} = 'gomining-observed-btc' and ${table.assetClass} = 'crypto' and typeof(${table.observedBtcSats}) = 'integer' and ${table.observedBtcSats} >= 0 and ${table.observedBtcSats} <= 9007199254740991)`),
   check('finance_wealth_assets_name', sql`length(trim(${table.name})) between 1 and 100`),
   check('finance_wealth_assets_quantity', sql`length(trim(${table.quantityDescription})) <= 80`),
   check('finance_wealth_assets_contributed', sql`typeof(${table.contributedCents}) = 'integer' and ${table.contributedCents} between 0 and 9007199254740991`),

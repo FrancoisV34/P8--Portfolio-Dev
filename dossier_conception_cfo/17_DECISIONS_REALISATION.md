@@ -53,6 +53,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D14 | Validé : L09 | Conservation des hypothèses GoMining | Historique immuable complet ; version courante seule ; duplication manuelle | Traçabilité des décisions et conservation des scénarios |
 | D15 | Validé : L09 | Utilisation d’une ancienne hypothèse | Dupliquer un scénario ; appliquer au scénario courant comme nouvelle révision ; consultation seule | Revenir à une hypothèse sans réécrire l’historique |
 | D16 | Validé : L10 | Périmètre initial du patrimoine | Bilan vérifiable ; snapshots seulement ; suivi exhaustif | Niveau de détail des actifs, dettes et échéanciers du premier incrément |
+| D17 | Validé : L10 | BTC GoMining dans le patrimoine réel | BTC observés uniquement ; exclusion complète ; valeur manuelle complète du contrat | Évite de confondre BTC réellement détenus, puissance TH et projections |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -75,6 +76,17 @@ projection privée distincte et n'est pas présenté comme une valeur de revente
 certaine. Aucun cours automatique, ordre, transaction, suivi exhaustif des
 mouvements de positions ou simulation de remboursement anticipé n'est ajouté à
 ce stade.
+
+## D17 — BTC GoMining observés dans le patrimoine
+
+**État : validé le 11 septembre 2026 — option A, BTC observés uniquement.**
+
+Le patrimoine peut contenir une position manuelle unique de BTC réellement
+détenus chez GoMining, exprimée en satoshis et valorisée à une date choisie.
+Cette position ne contient ni puissance TH, ni prix de revente du contrat, ni
+récompense future. Elle est indépendante du simulateur GoMining : aucune
+valeur, hypothèse ou projection n'est recopiée automatiquement entre les deux
+modules.
 
 ## D11 — Réserve de sécurité et engagements mensuels
 
@@ -209,5 +221,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-10 | D07 — Pas de calcul GoMining | « A » | Calcul mensuel simplifié retenu pour les projections et leur restitution |
 | 2026-09-10 | D12 — Moment des apports | « A » | Apports et réinvestissements pris en compte à la fin de chaque mois |
 | 2026-09-10 | D16 — Premier bilan patrimoine | « A » | Actifs et valorisations datés, dettes et échéancier indicatif ; liquidités et GoMining exclus des doubles comptes |
+| 2026-09-11 | D17 — BTC GoMining dans le patrimoine | « A » | Une position manuelle unique de BTC observés, sans TH ni valeur de contrat |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

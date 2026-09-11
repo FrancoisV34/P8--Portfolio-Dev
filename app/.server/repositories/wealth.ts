@@ -13,7 +13,8 @@ const positiveCents = cents.refine((value) => value > 0, 'Montant requis.');
 const date = z.string().transform((value, context) => {
   try { return parseCalendarDate(value); } catch { context.addIssue({ code: 'custom', message: 'Date invalide.' }); return z.NEVER; }
 });
-const assetInput = z.object({ entityId: z.uuid(), name, assetClass: z.enum(['securities', 'crypto', 'real_estate', 'business', 'other']), quantityDescription: z.string().trim().max(80), contributedCents: cents, valuedOn: date, valueCents: cents, note: z.string().trim().max(240) }).strict();
+const assetInput = z.object({ entityId: z.uuid(), name, assetClass: z.enum(['securities', 'crypto', 'real_estate', 'business', 'other']), source: z.enum(['manual', 'gomining-observed-btc']).default('manual'), observedBtcSats: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().optional().default(null), quantityDescription: z.string().trim().max(80), contributedCents: cents, valuedOn: date, valueCents: cents, note: z.string().trim().max(240) }).strict()
+  .refine(({ source, assetClass, observedBtcSats }) => source === 'manual' ? observedBtcSats === null : assetClass === 'crypto' && observedBtcSats !== null, 'Position BTC GoMining invalide.');
 const valuationInput = z.object({ assetId: z.uuid(), valuedOn: date, valueCents: cents, note: z.string().trim().max(240) }).strict();
 const debtInput = z.object({ entityId: z.uuid(), name, asOfDate: date, outstandingCents: cents, monthlyPaymentCents: positiveCents, annualRateBasisPoints: z.number().int().min(0).max(100_000), remainingMonths: z.number().int().min(1).max(600) }).strict();
 const debtBalanceInput = debtInput.omit({ entityId: true, name: true }).extend({ debtId: z.uuid() }).strict();
@@ -47,7 +48,8 @@ export function wealthRepository(db: FinanceDatabase, ownerId: string) {
       return db.transaction((tx) => {
         const asset = tx.insert(wealthAssets).values({
           id: randomUUID(), ownerId, entityId: values.entityId, name: values.name, assetClass: values.assetClass,
-          quantityDescription: values.quantityDescription, contributedCents: euroCents(values.contributedCents), createdAt: timestamp, updatedAt: timestamp,
+          source: values.source, observedBtcSats: values.observedBtcSats, quantityDescription: values.quantityDescription,
+          contributedCents: euroCents(values.contributedCents), createdAt: timestamp, updatedAt: timestamp,
         }).returning().get();
         const valuation = tx.insert(wealthAssetValuations).values({ id: randomUUID(), ownerId, assetId: asset.id, valuedOn: values.valuedOn, valueCents: euroCents(values.valueCents), note: values.note, createdAt: timestamp }).returning().get();
         return { asset, valuation };

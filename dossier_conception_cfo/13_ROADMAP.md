@@ -313,6 +313,12 @@ comptes et GoMining reste exclu du bilan, car il s'agit d'une projection sans
 valeur de revente certaine. Allocation, suivi détaillé de mouvements et
 simulations de remboursement anticipé sont différés.
 
+**Complément réalisé localement, 11 septembre 2026 (D17, option A) :** une
+position unique de BTC réellement observés chez GoMining peut être saisie en
+satoshis avec sa valorisation datée. Elle exclut toujours les TH, les
+récompenses projetées et toute valeur implicite du contrat ; elle ne se
+synchronise pas avec le simulateur.
+
 ### L11 — Business et portfolio de SaaS
 
 **But :** séparer activité économique et argent disponible pour le foyer.
