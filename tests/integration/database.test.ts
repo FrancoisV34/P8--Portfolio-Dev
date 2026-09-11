@@ -11,6 +11,7 @@ import { budgetRepository } from '../../app/.server/repositories/budget';
 import { planningRepository } from '../../app/.server/repositories/planning';
 import { gominingRepository } from '../../app/.server/repositories/gomining';
 import { goalsRepository } from '../../app/.server/repositories/goals';
+import { regulatoryRepository } from '../../app/.server/repositories/regulatory';
 import { wealthRepository } from '../../app/.server/repositories/wealth';
 
 let directory: string;
@@ -345,5 +346,15 @@ describe('persistance SQLite privée', () => {
     expect(owner.dashboard()).toMatchObject({ activeProjectCount: 2, activeProjectLimitStatus: 'within-limit' });
     owner.createProject({ goalId: null, name: 'Projet actif 4', status: 'active', priority: 4, estimatedCostCents: null, estimatedEffortMinutes: 10, nextAction: '' });
     expect(owner.dashboard()).toMatchObject({ activeProjectCount: 3, activeProjectLimit: 2, activeProjectLimitStatus: 'watch' });
+  });
+
+  it('isole les règles réglementaires manuelles et leurs périodes datées', () => {
+    const owner = regulatoryRepository(connection.db, 'owner-test');
+    const other = regulatoryRepository(connection.db, 'other-test');
+    const rule = owner.create({ name: 'Règle synthétique', value: '12,34 %', source: 'Source synthétique', verifiedOn: '2026-09-11', validFrom: '2026-01-01', validTo: null, note: '' });
+    expect(owner.list()).toEqual([expect.objectContaining({ id: rule.id, validFrom: '2026-01-01' })]);
+    expect(other.list()).toEqual([]);
+    expect(() => other.update({ id: rule.id, name: 'Interdit', value: '0', source: 'Source', verifiedOn: '2026-09-11', validFrom: '2026-01-01', validTo: null, note: '' })).toThrow('Règle introuvable');
+    expect(() => owner.create({ name: 'Période invalide', value: '0', source: 'Source', verifiedOn: '2026-09-11', validFrom: '2026-02-01', validTo: '2026-01-31', note: '' })).toThrow('Période invalide');
   });
 });

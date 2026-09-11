@@ -385,6 +385,14 @@ export const businessMonthlyProvisions = sqliteTable('finance_business_monthly_p
   check('finance_business_provisions_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
 ]);
 
+export const regulatoryRules = sqliteTable('finance_regulatory_rules', {
+  id: text('id').primaryKey(), ownerId: text('owner_id').notNull(), name: text('name').notNull(), value: text('value').notNull(), source: text('source').notNull(), verifiedOn: text('verified_on').notNull(), validFrom: text('valid_from').notNull(), validTo: text('valid_to'), note: text('note').notNull().default(''), createdAt: text('created_at').notNull(), updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_regulatory_rules_owner_validity_idx').on(table.ownerId, table.validFrom, table.validTo),
+  check('finance_regulatory_rules_name', sql`length(trim(${table.name})) between 1 and 100`), check('finance_regulatory_rules_value', sql`length(trim(${table.value})) between 1 and 120`), check('finance_regulatory_rules_source', sql`length(trim(${table.source})) between 1 and 500`), check('finance_regulatory_rules_note', sql`length(trim(${table.note})) <= 240`),
+  check('finance_regulatory_rules_dates', sql`length(${table.verifiedOn}) = 10 and date(${table.verifiedOn}, '+0 days') = ${table.verifiedOn} and length(${table.validFrom}) = 10 and date(${table.validFrom}, '+0 days') = ${table.validFrom} and (${table.validTo} is null or (length(${table.validTo}) = 10 and date(${table.validTo}, '+0 days') = ${table.validTo} and ${table.validTo} >= ${table.validFrom}))`),
+]);
+
 // Le pilotage business distingue l'activité économique de l'argent du foyer.
 // Les métriques mensuelles observées ne créent jamais de transaction et aucun
 // calcul fiscal ou montant distribuable n'est déduit automatiquement.
