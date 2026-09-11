@@ -52,11 +52,29 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D13 | Validé : L09 | Raccordement de l’apport GoMining au budget | Catégorie de dépense facultative par scénario ; intégration automatique au budget et au journal | Visibilité sans confondre hypothèse, budget et mouvement réel |
 | D14 | Validé : L09 | Conservation des hypothèses GoMining | Historique immuable complet ; version courante seule ; duplication manuelle | Traçabilité des décisions et conservation des scénarios |
 | D15 | Validé : L09 | Utilisation d’une ancienne hypothèse | Dupliquer un scénario ; appliquer au scénario courant comme nouvelle révision ; consultation seule | Revenir à une hypothèse sans réécrire l’historique |
+| D16 | Validé : L10 | Périmètre initial du patrimoine | Bilan vérifiable ; snapshots seulement ; suivi exhaustif | Niveau de détail des actifs, dettes et échéanciers du premier incrément |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
 
 D10 sera découpé en petites questions lorsque les mesures techniques seront disponibles. Aucune donnée secrète n'est demandée dans ce journal.
+
+## D16 — Premier bilan patrimoine
+
+**État : validé le 10 septembre 2026 — option A, bilan patrimonial vérifiable.**
+
+Le premier incrément de L10 enregistre manuellement des actifs hors liquidités,
+leur quantité descriptive, capital versé et valorisations datées, ainsi que les
+dettes avec un capital restant dû daté, mensualité, taux annuel et durée
+restante. Il calcule le patrimoine brut/net et un échéancier indicatif qui
+sépare intérêts et remboursement du capital.
+
+Les liquidités sont exclusivement recalculées depuis les comptes existants :
+elles ne sont jamais ressaisies dans le patrimoine. GoMining reste une
+projection privée distincte et n'est pas présenté comme une valeur de revente
+certaine. Aucun cours automatique, ordre, transaction, suivi exhaustif des
+mouvements de positions ou simulation de remboursement anticipé n'est ajouté à
+ce stade.
 
 ## D11 — Réserve de sécurité et engagements mensuels
 
@@ -190,5 +208,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-10 | D06 — BTC accumulés à 10 TH | « c'est exactement ça ! parfait » | Politique enregistrable par scénario : conserver le stock ou le réinvestir aussi au seuil ; récompenses après seuil réinvesties automatiquement |
 | 2026-09-10 | D07 — Pas de calcul GoMining | « A » | Calcul mensuel simplifié retenu pour les projections et leur restitution |
 | 2026-09-10 | D12 — Moment des apports | « A » | Apports et réinvestissements pris en compte à la fin de chaque mois |
+| 2026-09-10 | D16 — Premier bilan patrimoine | « A » | Actifs et valorisations datés, dettes et échéancier indicatif ; liquidités et GoMining exclus des doubles comptes |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

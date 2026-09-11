@@ -50,6 +50,8 @@ Les trajectoires B et C sont conservées pour historique ; elles ne sont pas ret
 
 Avancement du 10 septembre 2026 : **L00 établi, L02 validé localement et L04 réalisé** ([premier lot](18_MIGRATION_SOCLE.md)). **L03 est réalisé au minimum utile** : coque financière responsive, navigation, états vides et formulaires accessibles. **L05 reste partiellement réalisé** : SQLite, migrations, tables du compte, catégories, transactions, budgets, réserve, engagements et scénarios GoMining, unités EUR/BTC et repositories côté serveur. **L07 et L08 sont réalisés localement** : le dashboard mensuel, les prévus/réalisés, la réserve calculée depuis les comptes sélectionnés et les engagements explicitement rapprochés des paiements sont disponibles, sans historique inventé. **L09 est entamé** : l’écran privé de scénarios et le moteur mensuel déterministe couvrent D06, D07 et D12 avec des données synthétiques de test uniquement ; les jalons détaillés et le raccordement budgétaire restent à ajouter. Les routes financières exigent désormais la session du propriétaire, ou restent fermées en `503` sans configuration. [Suivi SQLite et conventions](19_FONDATIONS_SQLITE.md), [authentification](20_AUTHENTIFICATION_COMPTE_UNIQUE.md).
 
+Mise à jour de reprise : **L09 est désormais réalisé** avec jalons, raccordement budgétaire indicatif et historique immuable. **L10 est entamé selon D16** : actifs manuels et valorisations datées, dettes avec états datés et échéancier indicatif ; allocation, mouvements exhaustifs et simulations de remboursement anticipé restent à réaliser.
+
 Charge relative : **S** = lot ciblé ; **M** = plusieurs écrans ou une logique métier substantielle ; **L** = lot à découper en plusieurs incréments. Ce ne sont ni des estimations calendaires ni des promesses de durée.
 
 | Lot | Résultat | Charge | Dépendances principales |
@@ -301,6 +303,15 @@ Travail :
 - préparer simulations de remboursement anticipé/renégociation pour L15.
 
 **Terminé lorsque :** les actifs et dettes expliquent le patrimoine net, les liquidités ne sont comptées qu'une fois et le coût d'achat des TH n'est pas présenté comme une valeur de revente certaine.
+
+**Premier incrément réalisé localement, 10 septembre 2026 (D16, option A) :**
+les actifs hors comptes portent une quantité descriptive, le capital versé et
+des valorisations datées. Les dettes reçoivent des états datés avec capital
+restant dû, mensualité, taux et durée ; un échéancier indicatif distingue
+intérêts et capital. Les liquidités sont recalculées exclusivement depuis les
+comptes et GoMining reste exclu du bilan, car il s'agit d'une projection sans
+valeur de revente certaine. Allocation, suivi détaillé de mouvements et
+simulations de remboursement anticipé sont différés.
 
 ### L11 — Business et portfolio de SaaS
 

@@ -233,6 +233,80 @@ export const gominingScenarioVersions = sqliteTable('finance_gomining_scenario_v
   check('finance_gomining_versions_snapshot', sql`length(${table.snapshot}) between 2 and 10_000 and json_valid(${table.snapshot})`),
 ]);
 
+// Le patrimoine ne duplique jamais les liquidités du journal. Les actifs
+// manuels représentent donc uniquement des positions hors comptes, avec une
+// valorisation datée. GoMining reste une projection séparée et n'est pas une
+// valeur patrimoniale implicite.
+export const wealthAssets = sqliteTable('finance_wealth_assets', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  entityId: text('entity_id').notNull().references(() => economicEntities.id, { onDelete: 'restrict' }),
+  name: text('name').notNull(),
+  assetClass: text('asset_class', { enum: ['securities', 'crypto', 'real_estate', 'business', 'other'] }).notNull(),
+  quantityDescription: text('quantity_description').notNull().default(''),
+  contributedCents: integer('contributed_cents').notNull().default(0),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_wealth_assets_owner_idx').on(table.ownerId),
+  index('finance_wealth_assets_entity_idx').on(table.entityId),
+  check('finance_wealth_assets_class', sql`${table.assetClass} in ('securities', 'crypto', 'real_estate', 'business', 'other')`),
+  check('finance_wealth_assets_name', sql`length(trim(${table.name})) between 1 and 100`),
+  check('finance_wealth_assets_quantity', sql`length(trim(${table.quantityDescription})) <= 80`),
+  check('finance_wealth_assets_contributed', sql`typeof(${table.contributedCents}) = 'integer' and ${table.contributedCents} between 0 and 9007199254740991`),
+]);
+
+export const wealthAssetValuations = sqliteTable('finance_wealth_asset_valuations', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  assetId: text('asset_id').notNull().references(() => wealthAssets.id, { onDelete: 'restrict' }),
+  valuedOn: text('valued_on').notNull(),
+  valueCents: integer('value_cents').notNull(),
+  note: text('note').notNull().default(''),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_wealth_valuations_owner_date_idx').on(table.ownerId, table.valuedOn),
+  uniqueIndex('finance_wealth_valuations_asset_date_unique').on(table.assetId, table.valuedOn),
+  check('finance_wealth_valuations_value', sql`typeof(${table.valueCents}) = 'integer' and ${table.valueCents} between 0 and 9007199254740991`),
+  check('finance_wealth_valuations_note', sql`length(trim(${table.note})) <= 240`),
+  check('finance_wealth_valuations_date', sql`length(${table.valuedOn}) = 10 and ${table.valuedOn} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(${table.valuedOn}, 1, 4) as integer) between 1 and 9999 and date(${table.valuedOn}, '+0 days') is not null and date(${table.valuedOn}, '+0 days') = ${table.valuedOn}`),
+]);
+
+export const wealthDebts = sqliteTable('finance_wealth_debts', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  entityId: text('entity_id').notNull().references(() => economicEntities.id, { onDelete: 'restrict' }),
+  name: text('name').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_wealth_debts_owner_idx').on(table.ownerId),
+  index('finance_wealth_debts_entity_idx').on(table.entityId),
+  check('finance_wealth_debts_name', sql`length(trim(${table.name})) between 1 and 100`),
+]);
+
+// Un état de dette est daté : l'échéancier est calculé à partir de ce capital
+// restant dû, sans le faire passer pour un relevé bancaire ou un paiement réel.
+export const wealthDebtBalances = sqliteTable('finance_wealth_debt_balances', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  debtId: text('debt_id').notNull().references(() => wealthDebts.id, { onDelete: 'restrict' }),
+  asOfDate: text('as_of_date').notNull(),
+  outstandingCents: integer('outstanding_cents').notNull(),
+  monthlyPaymentCents: integer('monthly_payment_cents').notNull(),
+  annualRateBasisPoints: integer('annual_rate_basis_points').notNull(),
+  remainingMonths: integer('remaining_months').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_wealth_debt_balances_owner_date_idx').on(table.ownerId, table.asOfDate),
+  uniqueIndex('finance_wealth_debt_balances_debt_date_unique').on(table.debtId, table.asOfDate),
+  check('finance_wealth_debt_balances_outstanding', sql`typeof(${table.outstandingCents}) = 'integer' and ${table.outstandingCents} >= 0 and ${table.outstandingCents} <= 9007199254740991`),
+  check('finance_wealth_debt_balances_payment', sql`typeof(${table.monthlyPaymentCents}) = 'integer' and ${table.monthlyPaymentCents} > 0 and ${table.monthlyPaymentCents} <= 9007199254740991`),
+  check('finance_wealth_debt_balances_rate', sql`${table.annualRateBasisPoints} between 0 and 100000`),
+  check('finance_wealth_debt_balances_months', sql`${table.remainingMonths} between 1 and 600`),
+  check('finance_wealth_debt_balances_date', sql`length(${table.asOfDate}) = 10 and ${table.asOfDate} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(${table.asOfDate}, 1, 4) as integer) between 1 and 9999 and date(${table.asOfDate}, '+0 days') is not null and date(${table.asOfDate}, '+0 days') = ${table.asOfDate}`),
+]);
+
 export const monthlyBudgets = sqliteTable('finance_monthly_budgets', {
   id: text('id').primaryKey(),
   ownerId: text('owner_id').notNull(),

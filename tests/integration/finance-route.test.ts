@@ -96,4 +96,17 @@ describe('route finance privée', () => {
     await expect(action({ request: request('POST', form) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: request(), params: {} })).resolves.toMatchObject({ gomining: [expect.objectContaining({ scenario: expect.objectContaining({ name: 'Scénario synthétique', revision: 1, budgetCategoryId: budgetCategory.id }), versions: [expect.objectContaining({ revision: 1 })] })], gominingBudgetPlans: [expect.objectContaining({ categoryId: budgetCategory.id, contributionCents: 100 })], transactions: [] });
   });
+
+  it('enregistre un actif et une dette patrimoniaux par POST, avec état daté', async () => {
+    const loaded = await loader({ request: request(), params: {} });
+    const entity = loaded.entities[0];
+    if (!entity) throw new Error('Entité de test absente.');
+    const asset = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createWealthAsset', entityId: entity.id, name: 'Placement patrimonial synthétique', assetClass: 'securities', quantityDescription: '1 titre', contributedAmount: '10,00', valuedOn: '2026-09-30', valueAmount: '12,00', note: '' })) asset.set(key, value);
+    await expect(action({ request: request('POST', asset) })).resolves.toMatchObject({ status: 302 });
+    const debt = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createWealthDebt', entityId: entity.id, name: 'Dette patrimoniale synthétique', asOfDate: '2026-09-30', outstandingAmount: '100,00', monthlyPayment: '10,00', annualRate: '4,25', remainingMonths: '12' })) debt.set(key, value);
+    await expect(action({ request: request('POST', debt) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/wealth?period=2026-09`, { headers: { cookie } }), params: { '*': 'wealth' } })).resolves.toMatchObject({ section: 'wealth', wealth: { manualAssetCents: 1_200, debtCents: 10_000, assets: [expect.objectContaining({ asset: expect.objectContaining({ name: 'Placement patrimonial synthétique' }) })], debts: [expect.objectContaining({ debt: expect.objectContaining({ name: 'Dette patrimoniale synthétique' }) })] } });
+  });
 });

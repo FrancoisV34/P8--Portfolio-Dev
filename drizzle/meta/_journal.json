@@ -57,6 +57,13 @@
       "when": 1789063722996,
       "tag": "0007_gomining-immutable-history",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1789069025422,
+      "tag": "0008_wealth-foundation",
+      "breakpoints": true
     }
   ]
 }

@@ -9,6 +9,7 @@ import { accountsRepository } from '../../app/.server/repositories/accounts';
 import { budgetRepository } from '../../app/.server/repositories/budget';
 import { planningRepository } from '../../app/.server/repositories/planning';
 import { gominingRepository } from '../../app/.server/repositories/gomining';
+import { wealthRepository } from '../../app/.server/repositories/wealth';
 
 let directory: string;
 let connection: ReturnType<typeof openDatabase>;
@@ -185,5 +186,32 @@ describe('persistance SQLite privée', () => {
     expect(() => rawVersionUpdate.run(restored.versions[0]!.id)).toThrow('GoMining version is immutable');
     expect(() => owner.deleteScenario(scenario.id)).toThrow('GoMining version is immutable');
     expect(() => other.deleteScenario(scenario.id)).toThrow('Scénario introuvable');
+  });
+
+  it('conserve un bilan patrimonial daté sans doubler les comptes et isole ses relations', () => {
+    const ownerAccounts = accountsRepository(connection.db, 'owner-test');
+    const ownerEntity = ownerAccounts.createEntity({ name: 'Entité patrimoine test', type: 'personal' });
+    ownerAccounts.createAccount({ entityId: ownerEntity.id, name: 'Liquidités test', type: 'savings', openingBalanceCents: 12_000, openingDate: '2026-09-01' });
+    const otherEntity = accountsRepository(connection.db, 'other-test').createEntity({ name: 'Entité étrangère', type: 'personal' });
+    const owner = wealthRepository(connection.db, 'owner-test');
+    const other = wealthRepository(connection.db, 'other-test');
+    const { asset } = owner.createAsset({ entityId: ownerEntity.id, name: 'Placement synthétique', assetClass: 'securities', quantityDescription: '12 titres', contributedCents: 10_000, valuedOn: '2026-09-15', valueCents: 12_500, note: '' });
+    owner.addValuation({ assetId: asset.id, valuedOn: '2026-10-01', valueCents: 13_000, note: 'Valeur synthétique' });
+    const { debt } = owner.createDebt({ entityId: ownerEntity.id, name: 'Dette synthétique', asOfDate: '2026-09-30', outstandingCents: 50_000, monthlyPaymentCents: 1_000, annualRateBasisPoints: 400, remainingMonths: 60 });
+    owner.addDebtBalance({ debtId: debt.id, asOfDate: '2026-10-31', outstandingCents: 49_500, monthlyPaymentCents: 1_000, annualRateBasisPoints: 400, remainingMonths: 59 });
+
+    expect(owner.dashboard('2026-09-30')).toMatchObject({ manualAssetCents: 12_500, debtCents: 50_000, assets: [expect.objectContaining({ valuation: expect.objectContaining({ valuedOn: '2026-09-15' }) })], debts: [expect.objectContaining({ balance: expect.objectContaining({ asOfDate: '2026-09-30' }) })] });
+    expect(owner.dashboard('2026-10-31')).toMatchObject({ manualAssetCents: 13_000, debtCents: 49_500 });
+    expect(other.dashboard('2026-10-31')).toMatchObject({ assets: [], debts: [], manualAssetCents: 0, debtCents: 0 });
+    expect(() => owner.createAsset({ entityId: otherEntity.id, name: 'Actif interdit', assetClass: 'other', quantityDescription: '', contributedCents: 0, valuedOn: '2026-09-01', valueCents: 0, note: '' })).toThrow('Entité introuvable');
+    expect(() => other.addValuation({ assetId: asset.id, valuedOn: '2026-10-02', valueCents: 1, note: '' })).toThrow('Actif introuvable');
+    expect(() => other.addDebtBalance({ debtId: debt.id, asOfDate: '2026-10-02', outstandingCents: 1, monthlyPaymentCents: 1, annualRateBasisPoints: 0, remainingMonths: 1 })).toThrow('Dette introuvable');
+
+    const rawAsset = connection.sqlite.prepare("insert into finance_wealth_assets (id, owner_id, entity_id, name, asset_class, quantity_description, contributed_cents, created_at, updated_at) values ('asset-cross-owner', 'owner-test', ?, 'Interdit', 'other', '', 0, '2026-09-09T00:00:00.000Z', '2026-09-09T00:00:00.000Z')");
+    expect(() => rawAsset.run(otherEntity.id)).toThrow('invalid wealth asset entity');
+    const rawValuation = connection.sqlite.prepare("insert into finance_wealth_asset_valuations (id, owner_id, asset_id, valued_on, value_cents, note, created_at) values ('valuation-cross-owner', 'other-test', ?, '2026-09-30', 100, '', '2026-09-09T00:00:00.000Z')");
+    expect(() => rawValuation.run(asset.id)).toThrow('invalid wealth asset valuation');
+    const rawDebtBalance = connection.sqlite.prepare("insert into finance_wealth_debt_balances (id, owner_id, debt_id, as_of_date, outstanding_cents, monthly_payment_cents, annual_rate_basis_points, remaining_months, created_at) values ('debt-cross-owner', 'other-test', ?, '2026-09-30', 100, 10, 0, 1, '2026-09-09T00:00:00.000Z')");
+    expect(() => rawDebtBalance.run(debt.id)).toThrow('invalid wealth debt balance');
   });
 });

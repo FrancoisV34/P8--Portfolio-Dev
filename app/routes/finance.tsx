@@ -6,13 +6,15 @@ import { accountsRepository } from '../.server/repositories/accounts.ts';
 import { budgetRepository } from '../.server/repositories/budget.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
+import { wealthRepository } from '../.server/repositories/wealth.ts';
 import { requireSameOrigin } from '../.server/security/same-origin.server.ts';
 import { parseMonth } from '../lib/finance/dates.ts';
+import { projectDebtSchedule } from '../lib/finance/debt.ts';
 import { projectMonthlyGoMining } from '../lib/gomining/monthly.ts';
 import { euroCents, eurosDecimal, formatEuros, parseEuros } from '../lib/finance/units.ts';
 import './finance.scss';
 
-const sections = ['overview', 'accounts', 'categories', 'transactions', 'budget', 'gomining'] as const;
+const sections = ['overview', 'accounts', 'categories', 'transactions', 'budget', 'wealth', 'gomining'] as const;
 type Section = typeof sections[number];
 type ActionData = { error: string } | undefined;
 
@@ -42,6 +44,11 @@ function amount(data: FormData, key: string, signed = false) {
   if ((!signed && value <= 0) || !Number.isSafeInteger(value)) throw new Error('invalid');
   return value;
 }
+function nonNegativeAmount(data: FormData, key: string) {
+  const value = parseEuros(field(data, key, 32));
+  if (value < 0 || !Number.isSafeInteger(value)) throw new Error('invalid');
+  return value;
+}
 function milliCentAmount(data: FormData, key: string) {
   const raw = field(data, key, 32).trim().replace(',', '.');
   const match = /^(\d+)(?:\.(\d{1,5}))?$/.exec(raw);
@@ -50,6 +57,14 @@ function milliCentAmount(data: FormData, key: string) {
   const fraction = BigInt((match[2] ?? '').padEnd(5, '0'));
   const value = whole * 100_000n + fraction;
   if (value <= 0n || value > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error('invalid');
+  return Number(value);
+}
+function basisPoints(data: FormData, key: string) {
+  const raw = field(data, key, 16).trim().replace(',', '.');
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(raw);
+  if (!match) throw new Error('invalid');
+  const value = BigInt(match[1]!) * 100n + BigInt((match[2] ?? '').padEnd(2, '0'));
+  if (value > 100_000n) throw new Error('invalid');
   return Number(value);
 }
 function integer(data: FormData, key: string, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) { const value = Number(field(data, key, 24)); if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error('invalid'); return value; }
@@ -63,6 +78,7 @@ function goMiningInput(data: FormData) {
   };
 }
 function monthDistance(start: string, target: string) { const [startYear, startMonth] = parseMonth(start).split('-').map(Number); const [targetYear, targetMonth] = parseMonth(target).split('-').map(Number); return (targetYear - startYear) * 12 + targetMonth - startMonth + 1; }
+function endOfMonth(period: string) { const [year, month] = parseMonth(period).split('-').map(Number); return `${period}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, '0')}`; }
 function back(request: Request) { const url = new URL(request.url); return redirect(`${url.pathname.replace(/\.data$/, '')}${url.search}`); }
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
 
@@ -84,6 +100,7 @@ export async function loader({ request, params }: { request: Request; params: Re
     const budget = budgetRepository(database, session.user.id);
     const planning = planningRepository(database, session.user.id);
     const mining = gominingRepository(database, session.user.id);
+    const wealth = wealthRepository(database, session.user.id);
     const gominingScenarios = mining.listScenarios().map(({ scenario, phases, versions, historyIncomplete }) => ({ scenario, phases, versions, historyIncomplete, projection: projectMonthlyGoMining({ ...scenario, thresholdHashrateMilliTh: 10_000, contributionPhases: phases }) }));
     const transactions = budget.listTransactions(period);
     const dashboard = budget.dashboard(period);
@@ -91,6 +108,7 @@ export async function loader({ request, params }: { request: Request; params: Re
       name: session.user.name, section: sectionFor(params['*'] ?? ''), period,
       entities: accounts.listEntities(), accounts: accounts.listAccounts(), categories: budget.listCategories(),
       transactions, dashboard, commitments: planning.listCommitments(), planning: planning.dashboard(period, dashboard.accounts, transactions),
+      wealth: wealth.dashboard(endOfMonth(period)),
       gomining: gominingScenarios,
       gominingBudgetPlans: gominingScenarios.flatMap(({ scenario, projection }) => { const month = monthDistance(scenario.startPeriod, period); const contributionCents = projection.months[month - 1]?.contributionCents ?? 0; return scenario.budgetCategoryId && contributionCents > 0 ? [{ scenarioId: scenario.id, name: scenario.name, categoryId: scenario.budgetCategoryId, contributionCents }] : []; }),
     };
@@ -113,6 +131,7 @@ export async function action({ request }: { request: Request }) {
     const budget = budgetRepository(database, session.user.id);
     const planning = planningRepository(database, session.user.id);
     const mining = gominingRepository(database, session.user.id);
+    const wealth = wealthRepository(database, session.user.id);
     switch (intent) {
       case 'createEntity': accounts.createEntity({ name: field(data, 'name', 100), type: field(data, 'type', 20) as 'personal' | 'business' }); break;
       case 'createAccount': accounts.createAccount({ entityId: field(data, 'entityId', 64), name: field(data, 'name', 100), type: field(data, 'type', 20) as 'checking' | 'savings' | 'cash', openingBalanceCents: amount(data, 'openingBalance', true), openingDate: field(data, 'openingDate', 10) }); break;
@@ -134,6 +153,10 @@ export async function action({ request }: { request: Request }) {
       case 'updateGoMiningScenario': mining.updateScenario({ id: field(data, 'id', 64), ...goMiningInput(data) }); break;
       case 'restoreGoMiningVersion': mining.restoreVersion({ scenarioId: field(data, 'scenarioId', 64), versionId: field(data, 'versionId', 64) }); break;
       case 'setGoMiningPolicy': mining.setAccumulatedBtcPolicy(field(data, 'id', 64), data.has('reinvestAccumulated') ? 'reinvest-at-threshold' : 'keep'); break;
+      case 'createWealthAsset': wealth.createAsset({ entityId: field(data, 'entityId', 64), name: field(data, 'name', 100), assetClass: field(data, 'assetClass', 32) as 'securities' | 'crypto' | 'real_estate' | 'business' | 'other', quantityDescription: field(data, 'quantityDescription', 80), contributedCents: nonNegativeAmount(data, 'contributedAmount'), valuedOn: field(data, 'valuedOn', 10), valueCents: nonNegativeAmount(data, 'valueAmount'), note: field(data, 'note', 240) }); break;
+      case 'addWealthValuation': wealth.addValuation({ assetId: field(data, 'assetId', 64), valuedOn: field(data, 'valuedOn', 10), valueCents: nonNegativeAmount(data, 'valueAmount'), note: field(data, 'note', 240) }); break;
+      case 'createWealthDebt': wealth.createDebt({ entityId: field(data, 'entityId', 64), name: field(data, 'name', 100), asOfDate: field(data, 'asOfDate', 10), outstandingCents: nonNegativeAmount(data, 'outstandingAmount'), monthlyPaymentCents: amount(data, 'monthlyPayment'), annualRateBasisPoints: basisPoints(data, 'annualRate'), remainingMonths: integer(data, 'remainingMonths', 1, 600) }); break;
+      case 'addWealthDebtBalance': wealth.addDebtBalance({ debtId: field(data, 'debtId', 64), asOfDate: field(data, 'asOfDate', 10), outstandingCents: nonNegativeAmount(data, 'outstandingAmount'), monthlyPaymentCents: amount(data, 'monthlyPayment'), annualRateBasisPoints: basisPoints(data, 'annualRate'), remainingMonths: integer(data, 'remainingMonths', 1, 600) }); break;
       default: throw new Error('invalid');
     }
   } catch { return failure(); }
@@ -161,14 +184,15 @@ export default function Finance() {
   const activeCategories = data.categories.filter((item) => item.isActive);
   const balances = new Map(data.dashboard.accounts.map((item) => [item.id, item.balanceCents]));
   return <main className="finance-page">
-    <header className="finance-header"><div><p className="finance-eyebrow">Espace personnel</p><h1>{({ overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories', transactions: 'Transactions', budget: 'Budget', gomining: 'GoMining' })[data.section]}</h1><p>Bonjour {data.name}.</p></div><Form method="post"><input type="hidden" name="intent" value="signOut" /><button className="finance-button finance-button--quiet">Se déconnecter</button></Form></header>
-    <nav className="finance-nav" aria-label="Navigation financière"><Link to={`/finance?period=${data.period}`} aria-current={data.section === 'overview' ? 'page' : undefined}>Synthèse</Link><Link to={path('accounts', data.period)} aria-current={data.section === 'accounts' ? 'page' : undefined}>Comptes</Link><Link to={path('categories', data.period)} aria-current={data.section === 'categories' ? 'page' : undefined}>Catégories</Link><Link to={path('transactions', data.period)} aria-current={data.section === 'transactions' ? 'page' : undefined}>Transactions</Link><Link to={path('budget', data.period)} aria-current={data.section === 'budget' ? 'page' : undefined}>Budget</Link><Link to={path('gomining', data.period)} aria-current={data.section === 'gomining' ? 'page' : undefined}>GoMining</Link></nav>
+    <header className="finance-header"><div><p className="finance-eyebrow">Espace personnel</p><h1>{({ overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories', transactions: 'Transactions', budget: 'Budget', wealth: 'Patrimoine', gomining: 'GoMining' })[data.section]}</h1><p>Bonjour {data.name}.</p></div><Form method="post"><input type="hidden" name="intent" value="signOut" /><button className="finance-button finance-button--quiet">Se déconnecter</button></Form></header>
+    <nav className="finance-nav" aria-label="Navigation financière"><Link to={`/finance?period=${data.period}`} aria-current={data.section === 'overview' ? 'page' : undefined}>Synthèse</Link><Link to={path('accounts', data.period)} aria-current={data.section === 'accounts' ? 'page' : undefined}>Comptes</Link><Link to={path('categories', data.period)} aria-current={data.section === 'categories' ? 'page' : undefined}>Catégories</Link><Link to={path('transactions', data.period)} aria-current={data.section === 'transactions' ? 'page' : undefined}>Transactions</Link><Link to={path('budget', data.period)} aria-current={data.section === 'budget' ? 'page' : undefined}>Budget</Link><Link to={path('wealth', data.period)} aria-current={data.section === 'wealth' ? 'page' : undefined}>Patrimoine</Link><Link to={path('gomining', data.period)} aria-current={data.section === 'gomining' ? 'page' : undefined}>GoMining</Link></nav>
     {actionData?.error ? <p className="finance-alert" role="alert">{actionData.error}</p> : null}
     {data.section === 'overview' ? <Overview data={data} /> : null}
     {data.section === 'accounts' ? <Accounts data={data} balances={balances} /> : null}
     {data.section === 'categories' ? <Categories categories={data.categories} /> : null}
     {data.section === 'transactions' ? <Transactions data={data} accounts={activeAccounts} categories={activeCategories} /> : null}
     {data.section === 'budget' ? <Budget data={data} /> : null}
+    {data.section === 'wealth' ? <Wealth data={data} /> : null}
     {data.section === 'gomining' ? <GoMining data={data} /> : null}
   </main>;
 }
@@ -204,6 +228,23 @@ function Budget({ data }: { data: Data }) {
     <section className="finance-card"><h2>Réserve de sécurité</h2><p className="finance-help">La réserve est calculée depuis les soldes des comptes cochés à la fin de cette période. Aucun solde n’est saisi deux fois.</p>{data.accounts.length === 0 ? <p>Ajoute un compte avant de configurer la réserve.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="setSafetyReserve" /><label>Cible (€)<input name="targetAmount" defaultValue={reserve ? decimalMoney(reserve.targetAmountCents) : ''} inputMode="decimal" required /></label><fieldset className="finance-checklist"><legend>Comptes inclus</legend>{data.accounts.map((account) => <label key={account.id}><input type="checkbox" name="accountIds" value={account.id} defaultChecked={reserve?.accounts.some((selected) => selected.id === account.id) ?? false} /> {account.name}</label>)}</fieldset><button className="finance-button">Enregistrer la réserve</button></Form>}{reserve ? <><p>Constaté : {money(reserve.currentAmountCents)} · cible : {money(reserve.targetAmountCents)}.</p><Delete intent="deleteSafetyReserve" text="Retirer cette configuration de réserve." /></> : null}</section>
     <section className="finance-card"><h2>Nouvel engagement mensuel</h2>{expenses.length === 0 ? <p>Ajoute une catégorie de dépense avant de définir un engagement.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createCommitment" /><label>Nom<input name="name" required maxLength={100} /></label><label>Catégorie<select name="categoryId">{expenses.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Montant prévu (€)<input name="plannedAmount" inputMode="decimal" placeholder="0,00" required /></label><label>Jour prévu<input name="dueDay" type="number" min="1" max="31" defaultValue="1" required /></label><label>À partir de<input name="startPeriod" type="month" defaultValue={data.period} required /></label><label>Jusqu’à (facultatif)<input name="endPeriod" type="month" /></label><button className="finance-button">Ajouter l’engagement</button></Form>}</section>
     <section className="finance-card finance-card--wide"><h2>Engagements — {data.period}</h2>{data.planning.commitments.length === 0 ? <p>Aucun engagement planifié pour ce mois.</p> : <ul className="finance-records">{data.planning.commitments.map(({ commitment, categoryName, actualCents }) => <li key={commitment.id}><div><strong>{commitment.name}</strong><p>{categoryName} · prévu le {commitment.dueDay} · {money(actualCents)} payé / {money(commitment.plannedAmountCents)} prévu</p><p>{actualCents === 0 ? 'Aucun paiement réel relié.' : actualCents === commitment.plannedAmountCents ? 'Paiement conforme au prévu.' : `Écart constaté : ${money(actualCents - commitment.plannedAmountCents)}.`}</p></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateCommitment" /><input type="hidden" name="id" value={commitment.id} /><label>Nom<input name="name" defaultValue={commitment.name} required maxLength={100} /></label><label>Catégorie<select name="categoryId" defaultValue={commitment.categoryId}>{expenses.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Montant prévu (€)<input name="plannedAmount" defaultValue={decimalMoney(commitment.plannedAmountCents)} inputMode="decimal" required /></label><label>Jour prévu<input name="dueDay" type="number" min="1" max="31" defaultValue={commitment.dueDay} required /></label><label>À partir de<input name="startPeriod" type="month" defaultValue={commitment.startPeriod} required /></label><label>Jusqu’à (facultatif)<input name="endPeriod" type="month" defaultValue={commitment.endPeriod ?? ''} /></label><button className="finance-button">Enregistrer</button></Form><Delete intent="deleteCommitment" id={commitment.id} text="Supprimer cet engagement sans paiement relié." /></details></li>)}</ul>}<p className="finance-help">Un engagement est un prévu. Pour compter un paiement, relie explicitement la dépense correspondante depuis le journal, avec la même catégorie.</p></section>
+  </section>;
+}
+
+const assetClassLabel = { securities: 'Titres et placements', crypto: 'Crypto-actifs', real_estate: 'Immobilier', business: 'Participation / business', other: 'Autre actif' } as const;
+
+function Wealth({ data }: { data: Data }) {
+  const wealth = data.wealth;
+  const liquidCents = data.dashboard.accounts.reduce((total, account) => euroCents(total + account.balanceCents), 0);
+  const grossCents = euroCents(liquidCents + wealth.manualAssetCents);
+  const netCents = euroCents(grossCents - wealth.debtCents);
+  if (data.entities.length === 0) return <section className="finance-empty"><h2>Commencer par une entité</h2><p>Le patrimoine reste rattaché à une entité personnelle ou business.</p><Link className="finance-button" to={path('accounts', data.period)}>Configurer les comptes</Link></section>;
+  return <section className="finance-content finance-grid">
+    <section className="finance-card finance-card--wide"><h2>Bilan au {wealth.asOfDate}</h2><p className="finance-help">Les liquidités sont recalculées depuis les comptes. GoMining est une projection et n’est pas compté comme valeur de revente.</p><section className="finance-metrics"><Metric label="Liquidités" cents={liquidCents} /><Metric label="Actifs valorisés" cents={wealth.manualAssetCents} /><Metric label="Dettes" cents={-wealth.debtCents} /><Metric label="Patrimoine net" cents={netCents} emphasis /></section><p>Patrimoine brut : {money(grossCents)}. Un actif ou une dette sans état à cette date est exclu du total.</p></section>
+    <section className="finance-card"><h2>Nouvel actif</h2><p className="finance-help">Hors comptes liquides et hors GoMining. Sa première valorisation est obligatoire et datée.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createWealthAsset" /><label>Entité<select name="entityId">{data.entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label><label>Nom<input name="name" required maxLength={100} /></label><label>Classe<select name="assetClass">{Object.entries(assetClassLabel).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Quantité / unité (facultatif)<input name="quantityDescription" maxLength={80} placeholder="ex. 12 titres" /></label><label>Capital versé (€)<input name="contributedAmount" defaultValue="0,00" inputMode="decimal" required /></label><label>Valorisation au<input name="valuedOn" type="date" defaultValue={wealth.asOfDate} required /></label><label>Valeur estimée (€)<input name="valueAmount" inputMode="decimal" required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter l’actif</button></Form></section>
+    <section className="finance-card finance-card--wide"><h2>Actifs et valorisations</h2>{wealth.assets.length === 0 ? <p>Aucun actif hors comptes n’est encore enregistré.</p> : <ul className="finance-records">{wealth.assets.map(({ asset, valuation, valuations }) => <li key={asset.id}><div><strong>{asset.name}</strong><p>{assetClassLabel[asset.assetClass]}{asset.quantityDescription ? ` · ${asset.quantityDescription}` : ''} · capital versé : {money(asset.contributedCents)}</p><p>{valuation ? `Valeur retenue : ${money(valuation.valueCents)} au ${valuation.valuedOn}` : 'Aucune valorisation à cette date : actif exclu du bilan.'}</p><details><summary>Historique — {valuations.length} valorisation{valuations.length > 1 ? 's' : ''}</summary><List rows={valuations.map((item) => [item.valuedOn, money(item.valueCents)])} /></details></div><details><summary>Ajouter une valorisation</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="addWealthValuation" /><input type="hidden" name="assetId" value={asset.id} /><label>Date<input name="valuedOn" type="date" defaultValue={wealth.asOfDate} required /></label><label>Valeur estimée (€)<input name="valueAmount" inputMode="decimal" required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer</button></Form></details></li>)}</ul>}</section>
+    <section className="finance-card"><h2>Nouvelle dette</h2><p className="finance-help">Le capital restant dû, le taux et la mensualité constituent une photographie datée. L’échéancier est indicatif.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createWealthDebt" /><label>Entité<select name="entityId">{data.entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label><label>Nom<input name="name" required maxLength={100} /></label><label>État au<input name="asOfDate" type="date" defaultValue={wealth.asOfDate} required /></label><label>Capital restant dû (€)<input name="outstandingAmount" inputMode="decimal" required /></label><label>Mensualité (€)<input name="monthlyPayment" inputMode="decimal" required /></label><label>Taux annuel (%)<input name="annualRate" defaultValue="0,00" inputMode="decimal" required /></label><label>Mois restants<input name="remainingMonths" type="number" min="1" max="600" required /></label><button className="finance-button">Ajouter la dette</button></Form></section>
+    <section className="finance-card finance-card--wide"><h2>Dettes et échéanciers</h2>{wealth.debts.length === 0 ? <p>Aucune dette n’est encore enregistrée.</p> : <ul className="finance-records">{wealth.debts.map(({ debt, balance, balances }) => { const schedule = balance ? projectDebtSchedule(balance) : null; return <li key={debt.id}><div><strong>{debt.name}</strong><p>{balance ? `Capital retenu : ${money(balance.outstandingCents)} au ${balance.asOfDate} · mensualité : ${money(balance.monthlyPaymentCents)} · taux : ${(balance.annualRateBasisPoints / 100).toFixed(2).replace('.', ',')} %` : 'Aucun état de dette à cette date : dette exclue du bilan.'}</p>{schedule ? <details><summary>Échéancier indicatif</summary><p>{schedule.amortizes ? `Extinction projetée après ${schedule.rows.length} mensualité${schedule.rows.length > 1 ? 's' : ''}.` : `La mensualité ne rembourse pas le capital ; reste projeté : ${money(schedule.remainingCents)}.`}</p><div className="finance-table-wrap"><table className="finance-table"><caption>Douze premières échéances</caption><thead><tr><th>Mois</th><th>Intérêts</th><th>Capital</th><th>Restant dû</th></tr></thead><tbody>{schedule.rows.slice(0, 12).map((row) => <tr key={row.month}><td>{row.month}</td><td>{money(row.interestCents)}</td><td>{money(row.principalCents)}</td><td>{money(row.remainingCents)}</td></tr>)}</tbody></table></div></details> : null}<details><summary>États enregistrés — {balances.length}</summary><List rows={balances.map((item) => [item.asOfDate, money(item.outstandingCents)])} /></details></div><details><summary>Ajouter un état daté</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="addWealthDebtBalance" /><input type="hidden" name="debtId" value={debt.id} /><label>État au<input name="asOfDate" type="date" defaultValue={wealth.asOfDate} required /></label><label>Capital restant dû (€)<input name="outstandingAmount" inputMode="decimal" required /></label><label>Mensualité (€)<input name="monthlyPayment" inputMode="decimal" required /></label><label>Taux annuel (%)<input name="annualRate" defaultValue="0,00" inputMode="decimal" required /></label><label>Mois restants<input name="remainingMonths" type="number" min="1" max="600" required /></label><button className="finance-button">Enregistrer</button></Form></details></li>; })}</ul>}</section>
   </section>;
 }
 
