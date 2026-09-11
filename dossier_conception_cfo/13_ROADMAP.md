@@ -346,8 +346,14 @@ les activités sont rattachées à des entités business et reçoivent des
 observations mensuelles de CA encaissé et de charges opérationnelles. Un état
 de cash conservé et un flux distribué sont saisis séparément par entité et par
 période. Rien n'écrit de transaction dans le foyer, ne déduit de montant
-distribuable ni ne calcule de fiscalité ; MRR, ARR, provisions et métriques
-SaaS restent à arbitrer.
+distribuable ni ne calcule de fiscalité.
+
+**Complément réalisé localement, 11 septembre 2026 (D20, option A) :** une
+observation mensuelle peut aussi porter un MRR, un nombre de clients actifs et
+le temps de maintenance en minutes. Ces trois mesures restent facultatives :
+une donnée inconnue n'est jamais remplacée par zéro. L'ARR est uniquement
+dérivé du MRR observé (`MRR × 12`) et n'annualise jamais le CA encaissé.
+Provisions, concentration du revenu et stabilité restent différées.
 
 ### L12 — Objectifs et projets
 

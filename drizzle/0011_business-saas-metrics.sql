@@ -1,0 +1,3 @@
+ALTER TABLE `finance_business_monthly_metrics` ADD `mrr_cents` integer CHECK(`mrr_cents` is null or (typeof(`mrr_cents`) = 'integer' and `mrr_cents` >= 0 and `mrr_cents` <= 750599937895082));--> statement-breakpoint
+ALTER TABLE `finance_business_monthly_metrics` ADD `active_customer_count` integer CHECK(`active_customer_count` is null or (typeof(`active_customer_count`) = 'integer' and `active_customer_count` between 0 and 1000000000));--> statement-breakpoint
+ALTER TABLE `finance_business_monthly_metrics` ADD `maintenance_minutes` integer CHECK(`maintenance_minutes` is null or (typeof(`maintenance_minutes`) = 'integer' and `maintenance_minutes` between 0 and 44640));

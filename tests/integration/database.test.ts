@@ -66,6 +66,29 @@ describe('persistance SQLite privée', () => {
     }
   });
 
+  it('ajoute les métriques SaaS sans effacer une observation business existante', () => {
+    const legacyDirectory = mkdtempSync(join(tmpdir(), 'portfolio-business-legacy-test-'));
+    const legacyMigrations = join(legacyDirectory, 'migrations');
+    mkdirSync(join(legacyMigrations, 'meta'), { recursive: true });
+    for (const filename of readdirSync('drizzle').filter((name) => /^00(?:0[0-9]|10)_.*\.sql$/.test(name))) copyFileSync(join('drizzle', filename), join(legacyMigrations, filename));
+    const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')) as { entries: { idx: number }[] };
+    journal.entries = journal.entries.filter((entry) => entry.idx <= 10);
+    writeFileSync(join(legacyMigrations, 'meta', '_journal.json'), JSON.stringify(journal));
+    const legacy = openDatabase({ path: join(legacyDirectory, 'legacy.sqlite'), environment: 'test' });
+    try {
+      migrateDatabase(legacy.db, legacyMigrations);
+      const entity = accountsRepository(legacy.db, 'owner-legacy').createEntity({ name: 'Société ancienne', type: 'business' });
+      legacy.sqlite.prepare("insert into finance_business_activities (id, owner_id, entity_id, name, is_active, created_at, updated_at) values ('activity-legacy', 'owner-legacy', ?, 'Produit ancien', 1, '2026-09-11T00:00:00.000Z', '2026-09-11T00:00:00.000Z')").run(entity.id);
+      legacy.sqlite.prepare("insert into finance_business_monthly_metrics (id, owner_id, activity_id, period, revenue_cents, operating_expense_cents, created_at, updated_at) values ('metric-legacy', 'owner-legacy', 'activity-legacy', '2026-09', 12000, 4000, '2026-09-11T00:00:00.000Z', '2026-09-11T00:00:00.000Z')").run();
+      migrateDatabase(legacy.db);
+      expect(legacy.sqlite.prepare("select revenue_cents as revenueCents, operating_expense_cents as operatingExpenseCents, mrr_cents as mrrCents, active_customer_count as activeCustomerCount, maintenance_minutes as maintenanceMinutes from finance_business_monthly_metrics where id = 'metric-legacy'").get()).toEqual({ revenueCents: 12_000, operatingExpenseCents: 4_000, mrrCents: null, activeCustomerCount: null, maintenanceMinutes: null });
+      expect(businessRepository(legacy.db, 'owner-legacy').dashboard('2026-09')).toMatchObject({ mrrActivityCount: 0, activities: [expect.objectContaining({ metric: expect.objectContaining({ id: 'metric-legacy', revenueCents: 12_000, mrrCents: null }) })] });
+    } finally {
+      legacy.close();
+      rmSync(legacyDirectory, { recursive: true, force: true });
+    }
+  });
+
   it('filtre les lectures et refuse un rattachement à une autre identité', () => {
     const repository = accountsRepository(connection.db, 'owner-test');
     const other = accountsRepository(connection.db, 'other-test');
@@ -251,11 +274,11 @@ describe('persistance SQLite privée', () => {
     const owner = businessRepository(connection.db, 'owner-test');
     const other = businessRepository(connection.db, 'other-test');
     const activity = owner.createActivity({ entityId: businessEntity.id, name: 'Produit synthétique' });
-    owner.setMetrics({ activityId: activity.id, period: '2026-09', revenueCents: 12_000, operatingExpenseCents: 4_000 });
+    const septemberMetrics = owner.setMetrics({ activityId: activity.id, period: '2026-09', revenueCents: 12_000, operatingExpenseCents: 4_000, mrrCents: 9_000, activeCustomerCount: 3, maintenanceMinutes: 90 });
     owner.setEntityCash({ entityId: businessEntity.id, period: '2026-09', retainedCashCents: 30_000, distributedCents: 2_000 });
     owner.setMetrics({ activityId: activity.id, period: '2026-10', revenueCents: 15_000, operatingExpenseCents: 5_000 });
-    expect(owner.dashboard('2026-09')).toMatchObject({ revenueCents: 12_000, operatingExpenseCents: 4_000, retainedCashCents: 30_000, distributedCents: 2_000, activities: [expect.objectContaining({ activity: expect.objectContaining({ id: activity.id }), metric: expect.objectContaining({ revenueCents: 12_000 }) })] });
-    expect(owner.dashboard('2026-10')).toMatchObject({ revenueCents: 15_000, operatingExpenseCents: 5_000, retainedCashCents: 30_000, distributedCents: 0 });
+    expect(owner.dashboard('2026-09')).toMatchObject({ revenueCents: 12_000, operatingExpenseCents: 4_000, mrrCents: 9_000, annualRecurringRevenueCents: 108_000, mrrActivityCount: 1, activeCustomerCount: 3, activeCustomerActivityCount: 1, maintenanceMinutes: 90, maintenanceActivityCount: 1, retainedCashCents: 30_000, distributedCents: 2_000, activities: [expect.objectContaining({ activity: expect.objectContaining({ id: activity.id }), metric: expect.objectContaining({ revenueCents: 12_000, mrrCents: 9_000, activeCustomerCount: 3, maintenanceMinutes: 90 }) })] });
+    expect(owner.dashboard('2026-10')).toMatchObject({ revenueCents: 15_000, operatingExpenseCents: 5_000, mrrCents: 0, mrrActivityCount: 0, activeCustomerActivityCount: 0, maintenanceActivityCount: 0, retainedCashCents: 30_000, distributedCents: 0 });
     expect(other.dashboard('2026-10')).toMatchObject({ activities: [], cash: [], revenueCents: 0, retainedCashCents: 0 });
     expect(() => owner.createActivity({ entityId: personalEntity.id, name: 'Interdit' })).toThrow('Entité business introuvable');
     expect(() => other.createActivity({ entityId: businessEntity.id, name: 'Interdit' })).toThrow('Entité business introuvable');
@@ -265,6 +288,9 @@ describe('persistance SQLite privée', () => {
     expect(() => rawActivity.run(personalEntity.id)).toThrow('invalid business activity entity');
     const rawMetric = connection.sqlite.prepare("insert into finance_business_monthly_metrics (id, owner_id, activity_id, period, revenue_cents, operating_expense_cents, created_at, updated_at) values ('business-cross-owner', 'other-test', ?, '2026-09', 1, 0, '2026-09-09T00:00:00.000Z', '2026-09-09T00:00:00.000Z')");
     expect(() => rawMetric.run(activity.id)).toThrow('invalid business activity metric');
+    expect(() => connection.sqlite.prepare('update finance_business_monthly_metrics set mrr_cents = -1 where id = ?').run(septemberMetrics.id)).toThrow();
+    expect(() => connection.sqlite.prepare('update finance_business_monthly_metrics set active_customer_count = -1 where id = ?').run(septemberMetrics.id)).toThrow();
+    expect(() => connection.sqlite.prepare('update finance_business_monthly_metrics set maintenance_minutes = 44641 where id = ?').run(septemberMetrics.id)).toThrow();
     const rawCash = connection.sqlite.prepare("insert into finance_business_entity_monthly_cash (id, owner_id, entity_id, period, retained_cash_cents, distributed_cents, created_at, updated_at) values ('business-cash-personal', 'owner-test', ?, '2026-09', 1, 0, '2026-09-09T00:00:00.000Z', '2026-09-09T00:00:00.000Z')");
     expect(() => rawCash.run(personalEntity.id)).toThrow('invalid business cash entity');
     expect(otherBusinessEntity.id).toBeTruthy();

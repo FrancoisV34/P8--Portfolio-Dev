@@ -338,6 +338,9 @@ export const businessMonthlyMetrics = sqliteTable('finance_business_monthly_metr
   period: text('period').notNull(),
   revenueCents: integer('revenue_cents').notNull(),
   operatingExpenseCents: integer('operating_expense_cents').notNull(),
+  mrrCents: integer('mrr_cents'),
+  activeCustomerCount: integer('active_customer_count'),
+  maintenanceMinutes: integer('maintenance_minutes'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 }, (table) => [
@@ -345,6 +348,10 @@ export const businessMonthlyMetrics = sqliteTable('finance_business_monthly_metr
   uniqueIndex('finance_business_metrics_owner_activity_period_unique').on(table.ownerId, table.activityId, table.period),
   check('finance_business_metrics_revenue', sql`typeof(${table.revenueCents}) = 'integer' and ${table.revenueCents} >= 0 and ${table.revenueCents} <= 9007199254740991`),
   check('finance_business_metrics_expenses', sql`typeof(${table.operatingExpenseCents}) = 'integer' and ${table.operatingExpenseCents} >= 0 and ${table.operatingExpenseCents} <= 9007199254740991`),
+  // Le MRR est borné pour que son ARR (MRR × 12) reste un montant entier sûr.
+  check('finance_business_metrics_mrr', sql`${table.mrrCents} is null or (typeof(${table.mrrCents}) = 'integer' and ${table.mrrCents} >= 0 and ${table.mrrCents} <= 750599937895082)`),
+  check('finance_business_metrics_customers', sql`${table.activeCustomerCount} is null or (typeof(${table.activeCustomerCount}) = 'integer' and ${table.activeCustomerCount} between 0 and 1000000000)`),
+  check('finance_business_metrics_maintenance', sql`${table.maintenanceMinutes} is null or (typeof(${table.maintenanceMinutes}) = 'integer' and ${table.maintenanceMinutes} between 0 and 44640)`),
   check('finance_business_metrics_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
 ]);
 

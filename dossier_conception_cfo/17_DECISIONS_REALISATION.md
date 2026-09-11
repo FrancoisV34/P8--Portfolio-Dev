@@ -56,6 +56,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D17 | Validé : L10 | BTC GoMining dans le patrimoine réel | BTC observés uniquement ; exclusion complète ; valeur manuelle complète du contrat | Évite de confondre BTC réellement détenus, puissance TH et projections |
 | D18 | Validé : L10 | Allocation patrimoine | Allocation observée ; allocation observée + cible ; différer | Restitution de la répartition sans amorcer de recommandation CFO |
 | D19 | Validé : L11 | Premier suivi du business | Cash business observé ; KPI SaaS d'abord ; approfondir L10 | Distinguer strictement activité économique, cash d'entité et foyer |
+| D20 | Validé : L11 | Premier incrément de métriques SaaS | MRR/ARR et métriques observées ; objectifs/projets d'abord ; stabiliser après tests | Qualifier le revenu récurrent sans confondre CA encaissé et projection |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -114,6 +115,22 @@ Ces observations ne créent aucune transaction du budget du foyer et aucun
 montant « distribuable » n'est inféré. MRR, ARR, temps de maintenance,
 provisions et fiscalité sont volontairement différés : leur sémantique sera
 arbitrée dans un incrément dédié de L11, puis L13 pour tout calcul réglementaire.
+
+## D20 — Premier incrément de métriques SaaS
+
+**État : validé le 11 septembre 2026 — option A, MRR/ARR et métriques
+observées.**
+
+Pour chaque activité et période, le suivi peut enregistrer, en plus du CA
+encaissé et des charges, un MRR observé, un nombre de clients actifs et un
+temps de maintenance en minutes. Ces mesures sont facultatives ; leur absence
+reste explicitement inconnue.
+
+L'ARR est une restitution dérivée, égale au MRR observé multiplié par douze.
+Il ne constitue ni une prévision, ni du CA encaissé annualisé. Aucun montant
+distribuable, transaction foyer, provision ou fiscalité n'est déduit de ces
+métriques. La concentration, la stabilité et les autres KPI SaaS restent des
+incréments ultérieurs de L11.
 
 ## D11 — Réserve de sécurité et engagements mensuels
 
@@ -251,5 +268,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-11 | D17 — BTC GoMining dans le patrimoine | « A » | Une position manuelle unique de BTC observés, sans TH ni valeur de contrat |
 | 2026-09-11 | D18 — Allocation patrimoine | « A » | Répartition observée des actifs bruts, sans cible ni recommandation |
 | 2026-09-11 | D19 — Premier suivi du business | « A » | Activités, CA et charges mensuels, cash conservé et flux distribué par entité business ; aucune écriture foyer ou fiscalité automatique |
+| 2026-09-11 | D20 — Métriques SaaS initiales | « A » | MRR observé, ARR dérivé, clients actifs et temps de maintenance facultatifs ; CA encaissé et foyer restent isolés |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

@@ -8,8 +8,13 @@ import { businessActivities, businessEntityMonthlyCash, businessMonthlyMetrics, 
 
 const name = z.string().trim().min(1).max(100);
 const cents = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
+const mrrCents = z.number().int().min(0).max(Math.floor(Number.MAX_SAFE_INTEGER / 12));
+const optional = <T extends z.ZodType>(schema: T) => schema.nullable().optional().default(null);
 const activityInput = z.object({ entityId: z.uuid(), name }).strict();
-const metricsInput = z.object({ activityId: z.uuid(), period: z.string(), revenueCents: cents, operatingExpenseCents: cents }).strict();
+const metricsInput = z.object({
+  activityId: z.uuid(), period: z.string(), revenueCents: cents, operatingExpenseCents: cents,
+  mrrCents: optional(mrrCents), activeCustomerCount: optional(z.number().int().min(0).max(1_000_000_000)), maintenanceMinutes: optional(z.number().int().min(0).max(44_640)),
+}).strict();
 const cashInput = z.object({ entityId: z.uuid(), period: z.string(), retainedCashCents: cents, distributedCents: cents }).strict();
 
 export type CreateBusinessActivity = z.input<typeof activityInput>;
@@ -46,7 +51,11 @@ export function businessRepository(db: FinanceDatabase, ownerId: string) {
       const existing = db.select({ id: businessMonthlyMetrics.id }).from(businessMonthlyMetrics).where(and(
         eq(businessMonthlyMetrics.ownerId, ownerId), eq(businessMonthlyMetrics.activityId, values.activityId), eq(businessMonthlyMetrics.period, period),
       )).get();
-      const changes = { revenueCents: euroCents(values.revenueCents), operatingExpenseCents: euroCents(values.operatingExpenseCents), updatedAt: timestamp };
+      const changes = {
+        revenueCents: euroCents(values.revenueCents), operatingExpenseCents: euroCents(values.operatingExpenseCents),
+        mrrCents: values.mrrCents === null ? null : euroCents(values.mrrCents), activeCustomerCount: values.activeCustomerCount,
+        maintenanceMinutes: values.maintenanceMinutes, updatedAt: timestamp,
+      };
       return existing
         ? db.update(businessMonthlyMetrics).set(changes).where(eq(businessMonthlyMetrics.id, existing.id)).returning().get()
         : db.insert(businessMonthlyMetrics).values({ id: randomUUID(), ownerId, activityId: values.activityId, period, ...changes, createdAt: timestamp }).returning().get();
@@ -74,12 +83,23 @@ export function businessRepository(db: FinanceDatabase, ownerId: string) {
       for (const cash of cashHistory) if (cash.period <= period && !latestCash.has(cash.entityId)) latestCash.set(cash.entityId, cash);
       const currentCash = cashHistory.filter((cash) => cash.period === period);
       const activityRows = activities.map((activity) => ({ activity, metric: metricByActivity.get(activity.id) ?? null }));
+      const mrrMetrics = activityRows.flatMap(({ metric }) => metric?.mrrCents === null || metric === null ? [] : [euroCents(metric.mrrCents)]);
+      const activeCustomerMetrics = activityRows.flatMap(({ metric }) => metric?.activeCustomerCount === null || metric === null ? [] : [metric.activeCustomerCount]);
+      const maintenanceMetrics = activityRows.flatMap(({ metric }) => metric?.maintenanceMinutes === null || metric === null ? [] : [metric.maintenanceMinutes]);
+      const mrrCents = sumEuroCents(mrrMetrics);
       return {
         period,
         activities: activityRows,
         cash: [...latestCash.values()].sort((left, right) => left.entityId.localeCompare(right.entityId)),
         revenueCents: sumEuroCents(activityRows.flatMap(({ metric }) => metric ? [euroCents(metric.revenueCents)] : [])),
         operatingExpenseCents: sumEuroCents(activityRows.flatMap(({ metric }) => metric ? [euroCents(metric.operatingExpenseCents)] : [])),
+        mrrCents,
+        annualRecurringRevenueCents: euroCents(mrrCents * 12),
+        mrrActivityCount: mrrMetrics.length,
+        activeCustomerCount: activeCustomerMetrics.reduce((total, count) => total + count, 0),
+        activeCustomerActivityCount: activeCustomerMetrics.length,
+        maintenanceMinutes: maintenanceMetrics.reduce((total, minutes) => total + minutes, 0),
+        maintenanceActivityCount: maintenanceMetrics.length,
         retainedCashCents: sumEuroCents([...latestCash.values()].map((cash) => euroCents(cash.retainedCashCents))),
         distributedCents: sumEuroCents(currentCash.map((cash) => euroCents(cash.distributedCents))),
       };

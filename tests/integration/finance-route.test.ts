@@ -132,14 +132,14 @@ describe('route finance privée', () => {
     const businessActivity = created.business.activities.find(({ activity: item }) => item.name === 'Activité route synthétique')?.activity;
     if (!businessActivity) throw new Error('Activité business de test absente.');
     const metrics = new FormData();
-    for (const [key, value] of Object.entries({ intent: 'setBusinessMetrics', activityId: businessActivity.id, period: '2026-09', revenueAmount: '120,00', operatingExpenseAmount: '40,00' })) metrics.set(key, value);
+    for (const [key, value] of Object.entries({ intent: 'setBusinessMetrics', activityId: businessActivity.id, period: '2026-09', revenueAmount: '120,00', operatingExpenseAmount: '40,00', mrrAmount: '90,00', activeCustomerCount: '3', maintenanceMinutes: '75' })) metrics.set(key, value);
     await expect(action({ request: request('POST', metrics) })).resolves.toMatchObject({ status: 302 });
     const cash = new FormData();
     for (const [key, value] of Object.entries({ intent: 'setBusinessCash', entityId: businessEntity.id, period: '2026-09', retainedCashAmount: '300,00', distributedAmount: '20,00' })) cash.set(key, value);
     await expect(action({ request: request('POST', cash) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: new Request(`${origin}/finance/business?period=2026-09`, { headers: { cookie } }), params: { '*': 'business' } })).resolves.toMatchObject({
       section: 'business',
-      business: { revenueCents: 12_000, operatingExpenseCents: 4_000, retainedCashCents: 30_000, distributedCents: 2_000, activities: [expect.objectContaining({ activity: expect.objectContaining({ id: businessActivity.id }), metric: expect.objectContaining({ revenueCents: 12_000 }) })] },
+      business: { revenueCents: 12_000, operatingExpenseCents: 4_000, mrrCents: 9_000, annualRecurringRevenueCents: 108_000, activeCustomerCount: 3, maintenanceMinutes: 75, retainedCashCents: 30_000, distributedCents: 2_000, activities: [expect.objectContaining({ activity: expect.objectContaining({ id: businessActivity.id }), metric: expect.objectContaining({ revenueCents: 12_000, mrrCents: 9_000, activeCustomerCount: 3, maintenanceMinutes: 75 }) })] },
       transactions: [],
     });
   });
