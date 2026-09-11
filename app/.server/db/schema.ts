@@ -312,6 +312,59 @@ export const wealthDebtBalances = sqliteTable('finance_wealth_debt_balances', {
   check('finance_wealth_debt_balances_date', sql`length(${table.asOfDate}) = 10 and ${table.asOfDate} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(${table.asOfDate}, 1, 4) as integer) between 1 and 9999 and date(${table.asOfDate}, '+0 days') is not null and date(${table.asOfDate}, '+0 days') = ${table.asOfDate}`),
 ]);
 
+// Le pilotage business distingue l'activité économique de l'argent du foyer.
+// Les métriques mensuelles observées ne créent jamais de transaction et aucun
+// calcul fiscal ou montant distribuable n'est déduit automatiquement.
+export const businessActivities = sqliteTable('finance_business_activities', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  entityId: text('entity_id').notNull().references(() => economicEntities.id, { onDelete: 'restrict' }),
+  name: text('name').notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_business_activities_owner_idx').on(table.ownerId),
+  index('finance_business_activities_entity_idx').on(table.entityId),
+  uniqueIndex('finance_business_activities_owner_name_unique').on(table.ownerId, table.name),
+  check('finance_business_activities_name', sql`length(trim(${table.name})) between 1 and 100`),
+  check('finance_business_activities_active', sql`${table.isActive} in (0, 1)`),
+]);
+
+export const businessMonthlyMetrics = sqliteTable('finance_business_monthly_metrics', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  activityId: text('activity_id').notNull().references(() => businessActivities.id, { onDelete: 'restrict' }),
+  period: text('period').notNull(),
+  revenueCents: integer('revenue_cents').notNull(),
+  operatingExpenseCents: integer('operating_expense_cents').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_business_metrics_owner_period_idx').on(table.ownerId, table.period),
+  uniqueIndex('finance_business_metrics_owner_activity_period_unique').on(table.ownerId, table.activityId, table.period),
+  check('finance_business_metrics_revenue', sql`typeof(${table.revenueCents}) = 'integer' and ${table.revenueCents} >= 0 and ${table.revenueCents} <= 9007199254740991`),
+  check('finance_business_metrics_expenses', sql`typeof(${table.operatingExpenseCents}) = 'integer' and ${table.operatingExpenseCents} >= 0 and ${table.operatingExpenseCents} <= 9007199254740991`),
+  check('finance_business_metrics_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
+]);
+
+export const businessEntityMonthlyCash = sqliteTable('finance_business_entity_monthly_cash', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  entityId: text('entity_id').notNull().references(() => economicEntities.id, { onDelete: 'restrict' }),
+  period: text('period').notNull(),
+  retainedCashCents: integer('retained_cash_cents').notNull(),
+  distributedCents: integer('distributed_cents').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_business_cash_owner_period_idx').on(table.ownerId, table.period),
+  uniqueIndex('finance_business_cash_owner_entity_period_unique').on(table.ownerId, table.entityId, table.period),
+  check('finance_business_cash_retained', sql`typeof(${table.retainedCashCents}) = 'integer' and ${table.retainedCashCents} >= 0 and ${table.retainedCashCents} <= 9007199254740991`),
+  check('finance_business_cash_distributed', sql`typeof(${table.distributedCents}) = 'integer' and ${table.distributedCents} >= 0 and ${table.distributedCents} <= 9007199254740991`),
+  check('finance_business_cash_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
+]);
+
 export const monthlyBudgets = sqliteTable('finance_monthly_budgets', {
   id: text('id').primaryKey(),
   ownerId: text('owner_id').notNull(),

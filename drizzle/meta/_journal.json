@@ -71,6 +71,13 @@
       "when": 1789106190471,
       "tag": "0009_gomining-observed-btc-wealth",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1789109148708,
+      "tag": "0010_business-cash-observations",
+      "breakpoints": true
     }
   ]
 }

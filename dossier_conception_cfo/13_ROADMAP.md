@@ -341,6 +341,14 @@ Travail :
 
 Les projections fiscales automatiques dépendent de L13. Une saisie manuelle documentée permet un premier usage sans taux fiscal inventé.
 
+**Premier incrément réalisé localement, 11 septembre 2026 (D19, option A) :**
+les activités sont rattachées à des entités business et reçoivent des
+observations mensuelles de CA encaissé et de charges opérationnelles. Un état
+de cash conservé et un flux distribué sont saisis séparément par entité et par
+période. Rien n'écrit de transaction dans le foyer, ne déduit de montant
+distribuable ni ne calcule de fiscalité ; MRR, ARR, provisions et métriques
+SaaS restent à arbitrer.
+
 ### L12 — Objectifs et projets
 
 **But :** organiser les priorités et les décisions d'investissement.

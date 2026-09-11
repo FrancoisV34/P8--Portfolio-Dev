@@ -113,4 +113,34 @@ describe('route finance privée', () => {
     await expect(action({ request: request('POST', observedBtc) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: new Request(`${origin}/finance/wealth?period=2026-09`, { headers: { cookie } }), params: { '*': 'wealth' } })).resolves.toMatchObject({ wealth: { manualAssetCents: 1_900, assets: expect.arrayContaining([expect.objectContaining({ asset: expect.objectContaining({ source: 'gomining-observed-btc', observedBtcSats: 123_456 }) })]) } });
   });
+
+  it('isole les observations business du foyer par des mutations privées', async () => {
+    const entity = new FormData();
+    entity.set('intent', 'createEntity');
+    entity.set('name', 'Société route synthétique');
+    entity.set('type', 'business');
+    await expect(action({ request: request('POST', entity) })).resolves.toMatchObject({ status: 302 });
+    const loaded = await loader({ request: request(), params: {} });
+    const businessEntity = loaded.entities.find((item) => item.name === 'Société route synthétique');
+    if (!businessEntity) throw new Error('Entité business de test absente.');
+    const activity = new FormData();
+    activity.set('intent', 'createBusinessActivity');
+    activity.set('entityId', businessEntity.id);
+    activity.set('name', 'Activité route synthétique');
+    await expect(action({ request: request('POST', activity) })).resolves.toMatchObject({ status: 302 });
+    const created = await loader({ request: request(), params: {} });
+    const businessActivity = created.business.activities.find(({ activity: item }) => item.name === 'Activité route synthétique')?.activity;
+    if (!businessActivity) throw new Error('Activité business de test absente.');
+    const metrics = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'setBusinessMetrics', activityId: businessActivity.id, period: '2026-09', revenueAmount: '120,00', operatingExpenseAmount: '40,00' })) metrics.set(key, value);
+    await expect(action({ request: request('POST', metrics) })).resolves.toMatchObject({ status: 302 });
+    const cash = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'setBusinessCash', entityId: businessEntity.id, period: '2026-09', retainedCashAmount: '300,00', distributedAmount: '20,00' })) cash.set(key, value);
+    await expect(action({ request: request('POST', cash) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/business?period=2026-09`, { headers: { cookie } }), params: { '*': 'business' } })).resolves.toMatchObject({
+      section: 'business',
+      business: { revenueCents: 12_000, operatingExpenseCents: 4_000, retainedCashCents: 30_000, distributedCents: 2_000, activities: [expect.objectContaining({ activity: expect.objectContaining({ id: businessActivity.id }), metric: expect.objectContaining({ revenueCents: 12_000 }) })] },
+      transactions: [],
+    });
+  });
 });
