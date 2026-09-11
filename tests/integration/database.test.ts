@@ -328,7 +328,7 @@ describe('persistance SQLite privée', () => {
     const goal = owner.createGoal({ name: 'Objectif synthétique', targetCents: 100_000, progressCents: 25_000, targetDate: '2027-01-31', priority: 2 });
     const project = owner.createProject({ goalId: goal.id, name: 'Projet synthétique', status: 'active', priority: 1, estimatedCostCents: 12_000, estimatedEffortMinutes: 180, nextAction: 'Écrire le cadrage' });
     owner.setCapacity({ monthlyCapacityMinutes: 120 });
-    expect(owner.dashboard()).toMatchObject({ goals: [expect.objectContaining({ id: goal.id, progressCents: 25_000 })], projects: [expect.objectContaining({ id: project.id, goalId: goal.id, status: 'active' })], capacity: { monthlyCapacityMinutes: 120 }, activeProjectCount: 1, activeEffortProjectCount: 1, activeEffortMinutes: 180, capacityStatus: 'watch' });
+    expect(owner.dashboard()).toMatchObject({ goals: [expect.objectContaining({ id: goal.id, progressCents: 25_000 })], projects: [expect.objectContaining({ id: project.id, goalId: goal.id, status: 'active' })], capacity: { monthlyCapacityMinutes: 120 }, activeProjectCount: 1, activeProjectLimit: 2, activeProjectLimitStatus: 'within-limit', activeEffortProjectCount: 1, activeEffortMinutes: 180, capacityStatus: 'watch' });
     expect(other.dashboard()).toMatchObject({ goals: [], projects: [], capacity: null, capacityStatus: 'unknown' });
     expect(() => other.updateGoal({ id: goal.id, name: 'Interdit', targetCents: 1, progressCents: 0, targetDate: null, priority: 1 })).toThrow('Objectif introuvable');
     expect(() => other.createProject({ goalId: goal.id, name: 'Interdit', status: 'backlog', priority: 1, estimatedCostCents: null, estimatedEffortMinutes: null, nextAction: '' })).toThrow('Objectif introuvable');
@@ -336,5 +336,10 @@ describe('persistance SQLite privée', () => {
     expect(owner.dashboard()).toMatchObject({ projects: [expect.objectContaining({ id: project.id, goalId: null, status: 'done', estimatedCostCents: null })], capacityStatus: 'compatible', activeProjectCount: 0, activeEffortMinutes: 0 });
     const rawProject = connection.sqlite.prepare("insert into finance_projects (id, owner_id, goal_id, name, status, priority, next_action, created_at, updated_at) values ('project-cross-owner', 'other-test', ?, 'Interdit', 'backlog', 1, '', '2026-09-11T00:00:00.000Z', '2026-09-11T00:00:00.000Z')");
     expect(() => rawProject.run(goal.id)).toThrow('invalid project goal');
+    owner.createProject({ goalId: null, name: 'Projet actif 2', status: 'active', priority: 2, estimatedCostCents: null, estimatedEffortMinutes: 10, nextAction: '' });
+    owner.createProject({ goalId: null, name: 'Projet actif 3', status: 'active', priority: 3, estimatedCostCents: null, estimatedEffortMinutes: 10, nextAction: '' });
+    expect(owner.dashboard()).toMatchObject({ activeProjectCount: 2, activeProjectLimitStatus: 'within-limit' });
+    owner.createProject({ goalId: null, name: 'Projet actif 4', status: 'active', priority: 4, estimatedCostCents: null, estimatedEffortMinutes: 10, nextAction: '' });
+    expect(owner.dashboard()).toMatchObject({ activeProjectCount: 3, activeProjectLimit: 2, activeProjectLimitStatus: 'watch' });
   });
 });

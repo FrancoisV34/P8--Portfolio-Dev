@@ -388,6 +388,10 @@ capacité à la somme des charges estimées des seuls projets en cours et indiqu
 « compatible », « à surveiller » ou « charge inconnue ». L'indicateur ne
 bloque aucune action et ne recommande aucune allocation.
 
+**Complément réalisé localement, 11 septembre 2026 (D24, option A) :** deux
+projets en cours constituent une limite souple de concentration. Un troisième
+reste possible et l'interface le signale sans le bloquer.
+
 ### L13 — Registre réglementaire manuel vérifié
 
 **But :** fournir des règles datées aux calculs qui en dépendent.

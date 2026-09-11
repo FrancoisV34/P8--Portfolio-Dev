@@ -14,6 +14,7 @@ const projectInput = z.object({ goalId: optional(z.uuid()), name, status: z.enum
 const updateGoalInput = goalInput.extend({ id: z.uuid() }).strict();
 const updateProjectInput = projectInput.extend({ id: z.uuid() }).strict();
 const capacityInput = z.object({ monthlyCapacityMinutes: z.number().int().min(0).max(44_640) }).strict();
+const activeProjectLimit = 2;
 
 export type CreateGoal = z.input<typeof goalInput>;
 export type UpdateGoal = z.input<typeof updateGoalInput>;
@@ -50,7 +51,7 @@ export function goalsRepository(db: FinanceDatabase, ownerId: string) {
       const activeWithEffort = activeProjects.filter((project) => project.estimatedEffortMinutes !== null);
       const activeEffortMinutes = activeWithEffort.reduce((total, project) => total + project.estimatedEffortMinutes!, 0);
       const capacityStatus = capacity === null || activeWithEffort.length !== activeProjects.length ? 'unknown' as const : activeEffortMinutes <= capacity.monthlyCapacityMinutes ? 'compatible' as const : 'watch' as const;
-      return { goals: objectiveRows, projects: projectRows, capacity, activeProjectCount: activeProjects.length, activeEffortProjectCount: activeWithEffort.length, activeEffortMinutes, capacityStatus };
+      return { goals: objectiveRows, projects: projectRows, capacity, activeProjectCount: activeProjects.length, activeProjectLimit, activeProjectLimitStatus: activeProjects.length <= activeProjectLimit ? 'within-limit' as const : 'watch' as const, activeEffortProjectCount: activeWithEffort.length, activeEffortMinutes, capacityStatus };
     },
   };
 }
