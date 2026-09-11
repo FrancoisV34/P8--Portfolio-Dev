@@ -319,6 +319,11 @@ satoshis avec sa valorisation datée. Elle exclut toujours les TH, les
 récompenses projetées et toute valeur implicite du contrat ; elle ne se
 synchronise pas avec le simulateur.
 
+**Complément réalisé localement, 11 septembre 2026 (D18, option A) :** le
+bilan affiche la répartition observée des actifs bruts par liquidités et classe
+d'actif. Les pourcentages sont calculés à partir des seules valeurs datées
+disponibles ; dettes, cibles et recommandations de rééquilibrage sont exclus.
+
 ### L11 — Business et portfolio de SaaS
 
 **But :** séparer activité économique et argent disponible pour le foyer.

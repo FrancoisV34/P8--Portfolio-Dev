@@ -3,6 +3,7 @@ import { and, asc, desc, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { parseCalendarDate } from '../../lib/finance/dates.ts';
 import { projectDebtSchedule } from '../../lib/finance/debt.ts';
+import { observedWealthAllocation } from '../../lib/finance/wealth.ts';
 import { euroCents, sumEuroCents } from '../../lib/finance/units.ts';
 import type { FinanceDatabase } from '../db/connection.ts';
 import { economicEntities, wealthAssetValuations, wealthAssets, wealthDebtBalances, wealthDebts } from '../db/schema.ts';
@@ -77,8 +78,9 @@ export function wealthRepository(db: FinanceDatabase, ownerId: string) {
       projectDebtSchedule(values);
       return db.insert(wealthDebtBalances).values({ id: randomUUID(), ownerId, ...values, outstandingCents: euroCents(values.outstandingCents), monthlyPaymentCents: euroCents(values.monthlyPaymentCents), createdAt: now() }).returning().get();
     },
-    dashboard(asOfDateInput: string) {
+    dashboard(asOfDateInput: string, liquidCents = 0) {
       const asOfDate = parseCalendarDate(asOfDateInput);
+      const normalizedLiquidCents = euroCents(liquidCents);
       const assetRows = db.select().from(wealthAssets).where(eq(wealthAssets.ownerId, ownerId)).orderBy(asc(wealthAssets.name)).all();
       const valuationHistory = db.select().from(wealthAssetValuations).where(eq(wealthAssetValuations.ownerId, ownerId)).orderBy(desc(wealthAssetValuations.valuedOn), desc(wealthAssetValuations.createdAt)).all();
       const valuations = valuationHistory.filter((valuation) => valuation.valuedOn <= asOfDate);
@@ -95,6 +97,7 @@ export function wealthRepository(db: FinanceDatabase, ownerId: string) {
         asOfDate, assets, debts,
         manualAssetCents: sumEuroCents(assets.flatMap(({ valuation }) => valuation ? [euroCents(valuation.valueCents)] : [])),
         debtCents: sumEuroCents(debts.flatMap(({ balance }) => balance ? [euroCents(balance.outstandingCents)] : [])),
+        allocation: observedWealthAllocation(normalizedLiquidCents, assets.flatMap(({ asset, valuation }) => valuation ? [{ assetClass: asset.assetClass, valueCents: valuation.valueCents }] : [])),
       };
     },
   };
