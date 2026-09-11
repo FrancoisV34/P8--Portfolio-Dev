@@ -85,6 +85,13 @@
       "when": 1789114936571,
       "tag": "0011_business-saas-metrics",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1789123419199,
+      "tag": "0012_goals-and-projects",
+      "breakpoints": true
     }
   ]
 }

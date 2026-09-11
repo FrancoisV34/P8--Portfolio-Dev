@@ -375,6 +375,13 @@ Travail :
 
 **Terminé lorsque :** les projets peuvent être priorisés et les raisons d'éligibilité ou de blocage sont visibles, avec les limites de projets actifs du cadrage.
 
+**Premier incrément réalisé localement, 11 septembre 2026 (D22, option A) :**
+les objectifs portent un montant cible, une progression manuelle, une échéance
+facultative et une priorité. Les projets possèdent un statut, une priorité, un
+coût et une charge estimés facultatifs, ainsi qu'une prochaine action ; ils
+peuvent être liés à un objectif du même propriétaire. Aucun lien automatique
+avec le budget, le cash, le patrimoine ou le business n'est déduit.
+
 ### L13 — Registre réglementaire manuel vérifié
 
 **But :** fournir des règles datées aux calculs qui en dépendent.

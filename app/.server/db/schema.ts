@@ -312,6 +312,50 @@ export const wealthDebtBalances = sqliteTable('finance_wealth_debt_balances', {
   check('finance_wealth_debt_balances_date', sql`length(${table.asOfDate}) = 10 and ${table.asOfDate} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(${table.asOfDate}, 1, 4) as integer) between 1 and 9999 and date(${table.asOfDate}, '+0 days') is not null and date(${table.asOfDate}, '+0 days') = ${table.asOfDate}`),
 ]);
 
+// Les objectifs et projets sont des intentions manuelles. Ils n'écrivent
+// aucune transaction et ne déduisent aucun montant disponible ou fiscalité.
+export const goals = sqliteTable('finance_goals', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  name: text('name').notNull(),
+  targetCents: integer('target_cents').notNull(),
+  progressCents: integer('progress_cents').notNull().default(0),
+  targetDate: text('target_date'),
+  priority: integer('priority').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_goals_owner_priority_idx').on(table.ownerId, table.priority),
+  check('finance_goals_name', sql`length(trim(${table.name})) between 1 and 100`),
+  check('finance_goals_target', sql`typeof(${table.targetCents}) = 'integer' and ${table.targetCents} > 0 and ${table.targetCents} <= 9007199254740991`),
+  check('finance_goals_progress', sql`typeof(${table.progressCents}) = 'integer' and ${table.progressCents} between 0 and 9007199254740991`),
+  check('finance_goals_priority', sql`${table.priority} between 1 and 999`),
+  check('finance_goals_target_date', sql`${table.targetDate} is null or (length(${table.targetDate}) = 10 and ${table.targetDate} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(${table.targetDate}, 1, 4) as integer) between 1 and 9999 and date(${table.targetDate}, '+0 days') is not null and date(${table.targetDate}, '+0 days') = ${table.targetDate})`),
+]);
+
+export const projects = sqliteTable('finance_projects', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  goalId: text('goal_id').references(() => goals.id, { onDelete: 'restrict' }),
+  name: text('name').notNull(),
+  status: text('status', { enum: ['backlog', 'active', 'paused', 'done'] }).notNull().default('backlog'),
+  priority: integer('priority').notNull(),
+  estimatedCostCents: integer('estimated_cost_cents'),
+  estimatedEffortMinutes: integer('estimated_effort_minutes'),
+  nextAction: text('next_action').notNull().default(''),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_projects_owner_status_priority_idx').on(table.ownerId, table.status, table.priority),
+  index('finance_projects_goal_idx').on(table.goalId),
+  check('finance_projects_name', sql`length(trim(${table.name})) between 1 and 100`),
+  check('finance_projects_status', sql`${table.status} in ('backlog', 'active', 'paused', 'done')`),
+  check('finance_projects_priority', sql`${table.priority} between 1 and 999`),
+  check('finance_projects_cost', sql`${table.estimatedCostCents} is null or (typeof(${table.estimatedCostCents}) = 'integer' and ${table.estimatedCostCents} between 0 and 9007199254740991)`),
+  check('finance_projects_effort', sql`${table.estimatedEffortMinutes} is null or (typeof(${table.estimatedEffortMinutes}) = 'integer' and ${table.estimatedEffortMinutes} between 0 and 44640)`),
+  check('finance_projects_next_action', sql`length(trim(${table.nextAction})) <= 240`),
+]);
+
 // Le pilotage business distingue l'activité économique de l'argent du foyer.
 // Les métriques mensuelles observées ne créent jamais de transaction et aucun
 // calcul fiscal ou montant distribuable n'est déduit automatiquement.

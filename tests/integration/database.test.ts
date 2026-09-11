@@ -10,6 +10,7 @@ import { businessRepository } from '../../app/.server/repositories/business';
 import { budgetRepository } from '../../app/.server/repositories/budget';
 import { planningRepository } from '../../app/.server/repositories/planning';
 import { gominingRepository } from '../../app/.server/repositories/gomining';
+import { goalsRepository } from '../../app/.server/repositories/goals';
 import { wealthRepository } from '../../app/.server/repositories/wealth';
 
 let directory: string;
@@ -319,5 +320,20 @@ describe('persistance SQLite privée', () => {
       concentration: [expect.objectContaining({ activity: expect.objectContaining({ id: first.id }), shareBasisPoints: 10_000 })],
       mrrHistory: expect.arrayContaining([expect.objectContaining({ period: '2026-10', mrrCents: 20_000, mrrActivityCount: 1, activeActivityCount: 2, complete: false })]),
     });
+  });
+
+  it('isole les objectifs et projets manuels du foyer et des autres identités', () => {
+    const owner = goalsRepository(connection.db, 'owner-test');
+    const other = goalsRepository(connection.db, 'other-test');
+    const goal = owner.createGoal({ name: 'Objectif synthétique', targetCents: 100_000, progressCents: 25_000, targetDate: '2027-01-31', priority: 2 });
+    const project = owner.createProject({ goalId: goal.id, name: 'Projet synthétique', status: 'active', priority: 1, estimatedCostCents: 12_000, estimatedEffortMinutes: 180, nextAction: 'Écrire le cadrage' });
+    expect(owner.dashboard()).toMatchObject({ goals: [expect.objectContaining({ id: goal.id, progressCents: 25_000 })], projects: [expect.objectContaining({ id: project.id, goalId: goal.id, status: 'active' })] });
+    expect(other.dashboard()).toEqual({ goals: [], projects: [] });
+    expect(() => other.updateGoal({ id: goal.id, name: 'Interdit', targetCents: 1, progressCents: 0, targetDate: null, priority: 1 })).toThrow('Objectif introuvable');
+    expect(() => other.createProject({ goalId: goal.id, name: 'Interdit', status: 'backlog', priority: 1, estimatedCostCents: null, estimatedEffortMinutes: null, nextAction: '' })).toThrow('Objectif introuvable');
+    owner.updateProject({ id: project.id, goalId: null, name: 'Projet corrigé', status: 'done', priority: 3, estimatedCostCents: null, estimatedEffortMinutes: null, nextAction: '' });
+    expect(owner.dashboard().projects).toEqual([expect.objectContaining({ id: project.id, goalId: null, status: 'done', estimatedCostCents: null })]);
+    const rawProject = connection.sqlite.prepare("insert into finance_projects (id, owner_id, goal_id, name, status, priority, next_action, created_at, updated_at) values ('project-cross-owner', 'other-test', ?, 'Interdit', 'backlog', 1, '', '2026-09-11T00:00:00.000Z', '2026-09-11T00:00:00.000Z')");
+    expect(() => rawProject.run(goal.id)).toThrow('invalid project goal');
   });
 });

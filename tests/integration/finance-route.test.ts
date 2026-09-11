@@ -143,4 +143,19 @@ describe('route finance privée', () => {
       transactions: [],
     });
   });
+
+  it('enregistre les objectifs et projets par POST sans créer de transaction', async () => {
+    const goal = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createGoal', name: 'Objectif route synthétique', targetAmount: '1 000,00', progressAmount: '250,00', targetDate: '2027-01-31', priority: '2' })) goal.set(key, value);
+    await expect(action({ request: request('POST', goal) })).resolves.toMatchObject({ status: 302 });
+    const loaded = await loader({ request: request(), params: {} });
+    const createdGoal = loaded.goals.goals.find((item) => item.name === 'Objectif route synthétique');
+    if (!createdGoal) throw new Error('Objectif de test absent.');
+    const project = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createProject', goalId: createdGoal.id, name: 'Projet route synthétique', status: 'active', priority: '1', estimatedCostAmount: '50,00', estimatedEffortMinutes: '120', nextAction: 'Préparer le plan' })) project.set(key, value);
+    await expect(action({ request: request('POST', project) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/goals?period=2026-09`, { headers: { cookie } }), params: { '*': 'goals' } })).resolves.toMatchObject({
+      section: 'goals', goals: { goals: [expect.objectContaining({ id: createdGoal.id, targetCents: 100_000, progressCents: 25_000 })], projects: [expect.objectContaining({ goalId: createdGoal.id, status: 'active', estimatedCostCents: 5_000, estimatedEffortMinutes: 120 })] }, transactions: [],
+    });
+  });
 });

@@ -58,6 +58,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D19 | Validé : L11 | Premier suivi du business | Cash business observé ; KPI SaaS d'abord ; approfondir L10 | Distinguer strictement activité économique, cash d'entité et foyer |
 | D20 | Validé : L11 | Premier incrément de métriques SaaS | MRR/ARR et métriques observées ; objectifs/projets d'abord ; stabiliser après tests | Qualifier le revenu récurrent sans confondre CA encaissé et projection |
 | D21 | Validé : L11 | Stabilité et concentration MRR | Stabilité/concentration observées ; objectifs/projets d'abord ; exploitation locale | Montrer la qualité de l'historique sans transformer une absence en zéro |
+| D22 | Validé : L12 | Premier suivi objectifs/projets | Objectifs et backlog manuels ; provisions business ; exploitation locale | Organiser les priorités sans automatiser l'allocation financière |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -145,6 +146,21 @@ suppose aucun MRR nul.
 La variation sur trois mois est présentée seulement lorsque les quatre mois
 calendaires consécutifs concernés sont complets. Elle reste une comparaison
 observée : elle n'est ni un objectif, ni une prédiction, ni une recommandation.
+
+## D22 — Premier suivi des objectifs et projets
+
+**État : validé le 11 septembre 2026 — option A, objectifs et backlog
+manuels.**
+
+Un objectif contient un montant cible, une progression observée saisie, une
+échéance facultative et une priorité. Un projet peut être relié à un objectif
+du même propriétaire ; il porte un statut, une priorité, un coût estimé, une
+charge estimée et une prochaine action, tous explicitement saisis.
+
+Ces intentions n'écrivent aucune transaction, n'allouent pas de cash et ne
+transforment pas les données budget, patrimoine ou business en recommandation.
+Les critères d'éligibilité et les limites de projets actifs restent un
+incrément ultérieur.
 
 ## D11 — Réserve de sécurité et engagements mensuels
 
@@ -284,5 +300,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-11 | D19 — Premier suivi du business | « A » | Activités, CA et charges mensuels, cash conservé et flux distribué par entité business ; aucune écriture foyer ou fiscalité automatique |
 | 2026-09-11 | D20 — Métriques SaaS initiales | « A » | MRR observé, ARR dérivé, clients actifs et temps de maintenance facultatifs ; CA encaissé et foyer restent isolés |
 | 2026-09-11 | D21 — Stabilité et concentration MRR | « A » | Historique de six mois, concentration du MRR renseigné et variation seulement avec quatre périodes complètes |
+| 2026-09-11 | D22 — Objectifs et projets | « A » | Objectifs manuels et backlog de projets liés facultativement, sans écriture ni allocation financière automatique |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.
