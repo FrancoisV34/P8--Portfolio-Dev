@@ -295,4 +295,29 @@ describe('persistance SQLite privée', () => {
     expect(() => rawCash.run(personalEntity.id)).toThrow('invalid business cash entity');
     expect(otherBusinessEntity.id).toBeTruthy();
   });
+
+  it('montre la concentration et la variation MRR sans inventer les périodes incomplètes', () => {
+    const accounts = accountsRepository(connection.db, 'owner-test');
+    const entity = accounts.createEntity({ name: 'Société MRR de test', type: 'business' });
+    const business = businessRepository(connection.db, 'owner-test');
+    const first = business.createActivity({ entityId: entity.id, name: 'Application A' });
+    const second = business.createActivity({ entityId: entity.id, name: 'Application B' });
+    const record = (activityId: string, period: string, mrrCents: number | null) => business.setMetrics({ activityId, period, revenueCents: 0, operatingExpenseCents: 0, mrrCents });
+    for (const [period, firstMrr, secondMrr] of [['2026-07', 10_000, 10_000], ['2026-08', 12_000, 8_000], ['2026-09', 15_000, 5_000], ['2026-10', 20_000, 0]] as const) {
+      record(first.id, period, firstMrr);
+      record(second.id, period, secondMrr);
+    }
+    expect(business.dashboard('2026-10')).toMatchObject({
+      mrrCents: 20_000, mrrActivityCount: 2, activeActivityCount: 2,
+      concentration: [expect.objectContaining({ activity: expect.objectContaining({ id: first.id }), mrrCents: 20_000, shareBasisPoints: 10_000 }), expect.objectContaining({ activity: expect.objectContaining({ id: second.id }), mrrCents: 0, shareBasisPoints: 0 })],
+      stability: { fromPeriod: '2026-07', toPeriod: '2026-10', changeCents: 0, changeBasisPoints: 0 },
+      mrrHistory: expect.arrayContaining([expect.objectContaining({ period: '2026-07', mrrCents: 20_000, mrrActivityCount: 2, complete: true }), expect.objectContaining({ period: '2026-10', mrrCents: 20_000, mrrActivityCount: 2, complete: true })]),
+    });
+    record(second.id, '2026-10', null);
+    expect(business.dashboard('2026-10')).toMatchObject({
+      mrrCents: 20_000, mrrActivityCount: 1, stability: null,
+      concentration: [expect.objectContaining({ activity: expect.objectContaining({ id: first.id }), shareBasisPoints: 10_000 })],
+      mrrHistory: expect.arrayContaining([expect.objectContaining({ period: '2026-10', mrrCents: 20_000, mrrActivityCount: 1, activeActivityCount: 2, complete: false })]),
+    });
+  });
 });

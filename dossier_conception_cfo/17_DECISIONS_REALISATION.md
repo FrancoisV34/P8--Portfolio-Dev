@@ -57,6 +57,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D18 | Validé : L10 | Allocation patrimoine | Allocation observée ; allocation observée + cible ; différer | Restitution de la répartition sans amorcer de recommandation CFO |
 | D19 | Validé : L11 | Premier suivi du business | Cash business observé ; KPI SaaS d'abord ; approfondir L10 | Distinguer strictement activité économique, cash d'entité et foyer |
 | D20 | Validé : L11 | Premier incrément de métriques SaaS | MRR/ARR et métriques observées ; objectifs/projets d'abord ; stabiliser après tests | Qualifier le revenu récurrent sans confondre CA encaissé et projection |
+| D21 | Validé : L11 | Stabilité et concentration MRR | Stabilité/concentration observées ; objectifs/projets d'abord ; exploitation locale | Montrer la qualité de l'historique sans transformer une absence en zéro |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -129,8 +130,21 @@ reste explicitement inconnue.
 L'ARR est une restitution dérivée, égale au MRR observé multiplié par douze.
 Il ne constitue ni une prévision, ni du CA encaissé annualisé. Aucun montant
 distribuable, transaction foyer, provision ou fiscalité n'est déduit de ces
-métriques. La concentration, la stabilité et les autres KPI SaaS restent des
-incréments ultérieurs de L11.
+métriques. Les autres KPI SaaS restent des incréments ultérieurs de L11.
+
+## D21 — Stabilité et concentration du MRR observé
+
+**État : validé le 11 septembre 2026 — option A, indicateurs observés.**
+
+Le tableau Business affiche les six derniers mois calendaires, avec le montant
+de MRR effectivement renseigné et le nombre d'activités actives couvertes. Une
+part de concentration exprime uniquement la part de chaque activité dans ce
+MRR renseigné. Si la couverture est incomplète, l'interface le précise et ne
+suppose aucun MRR nul.
+
+La variation sur trois mois est présentée seulement lorsque les quatre mois
+calendaires consécutifs concernés sont complets. Elle reste une comparaison
+observée : elle n'est ni un objectif, ni une prédiction, ni une recommandation.
 
 ## D11 — Réserve de sécurité et engagements mensuels
 
@@ -269,5 +283,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-11 | D18 — Allocation patrimoine | « A » | Répartition observée des actifs bruts, sans cible ni recommandation |
 | 2026-09-11 | D19 — Premier suivi du business | « A » | Activités, CA et charges mensuels, cash conservé et flux distribué par entité business ; aucune écriture foyer ou fiscalité automatique |
 | 2026-09-11 | D20 — Métriques SaaS initiales | « A » | MRR observé, ARR dérivé, clients actifs et temps de maintenance facultatifs ; CA encaissé et foyer restent isolés |
+| 2026-09-11 | D21 — Stabilité et concentration MRR | « A » | Historique de six mois, concentration du MRR renseigné et variation seulement avec quatre périodes complètes |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

@@ -353,7 +353,13 @@ observation mensuelle peut aussi porter un MRR, un nombre de clients actifs et
 le temps de maintenance en minutes. Ces trois mesures restent facultatives :
 une donnée inconnue n'est jamais remplacée par zéro. L'ARR est uniquement
 dérivé du MRR observé (`MRR × 12`) et n'annualise jamais le CA encaissé.
-Provisions, concentration du revenu et stabilité restent différées.
+
+**Complément réalisé localement, 11 septembre 2026 (D21, option A) :** le
+pilotage restitue la concentration du MRR renseigné entre les activités actives
+et les six derniers mois de saisie. Une variation sur trois mois n'est montrée
+que si les quatre mois calendaires nécessaires sont complets pour toutes les
+activités actives. Les périodes partielles restent identifiées comme telles.
+Provisions et autres KPI SaaS restent différés.
 
 ### L12 — Objectifs et projets
 

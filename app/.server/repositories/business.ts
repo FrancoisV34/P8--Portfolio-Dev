@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import Decimal from 'decimal.js';
+import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { parseMonth } from '../../lib/finance/dates.ts';
 import { euroCents, sumEuroCents } from '../../lib/finance/units.ts';
@@ -16,12 +17,27 @@ const metricsInput = z.object({
   mrrCents: optional(mrrCents), activeCustomerCount: optional(z.number().int().min(0).max(1_000_000_000)), maintenanceMinutes: optional(z.number().int().min(0).max(44_640)),
 }).strict();
 const cashInput = z.object({ entityId: z.uuid(), period: z.string(), retainedCashCents: cents, distributedCents: cents }).strict();
+const decimal = Decimal.clone({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
 
 export type CreateBusinessActivity = z.input<typeof activityInput>;
 export type SetBusinessMetrics = z.input<typeof metricsInput>;
 export type SetBusinessCash = z.input<typeof cashInput>;
 
 function now() { return new Date().toISOString(); }
+
+function trailingMonths(period: string, count: number) {
+  const [year, month] = parseMonth(period).split('-').map(Number);
+  const last = (year - 1) * 12 + month - 1;
+  const first = Math.max(0, last - count + 1);
+  return Array.from({ length: last - first + 1 }, (_, index) => {
+    const value = first + index;
+    return parseMonth(`${Math.floor(value / 12) + 1}-${String(value % 12 + 1).padStart(2, '0')}`);
+  });
+}
+
+function basisPoints(numerator: number, denominator: number) {
+  return new decimal(numerator).mul(10_000).div(denominator).toDecimalPlaces(0, decimal.ROUND_HALF_UP).toNumber();
+}
 
 /** Données observées business, isolées du journal et du foyer. */
 export function businessRepository(db: FinanceDatabase, ownerId: string) {
@@ -77,16 +93,36 @@ export function businessRepository(db: FinanceDatabase, ownerId: string) {
       const period = parseMonth(periodInput);
       const activities = db.select().from(businessActivities).where(eq(businessActivities.ownerId, ownerId)).orderBy(asc(businessActivities.name)).all();
       const metrics = db.select().from(businessMonthlyMetrics).where(and(eq(businessMonthlyMetrics.ownerId, ownerId), eq(businessMonthlyMetrics.period, period))).all();
+      const historyPeriods = trailingMonths(period, 6);
+      const historyMetrics = db.select().from(businessMonthlyMetrics).where(and(
+        eq(businessMonthlyMetrics.ownerId, ownerId), gte(businessMonthlyMetrics.period, historyPeriods[0]!), lte(businessMonthlyMetrics.period, period),
+      )).all();
       const metricByActivity = new Map(metrics.map((metric) => [metric.activityId, metric]));
       const cashHistory = db.select().from(businessEntityMonthlyCash).where(eq(businessEntityMonthlyCash.ownerId, ownerId)).orderBy(desc(businessEntityMonthlyCash.period), desc(businessEntityMonthlyCash.createdAt)).all();
       const latestCash = new Map<string, typeof cashHistory[number]>();
       for (const cash of cashHistory) if (cash.period <= period && !latestCash.has(cash.entityId)) latestCash.set(cash.entityId, cash);
       const currentCash = cashHistory.filter((cash) => cash.period === period);
       const activityRows = activities.map((activity) => ({ activity, metric: metricByActivity.get(activity.id) ?? null }));
-      const mrrMetrics = activityRows.flatMap(({ metric }) => metric?.mrrCents === null || metric === null ? [] : [euroCents(metric.mrrCents)]);
-      const activeCustomerMetrics = activityRows.flatMap(({ metric }) => metric?.activeCustomerCount === null || metric === null ? [] : [metric.activeCustomerCount]);
-      const maintenanceMetrics = activityRows.flatMap(({ metric }) => metric?.maintenanceMinutes === null || metric === null ? [] : [metric.maintenanceMinutes]);
+      const activeActivityIds = new Set(activities.filter((activity) => activity.isActive).map((activity) => activity.id));
+      const activeActivityCount = activeActivityIds.size;
+      const mrrMetrics = activityRows.flatMap(({ activity, metric }) => !activity.isActive || metric?.mrrCents === null || metric === null ? [] : [euroCents(metric.mrrCents)]);
+      const activeCustomerMetrics = activityRows.flatMap(({ activity, metric }) => !activity.isActive || metric?.activeCustomerCount === null || metric === null ? [] : [metric.activeCustomerCount]);
+      const maintenanceMetrics = activityRows.flatMap(({ activity, metric }) => !activity.isActive || metric?.maintenanceMinutes === null || metric === null ? [] : [metric.maintenanceMinutes]);
       const mrrCents = sumEuroCents(mrrMetrics);
+      const mrrHistory = historyPeriods.map((historyPeriod) => {
+        const known = historyMetrics.filter((metric) => metric.period === historyPeriod && activeActivityIds.has(metric.activityId) && metric.mrrCents !== null);
+        return {
+          period: historyPeriod, mrrCents: sumEuroCents(known.map((metric) => euroCents(metric.mrrCents!))),
+          mrrActivityCount: known.length, activeActivityCount, complete: activeActivityCount > 0 && known.length === activeActivityCount,
+        };
+      });
+      const concentration = activityRows.flatMap(({ activity, metric }) => !activity.isActive || metric?.mrrCents === null || metric === null ? [] : [{
+        activity, mrrCents: euroCents(metric.mrrCents), shareBasisPoints: mrrCents === 0 ? null : basisPoints(metric.mrrCents, mrrCents),
+      }]);
+      const stabilityPeriods = mrrHistory.slice(-4);
+      const stability = stabilityPeriods.length === 4 && stabilityPeriods.every((item) => item.complete)
+        ? (() => { const from = stabilityPeriods[0]!; const to = stabilityPeriods[3]!; const changeCents = euroCents(to.mrrCents - from.mrrCents); return { fromPeriod: from.period, toPeriod: to.period, changeCents, changeBasisPoints: from.mrrCents === 0 ? null : basisPoints(changeCents, from.mrrCents) }; })()
+        : null;
       return {
         period,
         activities: activityRows,
@@ -96,6 +132,10 @@ export function businessRepository(db: FinanceDatabase, ownerId: string) {
         mrrCents,
         annualRecurringRevenueCents: euroCents(mrrCents * 12),
         mrrActivityCount: mrrMetrics.length,
+        activeActivityCount,
+        mrrHistory,
+        concentration,
+        stability,
         activeCustomerCount: activeCustomerMetrics.reduce((total, count) => total + count, 0),
         activeCustomerActivityCount: activeCustomerMetrics.length,
         maintenanceMinutes: maintenanceMetrics.reduce((total, minutes) => total + minutes, 0),
