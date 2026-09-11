@@ -92,6 +92,13 @@
       "when": 1789123419199,
       "tag": "0012_goals-and-projects",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1789124620785,
+      "tag": "0013_project-capacity",
+      "breakpoints": true
     }
   ]
 }

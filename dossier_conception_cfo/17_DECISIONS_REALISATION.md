@@ -59,6 +59,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D20 | Validé : L11 | Premier incrément de métriques SaaS | MRR/ARR et métriques observées ; objectifs/projets d'abord ; stabiliser après tests | Qualifier le revenu récurrent sans confondre CA encaissé et projection |
 | D21 | Validé : L11 | Stabilité et concentration MRR | Stabilité/concentration observées ; objectifs/projets d'abord ; exploitation locale | Montrer la qualité de l'historique sans transformer une absence en zéro |
 | D22 | Validé : L12 | Premier suivi objectifs/projets | Objectifs et backlog manuels ; provisions business ; exploitation locale | Organiser les priorités sans automatiser l'allocation financière |
+| D23 | Validé : L12 | Capacité des projets | Capacité manuelle informative ; limite bloquante ; provisions business | Rendre la charge visible sans imposer une règle de planification |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -161,6 +162,19 @@ Ces intentions n'écrivent aucune transaction, n'allouent pas de cash et ne
 transforment pas les données budget, patrimoine ou business en recommandation.
 Les critères d'éligibilité et les limites de projets actifs restent un
 incrément ultérieur.
+
+## D23 — Capacité manuelle des projets
+
+**État : validé le 11 septembre 2026 — option A, capacité informative.**
+
+Une capacité mensuelle est saisie en minutes. Elle est comparée à la somme des
+charges estimées des projets dont le statut est « en cours ». Le résultat est
+« compatible » lorsque toutes les charges sont renseignées et ne dépassent pas
+la capacité, « à surveiller » lorsqu'elles la dépassent, sinon « charge
+inconnue ».
+
+Cet indicateur ne bloque aucun projet, ne modifie pas les priorités et ne crée
+aucune recommandation ou allocation financière.
 
 ## D11 — Réserve de sécurité et engagements mensuels
 
@@ -301,5 +315,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-11 | D20 — Métriques SaaS initiales | « A » | MRR observé, ARR dérivé, clients actifs et temps de maintenance facultatifs ; CA encaissé et foyer restent isolés |
 | 2026-09-11 | D21 — Stabilité et concentration MRR | « A » | Historique de six mois, concentration du MRR renseigné et variation seulement avec quatre périodes complètes |
 | 2026-09-11 | D22 — Objectifs et projets | « A » | Objectifs manuels et backlog de projets liés facultativement, sans écriture ni allocation financière automatique |
+| 2026-09-11 | D23 — Capacité des projets | « A » | Capacité mensuelle et comparaison informative avec les charges des projets en cours |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

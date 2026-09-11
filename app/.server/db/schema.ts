@@ -356,6 +356,16 @@ export const projects = sqliteTable('finance_projects', {
   check('finance_projects_next_action', sql`length(trim(${table.nextAction})) <= 240`),
 ]);
 
+export const projectCapacity = sqliteTable('finance_project_capacity', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull().unique(),
+  monthlyCapacityMinutes: integer('monthly_capacity_minutes').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  check('finance_project_capacity_minutes', sql`typeof(${table.monthlyCapacityMinutes}) = 'integer' and ${table.monthlyCapacityMinutes} between 0 and 44640`),
+]);
+
 // Le pilotage business distingue l'activité économique de l'argent du foyer.
 // Les métriques mensuelles observées ne créent jamais de transaction et aucun
 // calcul fiscal ou montant distribuable n'est déduit automatiquement.

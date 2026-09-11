@@ -382,6 +382,12 @@ coût et une charge estimés facultatifs, ainsi qu'une prochaine action ; ils
 peuvent être liés à un objectif du même propriétaire. Aucun lien automatique
 avec le budget, le cash, le patrimoine ou le business n'est déduit.
 
+**Complément réalisé localement, 11 septembre 2026 (D23, option A) :** une
+capacité mensuelle en minutes est saisie séparément. L'écran compare cette
+capacité à la somme des charges estimées des seuls projets en cours et indique
+« compatible », « à surveiller » ou « charge inconnue ». L'indicateur ne
+bloque aucune action et ne recommande aucune allocation.
+
 ### L13 — Registre réglementaire manuel vérifié
 
 **But :** fournir des règles datées aux calculs qui en dépendent.

@@ -154,8 +154,12 @@ describe('route finance privée', () => {
     const project = new FormData();
     for (const [key, value] of Object.entries({ intent: 'createProject', goalId: createdGoal.id, name: 'Projet route synthétique', status: 'active', priority: '1', estimatedCostAmount: '50,00', estimatedEffortMinutes: '120', nextAction: 'Préparer le plan' })) project.set(key, value);
     await expect(action({ request: request('POST', project) })).resolves.toMatchObject({ status: 302 });
+    const capacity = new FormData();
+    capacity.set('intent', 'setProjectCapacity');
+    capacity.set('monthlyCapacityMinutes', '90');
+    await expect(action({ request: request('POST', capacity) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: new Request(`${origin}/finance/goals?period=2026-09`, { headers: { cookie } }), params: { '*': 'goals' } })).resolves.toMatchObject({
-      section: 'goals', goals: { goals: [expect.objectContaining({ id: createdGoal.id, targetCents: 100_000, progressCents: 25_000 })], projects: [expect.objectContaining({ goalId: createdGoal.id, status: 'active', estimatedCostCents: 5_000, estimatedEffortMinutes: 120 })] }, transactions: [],
+      section: 'goals', goals: { goals: [expect.objectContaining({ id: createdGoal.id, targetCents: 100_000, progressCents: 25_000 })], projects: [expect.objectContaining({ goalId: createdGoal.id, status: 'active', estimatedCostCents: 5_000, estimatedEffortMinutes: 120 })], capacity: expect.objectContaining({ monthlyCapacityMinutes: 90 }), activeEffortMinutes: 120, capacityStatus: 'watch' }, transactions: [],
     });
   });
 });
