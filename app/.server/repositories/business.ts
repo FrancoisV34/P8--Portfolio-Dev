@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { parseMonth } from '../../lib/finance/dates.ts';
 import { euroCents, sumEuroCents } from '../../lib/finance/units.ts';
 import type { FinanceDatabase } from '../db/connection.ts';
-import { businessActivities, businessEntityMonthlyCash, businessMonthlyMetrics, economicEntities } from '../db/schema.ts';
+import { businessActivities, businessEntityMonthlyCash, businessMonthlyMetrics, businessMonthlyProvisions, economicEntities } from '../db/schema.ts';
 
 const name = z.string().trim().min(1).max(100);
 const cents = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
@@ -17,11 +17,15 @@ const metricsInput = z.object({
   mrrCents: optional(mrrCents), activeCustomerCount: optional(z.number().int().min(0).max(1_000_000_000)), maintenanceMinutes: optional(z.number().int().min(0).max(44_640)),
 }).strict();
 const cashInput = z.object({ entityId: z.uuid(), period: z.string(), retainedCashCents: cents, distributedCents: cents }).strict();
+const provisionInput = z.object({ entityId: z.uuid(), period: z.string(), name, amountCents: cents, note: z.string().trim().max(240) }).strict();
+const updateProvisionInput = provisionInput.extend({ id: z.uuid() }).strict();
 const decimal = Decimal.clone({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
 
 export type CreateBusinessActivity = z.input<typeof activityInput>;
 export type SetBusinessMetrics = z.input<typeof metricsInput>;
 export type SetBusinessCash = z.input<typeof cashInput>;
+export type CreateBusinessProvision = z.input<typeof provisionInput>;
+export type UpdateBusinessProvision = z.input<typeof updateProvisionInput>;
 
 function now() { return new Date().toISOString(); }
 
@@ -89,10 +93,22 @@ export function businessRepository(db: FinanceDatabase, ownerId: string) {
         ? db.update(businessEntityMonthlyCash).set(changes).where(eq(businessEntityMonthlyCash.id, existing.id)).returning().get()
         : db.insert(businessEntityMonthlyCash).values({ id: randomUUID(), ownerId, entityId: values.entityId, period, ...changes, createdAt: timestamp }).returning().get();
     },
+    createProvision(input: CreateBusinessProvision) {
+      const values = provisionInput.parse(input); const period = parseMonth(values.period);
+      if (!ownedBusinessEntity(values.entityId)) throw new Error('Entité business introuvable.');
+      const timestamp = now(); return db.insert(businessMonthlyProvisions).values({ id: randomUUID(), ownerId, ...values, period, amountCents: euroCents(values.amountCents), createdAt: timestamp, updatedAt: timestamp }).returning().get();
+    },
+    updateProvision(input: UpdateBusinessProvision) {
+      const { id, ...values } = updateProvisionInput.parse(input); const period = parseMonth(values.period);
+      if (!db.select().from(businessMonthlyProvisions).where(and(eq(businessMonthlyProvisions.id, id), eq(businessMonthlyProvisions.ownerId, ownerId))).get()) throw new Error('Provision introuvable.');
+      if (!ownedBusinessEntity(values.entityId)) throw new Error('Entité business introuvable.');
+      return db.update(businessMonthlyProvisions).set({ ...values, period, amountCents: euroCents(values.amountCents), updatedAt: now() }).where(and(eq(businessMonthlyProvisions.id, id), eq(businessMonthlyProvisions.ownerId, ownerId))).returning().get();
+    },
     dashboard(periodInput: string) {
       const period = parseMonth(periodInput);
       const activities = db.select().from(businessActivities).where(eq(businessActivities.ownerId, ownerId)).orderBy(asc(businessActivities.name)).all();
       const metrics = db.select().from(businessMonthlyMetrics).where(and(eq(businessMonthlyMetrics.ownerId, ownerId), eq(businessMonthlyMetrics.period, period))).all();
+      const provisions = db.select().from(businessMonthlyProvisions).where(and(eq(businessMonthlyProvisions.ownerId, ownerId), eq(businessMonthlyProvisions.period, period))).orderBy(asc(businessMonthlyProvisions.name)).all();
       const historyPeriods = trailingMonths(period, 6);
       const historyMetrics = db.select().from(businessMonthlyMetrics).where(and(
         eq(businessMonthlyMetrics.ownerId, ownerId), gte(businessMonthlyMetrics.period, historyPeriods[0]!), lte(businessMonthlyMetrics.period, period),
@@ -142,6 +158,8 @@ export function businessRepository(db: FinanceDatabase, ownerId: string) {
         maintenanceActivityCount: maintenanceMetrics.length,
         retainedCashCents: sumEuroCents([...latestCash.values()].map((cash) => euroCents(cash.retainedCashCents))),
         distributedCents: sumEuroCents(currentCash.map((cash) => euroCents(cash.distributedCents))),
+        provisions,
+        provisionCents: sumEuroCents(provisions.map((provision) => euroCents(provision.amountCents))),
       };
     },
   };

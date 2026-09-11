@@ -366,6 +366,25 @@ export const projectCapacity = sqliteTable('finance_project_capacity', {
   check('finance_project_capacity_minutes', sql`typeof(${table.monthlyCapacityMinutes}) = 'integer' and ${table.monthlyCapacityMinutes} between 0 and 44640`),
 ]);
 
+export const businessMonthlyProvisions = sqliteTable('finance_business_monthly_provisions', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  entityId: text('entity_id').notNull().references(() => economicEntities.id, { onDelete: 'restrict' }),
+  period: text('period').notNull(),
+  name: text('name').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  note: text('note').notNull().default(''),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  index('finance_business_provisions_owner_period_idx').on(table.ownerId, table.period),
+  index('finance_business_provisions_entity_period_idx').on(table.entityId, table.period),
+  check('finance_business_provisions_name', sql`length(trim(${table.name})) between 1 and 100`),
+  check('finance_business_provisions_amount', sql`typeof(${table.amountCents}) = 'integer' and ${table.amountCents} >= 0 and ${table.amountCents} <= 9007199254740991`),
+  check('finance_business_provisions_note', sql`length(trim(${table.note})) <= 240`),
+  check('finance_business_provisions_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
+]);
+
 // Le pilotage business distingue l'activité économique de l'argent du foyer.
 // Les métriques mensuelles observées ne créent jamais de transaction et aucun
 // calcul fiscal ou montant distribuable n'est déduit automatiquement.

@@ -137,9 +137,12 @@ describe('route finance privée', () => {
     const cash = new FormData();
     for (const [key, value] of Object.entries({ intent: 'setBusinessCash', entityId: businessEntity.id, period: '2026-09', retainedCashAmount: '300,00', distributedAmount: '20,00' })) cash.set(key, value);
     await expect(action({ request: request('POST', cash) })).resolves.toMatchObject({ status: 302 });
+    const provision = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createBusinessProvision', entityId: businessEntity.id, period: '2026-09', name: 'Provision route synthétique', amount: '30,00', note: '' })) provision.set(key, value);
+    await expect(action({ request: request('POST', provision) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: new Request(`${origin}/finance/business?period=2026-09`, { headers: { cookie } }), params: { '*': 'business' } })).resolves.toMatchObject({
       section: 'business',
-      business: { revenueCents: 12_000, operatingExpenseCents: 4_000, mrrCents: 9_000, annualRecurringRevenueCents: 108_000, activeCustomerCount: 3, maintenanceMinutes: 75, retainedCashCents: 30_000, distributedCents: 2_000, activities: [expect.objectContaining({ activity: expect.objectContaining({ id: businessActivity.id }), metric: expect.objectContaining({ revenueCents: 12_000, mrrCents: 9_000, activeCustomerCount: 3, maintenanceMinutes: 75 }) })] },
+      business: { revenueCents: 12_000, operatingExpenseCents: 4_000, mrrCents: 9_000, annualRecurringRevenueCents: 108_000, activeCustomerCount: 3, maintenanceMinutes: 75, retainedCashCents: 30_000, distributedCents: 2_000, provisionCents: 3_000, provisions: [expect.objectContaining({ entityId: businessEntity.id, name: 'Provision route synthétique' })], activities: [expect.objectContaining({ activity: expect.objectContaining({ id: businessActivity.id }), metric: expect.objectContaining({ revenueCents: 12_000, mrrCents: 9_000, activeCustomerCount: 3, maintenanceMinutes: 75 }) })] },
       transactions: [],
     });
   });

@@ -361,6 +361,11 @@ que si les quatre mois calendaires nécessaires sont complets pour toutes les
 activités actives. Les périodes partielles restent identifiées comme telles.
 Provisions et autres KPI SaaS restent différés.
 
+**Complément réalisé localement, 11 septembre 2026 (D25, option A) :** des
+provisions manuelles peuvent être déclarées par entité business et période,
+avec libellé et note. Elles restent distinctes du cash, du foyer et de toute
+fiscalité calculée.
+
 ### L12 — Objectifs et projets
 
 **But :** organiser les priorités et les décisions d'investissement.
