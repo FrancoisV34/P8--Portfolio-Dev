@@ -62,6 +62,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D23 | Validé : L12 | Capacité des projets | Capacité manuelle informative ; limite bloquante ; provisions business | Rendre la charge visible sans imposer une règle de planification |
 | D24 | Validé : L12 | Limite des projets en cours | Limite souple de deux ; limite stricte ; aucune limite | Préserver la concentration sans retirer le contrôle manuel |
 | D25 | Validé : L11 | Provisions business | Provisions manuelles ; registre réglementaire ; automatisation fiscale | Rendre les réserves explicites sans inventer un calcul fiscal |
+| D26 | Validé : L13 | Résolution des règles datées | Une seule règle applicable ; choisir une règle la plus récente ; valeur de repli | Rendre les absences et chevauchements visibles avant tout calcul |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -338,5 +339,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-11 | D24 — Limite des projets actifs | « A » | Limite souple de deux projets en cours, avec signal sans blocage |
 | 2026-09-11 | D25 — Provisions business | « A » | Provisions déclaratives par entité et période, sans fiscalité automatique |
 | 2026-09-12 | L06 — Sauvegarde/restauration locale | « A » | Copie SQLite cohérente vérifiée ; restauration uniquement vers une base neuve et séparée, sans cloud ni déploiement |
+| 2026-09-12 | D26 — Résolution réglementaire | « A » | Une règle unique est applicable ; absence ou chevauchement bloque toute valeur implicite |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

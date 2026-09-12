@@ -165,4 +165,16 @@ describe('route finance privée', () => {
       section: 'goals', goals: { goals: [expect.objectContaining({ id: createdGoal.id, targetCents: 100_000, progressCents: 25_000 })], projects: [expect.objectContaining({ goalId: createdGoal.id, status: 'active', estimatedCostCents: 5_000, estimatedEffortMinutes: 120 })], capacity: expect.objectContaining({ monthlyCapacityMinutes: 90 }), activeEffortMinutes: 120, capacityStatus: 'watch' }, transactions: [],
     });
   });
+
+  it('résout une règle réglementaire uniquement côté serveur, sans valeur de repli', async () => {
+    const rule = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createRegulatoryRule', name: 'Règle route synthétique', value: '10 %', source: 'Source route synthétique', verifiedOn: '2026-09-12', validFrom: '2026-01-01', validTo: '2026-03-31', note: '' })) rule.set(key, value);
+    await expect(action({ request: request('POST', rule) })).resolves.toMatchObject({ status: 302 });
+    const resolve = new FormData();
+    resolve.set('intent', 'resolveRegulatoryRule');
+    resolve.set('name', 'Règle route synthétique');
+    resolve.set('asOf', '2026-04-01');
+    await expect(action({ request: request('POST', resolve) })).resolves.toMatchObject({ regulationResolution: { status: 'missing', rules: [] } });
+    await expect(loader({ request: new Request(`${origin}/finance/regulations?period=2026-04`, { headers: { cookie } }), params: { '*': 'regulations' } })).resolves.toMatchObject({ regulations: { asOf: '2026-04-30', coverage: expect.arrayContaining([expect.objectContaining({ name: 'Règle route synthétique', status: 'missing' })]) } });
+  });
 });

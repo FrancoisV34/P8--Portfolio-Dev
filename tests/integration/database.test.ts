@@ -376,9 +376,15 @@ describe('persistance SQLite privée', () => {
   it('isole les règles réglementaires manuelles et leurs périodes datées', () => {
     const owner = regulatoryRepository(connection.db, 'owner-test');
     const other = regulatoryRepository(connection.db, 'other-test');
-    const rule = owner.create({ name: 'Règle synthétique', value: '12,34 %', source: 'Source synthétique', verifiedOn: '2026-09-11', validFrom: '2026-01-01', validTo: null, note: '' });
+    const rule = owner.create({ name: 'Règle synthétique', value: '12,34 %', source: 'Source synthétique', verifiedOn: '2026-09-11', validFrom: '2026-01-01', validTo: '2026-02-28', note: '' });
     expect(owner.list()).toEqual([expect.objectContaining({ id: rule.id, validFrom: '2026-01-01' })]);
     expect(other.list()).toEqual([]);
+    owner.create({ name: 'Règle synthétique', value: '15 %', source: 'Source synthétique', verifiedOn: '2026-09-12', validFrom: '2026-04-01', validTo: '2026-06-30', note: '' });
+    owner.create({ name: 'Règle synthétique', value: '16 %', source: 'Source synthétique', verifiedOn: '2026-09-12', validFrom: '2026-06-01', validTo: null, note: '' });
+    expect(owner.resolve({ name: ' règle synthétique ', asOf: '2026-02-01' })).toMatchObject({ status: 'applicable', rules: [expect.objectContaining({ id: rule.id })] });
+    expect(owner.resolve({ name: 'Règle synthétique', asOf: '2026-03-31' })).toMatchObject({ status: 'missing', rules: [] });
+    expect(owner.resolve({ name: 'Règle synthétique', asOf: '2026-06-15' })).toMatchObject({ status: 'overlap', rules: expect.arrayContaining([expect.objectContaining({ value: '15 %' }), expect.objectContaining({ value: '16 %' })]) });
+    expect(owner.dashboard('2026-03-31')).toMatchObject({ asOf: '2026-03-31', coverage: [expect.objectContaining({ name: 'Règle synthétique', status: 'missing' })] });
     expect(() => other.update({ id: rule.id, name: 'Interdit', value: '0', source: 'Source', verifiedOn: '2026-09-11', validFrom: '2026-01-01', validTo: null, note: '' })).toThrow('Règle introuvable');
     expect(() => owner.create({ name: 'Période invalide', value: '0', source: 'Source', verifiedOn: '2026-09-11', validFrom: '2026-02-01', validTo: '2026-01-31', note: '' })).toThrow('Période invalide');
   });
