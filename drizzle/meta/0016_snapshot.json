@@ -1,0 +1,2951 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "b292ae46-67c9-4775-ac38-9f8374bf4617",
+  "prevId": "4bab5acb-9c67-4092-828b-f5426bae9d70",
+  "tables": {
+    "account": {
+      "name": "account",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "account_user_idx": {
+          "name": "account_user_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        },
+        "account_provider_account_unique": {
+          "name": "account_provider_account_unique",
+          "columns": [
+            "provider_id",
+            "account_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "account_user_id_user_id_fk": {
+          "name": "account_user_id_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "finance_accounts": {
+      "name": "finance_accounts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'EUR'"
+        },
+        "opening_balance_cents": {
+          "name": "opening_balance_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "opening_date": {
+          "name": "opening_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_accounts_entity_idx": {
+          "name": "finance_accounts_entity_idx",
+          "columns": [
+            "entity_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_accounts_entity_id_finance_economic_entities_id_fk": {
+          "name": "finance_accounts_entity_id_finance_economic_entities_id_fk",
+          "tableFrom": "finance_accounts",
+          "tableTo": "finance_economic_entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_accounts_type": {
+          "name": "finance_accounts_type",
+          "value": "\"finance_accounts\".\"type\" in ('checking', 'savings', 'cash')"
+        },
+        "finance_accounts_currency": {
+          "name": "finance_accounts_currency",
+          "value": "\"finance_accounts\".\"currency\" = 'EUR'"
+        },
+        "finance_accounts_balance": {
+          "name": "finance_accounts_balance",
+          "value": "typeof(\"finance_accounts\".\"opening_balance_cents\") = 'integer' and \"finance_accounts\".\"opening_balance_cents\" between -9007199254740991 and 9007199254740991"
+        },
+        "finance_accounts_name": {
+          "name": "finance_accounts_name",
+          "value": "length(trim(\"finance_accounts\".\"name\")) between 1 and 100"
+        },
+        "finance_accounts_active": {
+          "name": "finance_accounts_active",
+          "value": "\"finance_accounts\".\"is_active\" in (0, 1)"
+        },
+        "finance_accounts_opening_date": {
+          "name": "finance_accounts_opening_date",
+          "value": "length(\"finance_accounts\".\"opening_date\") = 10 and \"finance_accounts\".\"opening_date\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_accounts\".\"opening_date\", 1, 4) as integer) between 1 and 9999 and date(\"finance_accounts\".\"opening_date\", '+0 days') is not null and date(\"finance_accounts\".\"opening_date\", '+0 days') = \"finance_accounts\".\"opening_date\""
+        }
+      }
+    },
+    "finance_business_activities": {
+      "name": "finance_business_activities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_business_activities_owner_idx": {
+          "name": "finance_business_activities_owner_idx",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "finance_business_activities_entity_idx": {
+          "name": "finance_business_activities_entity_idx",
+          "columns": [
+            "entity_id"
+          ],
+          "isUnique": false
+        },
+        "finance_business_activities_owner_name_unique": {
+          "name": "finance_business_activities_owner_name_unique",
+          "columns": [
+            "owner_id",
+            "name"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "finance_business_activities_entity_id_finance_economic_entities_id_fk": {
+          "name": "finance_business_activities_entity_id_finance_economic_entities_id_fk",
+          "tableFrom": "finance_business_activities",
+          "tableTo": "finance_economic_entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_business_activities_name": {
+          "name": "finance_business_activities_name",
+          "value": "length(trim(\"finance_business_activities\".\"name\")) between 1 and 100"
+        },
+        "finance_business_activities_active": {
+          "name": "finance_business_activities_active",
+          "value": "\"finance_business_activities\".\"is_active\" in (0, 1)"
+        }
+      }
+    },
+    "finance_business_entity_monthly_cash": {
+      "name": "finance_business_entity_monthly_cash",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "period": {
+          "name": "period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "retained_cash_cents": {
+          "name": "retained_cash_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "distributed_cents": {
+          "name": "distributed_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_business_cash_owner_period_idx": {
+          "name": "finance_business_cash_owner_period_idx",
+          "columns": [
+            "owner_id",
+            "period"
+          ],
+          "isUnique": false
+        },
+        "finance_business_cash_owner_entity_period_unique": {
+          "name": "finance_business_cash_owner_entity_period_unique",
+          "columns": [
+            "owner_id",
+            "entity_id",
+            "period"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "finance_business_entity_monthly_cash_entity_id_finance_economic_entities_id_fk": {
+          "name": "finance_business_entity_monthly_cash_entity_id_finance_economic_entities_id_fk",
+          "tableFrom": "finance_business_entity_monthly_cash",
+          "tableTo": "finance_economic_entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_business_cash_retained": {
+          "name": "finance_business_cash_retained",
+          "value": "typeof(\"finance_business_entity_monthly_cash\".\"retained_cash_cents\") = 'integer' and \"finance_business_entity_monthly_cash\".\"retained_cash_cents\" >= 0 and \"finance_business_entity_monthly_cash\".\"retained_cash_cents\" <= 9007199254740991"
+        },
+        "finance_business_cash_distributed": {
+          "name": "finance_business_cash_distributed",
+          "value": "typeof(\"finance_business_entity_monthly_cash\".\"distributed_cents\") = 'integer' and \"finance_business_entity_monthly_cash\".\"distributed_cents\" >= 0 and \"finance_business_entity_monthly_cash\".\"distributed_cents\" <= 9007199254740991"
+        },
+        "finance_business_cash_period": {
+          "name": "finance_business_cash_period",
+          "value": "length(\"finance_business_entity_monthly_cash\".\"period\") = 7 and \"finance_business_entity_monthly_cash\".\"period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_business_entity_monthly_cash\".\"period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_business_entity_monthly_cash\".\"period\", 6, 2) as integer) between 1 and 12"
+        }
+      }
+    },
+    "finance_business_monthly_metrics": {
+      "name": "finance_business_monthly_metrics",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "activity_id": {
+          "name": "activity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "period": {
+          "name": "period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revenue_cents": {
+          "name": "revenue_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "operating_expense_cents": {
+          "name": "operating_expense_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mrr_cents": {
+          "name": "mrr_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "active_customer_count": {
+          "name": "active_customer_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "maintenance_minutes": {
+          "name": "maintenance_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_business_metrics_owner_period_idx": {
+          "name": "finance_business_metrics_owner_period_idx",
+          "columns": [
+            "owner_id",
+            "period"
+          ],
+          "isUnique": false
+        },
+        "finance_business_metrics_owner_activity_period_unique": {
+          "name": "finance_business_metrics_owner_activity_period_unique",
+          "columns": [
+            "owner_id",
+            "activity_id",
+            "period"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "finance_business_monthly_metrics_activity_id_finance_business_activities_id_fk": {
+          "name": "finance_business_monthly_metrics_activity_id_finance_business_activities_id_fk",
+          "tableFrom": "finance_business_monthly_metrics",
+          "tableTo": "finance_business_activities",
+          "columnsFrom": [
+            "activity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_business_metrics_revenue": {
+          "name": "finance_business_metrics_revenue",
+          "value": "typeof(\"finance_business_monthly_metrics\".\"revenue_cents\") = 'integer' and \"finance_business_monthly_metrics\".\"revenue_cents\" >= 0 and \"finance_business_monthly_metrics\".\"revenue_cents\" <= 9007199254740991"
+        },
+        "finance_business_metrics_expenses": {
+          "name": "finance_business_metrics_expenses",
+          "value": "typeof(\"finance_business_monthly_metrics\".\"operating_expense_cents\") = 'integer' and \"finance_business_monthly_metrics\".\"operating_expense_cents\" >= 0 and \"finance_business_monthly_metrics\".\"operating_expense_cents\" <= 9007199254740991"
+        },
+        "finance_business_metrics_mrr": {
+          "name": "finance_business_metrics_mrr",
+          "value": "\"finance_business_monthly_metrics\".\"mrr_cents\" is null or (typeof(\"finance_business_monthly_metrics\".\"mrr_cents\") = 'integer' and \"finance_business_monthly_metrics\".\"mrr_cents\" >= 0 and \"finance_business_monthly_metrics\".\"mrr_cents\" <= 750599937895082)"
+        },
+        "finance_business_metrics_customers": {
+          "name": "finance_business_metrics_customers",
+          "value": "\"finance_business_monthly_metrics\".\"active_customer_count\" is null or (typeof(\"finance_business_monthly_metrics\".\"active_customer_count\") = 'integer' and \"finance_business_monthly_metrics\".\"active_customer_count\" between 0 and 1000000000)"
+        },
+        "finance_business_metrics_maintenance": {
+          "name": "finance_business_metrics_maintenance",
+          "value": "\"finance_business_monthly_metrics\".\"maintenance_minutes\" is null or (typeof(\"finance_business_monthly_metrics\".\"maintenance_minutes\") = 'integer' and \"finance_business_monthly_metrics\".\"maintenance_minutes\" between 0 and 44640)"
+        },
+        "finance_business_metrics_period": {
+          "name": "finance_business_metrics_period",
+          "value": "length(\"finance_business_monthly_metrics\".\"period\") = 7 and \"finance_business_monthly_metrics\".\"period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_business_monthly_metrics\".\"period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_business_monthly_metrics\".\"period\", 6, 2) as integer) between 1 and 12"
+        }
+      }
+    },
+    "finance_business_monthly_provisions": {
+      "name": "finance_business_monthly_provisions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "period": {
+          "name": "period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount_cents": {
+          "name": "amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_business_provisions_owner_period_idx": {
+          "name": "finance_business_provisions_owner_period_idx",
+          "columns": [
+            "owner_id",
+            "period"
+          ],
+          "isUnique": false
+        },
+        "finance_business_provisions_entity_period_idx": {
+          "name": "finance_business_provisions_entity_period_idx",
+          "columns": [
+            "entity_id",
+            "period"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_business_monthly_provisions_entity_id_finance_economic_entities_id_fk": {
+          "name": "finance_business_monthly_provisions_entity_id_finance_economic_entities_id_fk",
+          "tableFrom": "finance_business_monthly_provisions",
+          "tableTo": "finance_economic_entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_business_provisions_name": {
+          "name": "finance_business_provisions_name",
+          "value": "length(trim(\"finance_business_monthly_provisions\".\"name\")) between 1 and 100"
+        },
+        "finance_business_provisions_amount": {
+          "name": "finance_business_provisions_amount",
+          "value": "typeof(\"finance_business_monthly_provisions\".\"amount_cents\") = 'integer' and \"finance_business_monthly_provisions\".\"amount_cents\" >= 0 and \"finance_business_monthly_provisions\".\"amount_cents\" <= 9007199254740991"
+        },
+        "finance_business_provisions_note": {
+          "name": "finance_business_provisions_note",
+          "value": "length(trim(\"finance_business_monthly_provisions\".\"note\")) <= 240"
+        },
+        "finance_business_provisions_period": {
+          "name": "finance_business_provisions_period",
+          "value": "length(\"finance_business_monthly_provisions\".\"period\") = 7 and \"finance_business_monthly_provisions\".\"period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_business_monthly_provisions\".\"period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_business_monthly_provisions\".\"period\", 6, 2) as integer) between 1 and 12"
+        }
+      }
+    },
+    "finance_categories": {
+      "name": "finance_categories",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_categories_owner_idx": {
+          "name": "finance_categories_owner_idx",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "finance_categories_owner_name_kind_unique": {
+          "name": "finance_categories_owner_name_kind_unique",
+          "columns": [
+            "owner_id",
+            "name",
+            "kind"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_categories_kind": {
+          "name": "finance_categories_kind",
+          "value": "\"finance_categories\".\"kind\" in ('income', 'expense')"
+        },
+        "finance_categories_name": {
+          "name": "finance_categories_name",
+          "value": "length(trim(\"finance_categories\".\"name\")) between 1 and 100"
+        },
+        "finance_categories_active": {
+          "name": "finance_categories_active",
+          "value": "\"finance_categories\".\"is_active\" in (0, 1)"
+        }
+      }
+    },
+    "finance_economic_entities": {
+      "name": "finance_economic_entities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_entities_owner_idx": {
+          "name": "finance_entities_owner_idx",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_entities_type": {
+          "name": "finance_entities_type",
+          "value": "\"finance_economic_entities\".\"type\" in ('personal', 'business')"
+        },
+        "finance_entities_name": {
+          "name": "finance_entities_name",
+          "value": "length(trim(\"finance_economic_entities\".\"name\")) between 1 and 100"
+        }
+      }
+    },
+    "finance_goals": {
+      "name": "finance_goals",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_cents": {
+          "name": "target_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "progress_cents": {
+          "name": "progress_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "target_date": {
+          "name": "target_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_goals_owner_priority_idx": {
+          "name": "finance_goals_owner_priority_idx",
+          "columns": [
+            "owner_id",
+            "priority"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_goals_name": {
+          "name": "finance_goals_name",
+          "value": "length(trim(\"finance_goals\".\"name\")) between 1 and 100"
+        },
+        "finance_goals_target": {
+          "name": "finance_goals_target",
+          "value": "typeof(\"finance_goals\".\"target_cents\") = 'integer' and \"finance_goals\".\"target_cents\" > 0 and \"finance_goals\".\"target_cents\" <= 9007199254740991"
+        },
+        "finance_goals_progress": {
+          "name": "finance_goals_progress",
+          "value": "typeof(\"finance_goals\".\"progress_cents\") = 'integer' and \"finance_goals\".\"progress_cents\" between 0 and 9007199254740991"
+        },
+        "finance_goals_priority": {
+          "name": "finance_goals_priority",
+          "value": "\"finance_goals\".\"priority\" between 1 and 999"
+        },
+        "finance_goals_target_date": {
+          "name": "finance_goals_target_date",
+          "value": "\"finance_goals\".\"target_date\" is null or (length(\"finance_goals\".\"target_date\") = 10 and \"finance_goals\".\"target_date\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_goals\".\"target_date\", 1, 4) as integer) between 1 and 9999 and date(\"finance_goals\".\"target_date\", '+0 days') is not null and date(\"finance_goals\".\"target_date\", '+0 days') = \"finance_goals\".\"target_date\")"
+        }
+      }
+    },
+    "finance_gomining_contribution_phases": {
+      "name": "finance_gomining_contribution_phases",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scenario_id": {
+          "name": "scenario_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_month": {
+          "name": "start_month",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end_month": {
+          "name": "end_month",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "amount_cents": {
+          "name": "amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_gomining_phases_scenario_idx": {
+          "name": "finance_gomining_phases_scenario_idx",
+          "columns": [
+            "scenario_id"
+          ],
+          "isUnique": false
+        },
+        "finance_gomining_phases_scenario_start_unique": {
+          "name": "finance_gomining_phases_scenario_start_unique",
+          "columns": [
+            "scenario_id",
+            "start_month"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "finance_gomining_contribution_phases_scenario_id_finance_gomining_scenarios_id_fk": {
+          "name": "finance_gomining_contribution_phases_scenario_id_finance_gomining_scenarios_id_fk",
+          "tableFrom": "finance_gomining_contribution_phases",
+          "tableTo": "finance_gomining_scenarios",
+          "columnsFrom": [
+            "scenario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_gomining_phases_months": {
+          "name": "finance_gomining_phases_months",
+          "value": "\"finance_gomining_contribution_phases\".\"start_month\" >= 1 and (\"finance_gomining_contribution_phases\".\"end_month\" is null or \"finance_gomining_contribution_phases\".\"end_month\" >= \"finance_gomining_contribution_phases\".\"start_month\")"
+        },
+        "finance_gomining_phases_amount": {
+          "name": "finance_gomining_phases_amount",
+          "value": "\"finance_gomining_contribution_phases\".\"amount_cents\" >= 0 and \"finance_gomining_contribution_phases\".\"amount_cents\" <= 9007199254740991"
+        }
+      }
+    },
+    "finance_gomining_scenario_versions": {
+      "name": "finance_gomining_scenario_versions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scenario_id": {
+          "name": "scenario_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_gomining_versions_scenario_revision_unique": {
+          "name": "finance_gomining_versions_scenario_revision_unique",
+          "columns": [
+            "scenario_id",
+            "revision"
+          ],
+          "isUnique": true
+        },
+        "finance_gomining_versions_scenario_idx": {
+          "name": "finance_gomining_versions_scenario_idx",
+          "columns": [
+            "scenario_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_gomining_scenario_versions_scenario_id_finance_gomining_scenarios_id_fk": {
+          "name": "finance_gomining_scenario_versions_scenario_id_finance_gomining_scenarios_id_fk",
+          "tableFrom": "finance_gomining_scenario_versions",
+          "tableTo": "finance_gomining_scenarios",
+          "columnsFrom": [
+            "scenario_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_gomining_versions_revision": {
+          "name": "finance_gomining_versions_revision",
+          "value": "\"finance_gomining_scenario_versions\".\"revision\" >= 1 and \"finance_gomining_scenario_versions\".\"revision\" <= 9007199254740991"
+        },
+        "finance_gomining_versions_snapshot": {
+          "name": "finance_gomining_versions_snapshot",
+          "value": "length(\"finance_gomining_scenario_versions\".\"snapshot\") between 2 and 10_000 and json_valid(\"finance_gomining_scenario_versions\".\"snapshot\")"
+        }
+      }
+    },
+    "finance_gomining_scenarios": {
+      "name": "finance_gomining_scenarios",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_period": {
+          "name": "start_period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "horizon_months": {
+          "name": "horizon_months",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "initial_hashrate_milli_th": {
+          "name": "initial_hashrate_milli_th",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "initial_accumulated_sats": {
+          "name": "initial_accumulated_sats",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "efficiency_milli_watts_per_th": {
+          "name": "efficiency_milli_watts_per_th",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "monthly_net_reward_sats_per_th": {
+          "name": "monthly_net_reward_sats_per_th",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "price_milli_cents_per_milli_th": {
+          "name": "price_milli_cents_per_milli_th",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "btc_price_cents": {
+          "name": "btc_price_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "budget_category_id": {
+          "name": "budget_category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "accumulated_btc_policy": {
+          "name": "accumulated_btc_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_gomining_scenarios_owner_idx": {
+          "name": "finance_gomining_scenarios_owner_idx",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "finance_gomining_scenarios_budget_category_idx": {
+          "name": "finance_gomining_scenarios_budget_category_idx",
+          "columns": [
+            "budget_category_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_gomining_scenarios_budget_category_id_finance_categories_id_fk": {
+          "name": "finance_gomining_scenarios_budget_category_id_finance_categories_id_fk",
+          "tableFrom": "finance_gomining_scenarios",
+          "tableTo": "finance_categories",
+          "columnsFrom": [
+            "budget_category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_gomining_scenarios_name": {
+          "name": "finance_gomining_scenarios_name",
+          "value": "length(trim(\"finance_gomining_scenarios\".\"name\")) between 1 and 100"
+        },
+        "finance_gomining_scenarios_horizon": {
+          "name": "finance_gomining_scenarios_horizon",
+          "value": "\"finance_gomining_scenarios\".\"horizon_months\" between 1 and 600"
+        },
+        "finance_gomining_scenarios_hashrate": {
+          "name": "finance_gomining_scenarios_hashrate",
+          "value": "typeof(\"finance_gomining_scenarios\".\"initial_hashrate_milli_th\") = 'integer' and \"finance_gomining_scenarios\".\"initial_hashrate_milli_th\" > 0 and \"finance_gomining_scenarios\".\"initial_hashrate_milli_th\" <= 9007199254740991"
+        },
+        "finance_gomining_scenarios_sats": {
+          "name": "finance_gomining_scenarios_sats",
+          "value": "typeof(\"finance_gomining_scenarios\".\"initial_accumulated_sats\") = 'integer' and \"finance_gomining_scenarios\".\"initial_accumulated_sats\" >= 0 and \"finance_gomining_scenarios\".\"initial_accumulated_sats\" <= 9007199254740991"
+        },
+        "finance_gomining_scenarios_efficiency": {
+          "name": "finance_gomining_scenarios_efficiency",
+          "value": "\"finance_gomining_scenarios\".\"efficiency_milli_watts_per_th\" > 0 and \"finance_gomining_scenarios\".\"efficiency_milli_watts_per_th\" <= 9007199254740991"
+        },
+        "finance_gomining_scenarios_reward": {
+          "name": "finance_gomining_scenarios_reward",
+          "value": "\"finance_gomining_scenarios\".\"monthly_net_reward_sats_per_th\" >= 0 and \"finance_gomining_scenarios\".\"monthly_net_reward_sats_per_th\" <= 9007199254740991"
+        },
+        "finance_gomining_scenarios_prices": {
+          "name": "finance_gomining_scenarios_prices",
+          "value": "\"finance_gomining_scenarios\".\"price_milli_cents_per_milli_th\" > 0 and \"finance_gomining_scenarios\".\"btc_price_cents\" > 0 and \"finance_gomining_scenarios\".\"price_milli_cents_per_milli_th\" <= 9007199254740991 and \"finance_gomining_scenarios\".\"btc_price_cents\" <= 9007199254740991"
+        },
+        "finance_gomining_scenarios_policy": {
+          "name": "finance_gomining_scenarios_policy",
+          "value": "\"finance_gomining_scenarios\".\"accumulated_btc_policy\" in ('keep', 'reinvest-at-threshold')"
+        },
+        "finance_gomining_scenarios_revision": {
+          "name": "finance_gomining_scenarios_revision",
+          "value": "\"finance_gomining_scenarios\".\"revision\" >= 1 and \"finance_gomining_scenarios\".\"revision\" <= 9007199254740991"
+        },
+        "finance_gomining_scenarios_period": {
+          "name": "finance_gomining_scenarios_period",
+          "value": "length(\"finance_gomining_scenarios\".\"start_period\") = 7 and \"finance_gomining_scenarios\".\"start_period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_gomining_scenarios\".\"start_period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_gomining_scenarios\".\"start_period\", 6, 2) as integer) between 1 and 12"
+        }
+      }
+    },
+    "finance_monthly_budgets": {
+      "name": "finance_monthly_budgets",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "period": {
+          "name": "period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "planned_amount_cents": {
+          "name": "planned_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_budgets_owner_period_idx": {
+          "name": "finance_budgets_owner_period_idx",
+          "columns": [
+            "owner_id",
+            "period"
+          ],
+          "isUnique": false
+        },
+        "finance_budgets_owner_category_period_unique": {
+          "name": "finance_budgets_owner_category_period_unique",
+          "columns": [
+            "owner_id",
+            "category_id",
+            "period"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "finance_monthly_budgets_category_id_finance_categories_id_fk": {
+          "name": "finance_monthly_budgets_category_id_finance_categories_id_fk",
+          "tableFrom": "finance_monthly_budgets",
+          "tableTo": "finance_categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_budgets_amount": {
+          "name": "finance_budgets_amount",
+          "value": "typeof(\"finance_monthly_budgets\".\"planned_amount_cents\") = 'integer' and \"finance_monthly_budgets\".\"planned_amount_cents\" > 0 and \"finance_monthly_budgets\".\"planned_amount_cents\" <= 9007199254740991"
+        },
+        "finance_budgets_period": {
+          "name": "finance_budgets_period",
+          "value": "length(\"finance_monthly_budgets\".\"period\") = 7 and \"finance_monthly_budgets\".\"period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_monthly_budgets\".\"period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_monthly_budgets\".\"period\", 6, 2) as integer) between 1 and 12"
+        }
+      }
+    },
+    "finance_project_capacity": {
+      "name": "finance_project_capacity",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "monthly_capacity_minutes": {
+          "name": "monthly_capacity_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_project_capacity_owner_id_unique": {
+          "name": "finance_project_capacity_owner_id_unique",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_project_capacity_minutes": {
+          "name": "finance_project_capacity_minutes",
+          "value": "typeof(\"finance_project_capacity\".\"monthly_capacity_minutes\") = 'integer' and \"finance_project_capacity\".\"monthly_capacity_minutes\" between 0 and 44640"
+        }
+      }
+    },
+    "finance_projects": {
+      "name": "finance_projects",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "goal_id": {
+          "name": "goal_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'backlog'"
+        },
+        "priority": {
+          "name": "priority",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "estimated_cost_cents": {
+          "name": "estimated_cost_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "estimated_effort_minutes": {
+          "name": "estimated_effort_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "next_action": {
+          "name": "next_action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_projects_owner_status_priority_idx": {
+          "name": "finance_projects_owner_status_priority_idx",
+          "columns": [
+            "owner_id",
+            "status",
+            "priority"
+          ],
+          "isUnique": false
+        },
+        "finance_projects_goal_idx": {
+          "name": "finance_projects_goal_idx",
+          "columns": [
+            "goal_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_projects_goal_id_finance_goals_id_fk": {
+          "name": "finance_projects_goal_id_finance_goals_id_fk",
+          "tableFrom": "finance_projects",
+          "tableTo": "finance_goals",
+          "columnsFrom": [
+            "goal_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_projects_name": {
+          "name": "finance_projects_name",
+          "value": "length(trim(\"finance_projects\".\"name\")) between 1 and 100"
+        },
+        "finance_projects_status": {
+          "name": "finance_projects_status",
+          "value": "\"finance_projects\".\"status\" in ('backlog', 'active', 'paused', 'done')"
+        },
+        "finance_projects_priority": {
+          "name": "finance_projects_priority",
+          "value": "\"finance_projects\".\"priority\" between 1 and 999"
+        },
+        "finance_projects_cost": {
+          "name": "finance_projects_cost",
+          "value": "\"finance_projects\".\"estimated_cost_cents\" is null or (typeof(\"finance_projects\".\"estimated_cost_cents\") = 'integer' and \"finance_projects\".\"estimated_cost_cents\" between 0 and 9007199254740991)"
+        },
+        "finance_projects_effort": {
+          "name": "finance_projects_effort",
+          "value": "\"finance_projects\".\"estimated_effort_minutes\" is null or (typeof(\"finance_projects\".\"estimated_effort_minutes\") = 'integer' and \"finance_projects\".\"estimated_effort_minutes\" between 0 and 44640)"
+        },
+        "finance_projects_next_action": {
+          "name": "finance_projects_next_action",
+          "value": "length(trim(\"finance_projects\".\"next_action\")) <= 240"
+        }
+      }
+    },
+    "finance_recurring_commitments": {
+      "name": "finance_recurring_commitments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "planned_amount_cents": {
+          "name": "planned_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "due_day": {
+          "name": "due_day",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "start_period": {
+          "name": "start_period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end_period": {
+          "name": "end_period",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_commitments_owner_period_idx": {
+          "name": "finance_commitments_owner_period_idx",
+          "columns": [
+            "owner_id",
+            "start_period",
+            "end_period"
+          ],
+          "isUnique": false
+        },
+        "finance_commitments_category_idx": {
+          "name": "finance_commitments_category_idx",
+          "columns": [
+            "category_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_recurring_commitments_category_id_finance_categories_id_fk": {
+          "name": "finance_recurring_commitments_category_id_finance_categories_id_fk",
+          "tableFrom": "finance_recurring_commitments",
+          "tableTo": "finance_categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_commitments_name": {
+          "name": "finance_commitments_name",
+          "value": "length(trim(\"finance_recurring_commitments\".\"name\")) between 1 and 100"
+        },
+        "finance_commitments_amount": {
+          "name": "finance_commitments_amount",
+          "value": "typeof(\"finance_recurring_commitments\".\"planned_amount_cents\") = 'integer' and \"finance_recurring_commitments\".\"planned_amount_cents\" > 0 and \"finance_recurring_commitments\".\"planned_amount_cents\" <= 9007199254740991"
+        },
+        "finance_commitments_due_day": {
+          "name": "finance_commitments_due_day",
+          "value": "\"finance_recurring_commitments\".\"due_day\" between 1 and 31"
+        },
+        "finance_commitments_start_period": {
+          "name": "finance_commitments_start_period",
+          "value": "length(\"finance_recurring_commitments\".\"start_period\") = 7 and \"finance_recurring_commitments\".\"start_period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_recurring_commitments\".\"start_period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_recurring_commitments\".\"start_period\", 6, 2) as integer) between 1 and 12"
+        },
+        "finance_commitments_end_period": {
+          "name": "finance_commitments_end_period",
+          "value": "\"finance_recurring_commitments\".\"end_period\" is null or (length(\"finance_recurring_commitments\".\"end_period\") = 7 and \"finance_recurring_commitments\".\"end_period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_recurring_commitments\".\"end_period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_recurring_commitments\".\"end_period\", 6, 2) as integer) between 1 and 12 and \"finance_recurring_commitments\".\"end_period\" >= \"finance_recurring_commitments\".\"start_period\")"
+        }
+      }
+    },
+    "finance_regulatory_rules": {
+      "name": "finance_regulatory_rules",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "series_id": {
+          "name": "series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "revision": {
+          "name": "revision",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "verified_on": {
+          "name": "verified_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "valid_from": {
+          "name": "valid_from",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "valid_to": {
+          "name": "valid_to",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_regulatory_rules_owner_validity_idx": {
+          "name": "finance_regulatory_rules_owner_validity_idx",
+          "columns": [
+            "owner_id",
+            "valid_from",
+            "valid_to"
+          ],
+          "isUnique": false
+        },
+        "finance_regulatory_rules_series_revision_idx": {
+          "name": "finance_regulatory_rules_series_revision_idx",
+          "columns": [
+            "owner_id",
+            "series_id",
+            "revision"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_regulatory_rules_name": {
+          "name": "finance_regulatory_rules_name",
+          "value": "length(trim(\"finance_regulatory_rules\".\"name\")) between 1 and 100"
+        },
+        "finance_regulatory_rules_value": {
+          "name": "finance_regulatory_rules_value",
+          "value": "length(trim(\"finance_regulatory_rules\".\"value\")) between 1 and 120"
+        },
+        "finance_regulatory_rules_source": {
+          "name": "finance_regulatory_rules_source",
+          "value": "length(trim(\"finance_regulatory_rules\".\"source\")) between 1 and 500"
+        },
+        "finance_regulatory_rules_note": {
+          "name": "finance_regulatory_rules_note",
+          "value": "length(trim(\"finance_regulatory_rules\".\"note\")) <= 240"
+        },
+        "finance_regulatory_rules_revision": {
+          "name": "finance_regulatory_rules_revision",
+          "value": "\"finance_regulatory_rules\".\"revision\" >= 1"
+        },
+        "finance_regulatory_rules_dates": {
+          "name": "finance_regulatory_rules_dates",
+          "value": "length(\"finance_regulatory_rules\".\"verified_on\") = 10 and date(\"finance_regulatory_rules\".\"verified_on\", '+0 days') = \"finance_regulatory_rules\".\"verified_on\" and length(\"finance_regulatory_rules\".\"valid_from\") = 10 and date(\"finance_regulatory_rules\".\"valid_from\", '+0 days') = \"finance_regulatory_rules\".\"valid_from\" and (\"finance_regulatory_rules\".\"valid_to\" is null or (length(\"finance_regulatory_rules\".\"valid_to\") = 10 and date(\"finance_regulatory_rules\".\"valid_to\", '+0 days') = \"finance_regulatory_rules\".\"valid_to\" and \"finance_regulatory_rules\".\"valid_to\" >= \"finance_regulatory_rules\".\"valid_from\"))"
+        }
+      }
+    },
+    "finance_safety_reserve_accounts": {
+      "name": "finance_safety_reserve_accounts",
+      "columns": {
+        "reserve_id": {
+          "name": "reserve_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_safety_reserve_account_unique": {
+          "name": "finance_safety_reserve_account_unique",
+          "columns": [
+            "reserve_id",
+            "account_id"
+          ],
+          "isUnique": true
+        },
+        "finance_safety_reserve_accounts_account_idx": {
+          "name": "finance_safety_reserve_accounts_account_idx",
+          "columns": [
+            "account_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_safety_reserve_accounts_reserve_id_finance_safety_reserves_id_fk": {
+          "name": "finance_safety_reserve_accounts_reserve_id_finance_safety_reserves_id_fk",
+          "tableFrom": "finance_safety_reserve_accounts",
+          "tableTo": "finance_safety_reserves",
+          "columnsFrom": [
+            "reserve_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "finance_safety_reserve_accounts_account_id_finance_accounts_id_fk": {
+          "name": "finance_safety_reserve_accounts_account_id_finance_accounts_id_fk",
+          "tableFrom": "finance_safety_reserve_accounts",
+          "tableTo": "finance_accounts",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "finance_safety_reserves": {
+      "name": "finance_safety_reserves",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "target_amount_cents": {
+          "name": "target_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_safety_reserves_owner_id_unique": {
+          "name": "finance_safety_reserves_owner_id_unique",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_safety_reserves_target": {
+          "name": "finance_safety_reserves_target",
+          "value": "typeof(\"finance_safety_reserves\".\"target_amount_cents\") = 'integer' and \"finance_safety_reserves\".\"target_amount_cents\" > 0 and \"finance_safety_reserves\".\"target_amount_cents\" <= 9007199254740991"
+        }
+      }
+    },
+    "session": {
+      "name": "session",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "columns": [
+            "token"
+          ],
+          "isUnique": true
+        },
+        "session_user_idx": {
+          "name": "session_user_idx",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "finance_transactions": {
+      "name": "finance_transactions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category_id": {
+          "name": "category_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "amount_cents": {
+          "name": "amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "occurred_on": {
+          "name": "occurred_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "transfer_group_id": {
+          "name": "transfer_group_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "recurring_commitment_id": {
+          "name": "recurring_commitment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_transactions_owner_date_idx": {
+          "name": "finance_transactions_owner_date_idx",
+          "columns": [
+            "owner_id",
+            "occurred_on"
+          ],
+          "isUnique": false
+        },
+        "finance_transactions_account_date_idx": {
+          "name": "finance_transactions_account_date_idx",
+          "columns": [
+            "account_id",
+            "occurred_on"
+          ],
+          "isUnique": false
+        },
+        "finance_transactions_category_idx": {
+          "name": "finance_transactions_category_idx",
+          "columns": [
+            "category_id"
+          ],
+          "isUnique": false
+        },
+        "finance_transactions_transfer_group_idx": {
+          "name": "finance_transactions_transfer_group_idx",
+          "columns": [
+            "transfer_group_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_transactions_account_id_finance_accounts_id_fk": {
+          "name": "finance_transactions_account_id_finance_accounts_id_fk",
+          "tableFrom": "finance_transactions",
+          "tableTo": "finance_accounts",
+          "columnsFrom": [
+            "account_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "finance_transactions_category_id_finance_categories_id_fk": {
+          "name": "finance_transactions_category_id_finance_categories_id_fk",
+          "tableFrom": "finance_transactions",
+          "tableTo": "finance_categories",
+          "columnsFrom": [
+            "category_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "finance_transactions_recurring_commitment_id_finance_recurring_commitments_id_fk": {
+          "name": "finance_transactions_recurring_commitment_id_finance_recurring_commitments_id_fk",
+          "tableFrom": "finance_transactions",
+          "tableTo": "finance_recurring_commitments",
+          "columnsFrom": [
+            "recurring_commitment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_transactions_kind": {
+          "name": "finance_transactions_kind",
+          "value": "\"finance_transactions\".\"kind\" in ('income', 'expense', 'transfer')"
+        },
+        "finance_transactions_amount": {
+          "name": "finance_transactions_amount",
+          "value": "typeof(\"finance_transactions\".\"amount_cents\") = 'integer' and \"finance_transactions\".\"amount_cents\" between -9007199254740991 and 9007199254740991 and (((\"finance_transactions\".\"kind\" = 'income') and \"finance_transactions\".\"amount_cents\" > 0) or ((\"finance_transactions\".\"kind\" = 'expense') and \"finance_transactions\".\"amount_cents\" < 0) or ((\"finance_transactions\".\"kind\" = 'transfer') and \"finance_transactions\".\"amount_cents\" != 0))"
+        },
+        "finance_transactions_category": {
+          "name": "finance_transactions_category",
+          "value": "((\"finance_transactions\".\"kind\" in ('income', 'expense')) and \"finance_transactions\".\"category_id\" is not null and \"finance_transactions\".\"transfer_group_id\" is null) or ((\"finance_transactions\".\"kind\" = 'transfer') and \"finance_transactions\".\"category_id\" is null and \"finance_transactions\".\"transfer_group_id\" is not null)"
+        },
+        "finance_transactions_commitment": {
+          "name": "finance_transactions_commitment",
+          "value": "\"finance_transactions\".\"recurring_commitment_id\" is null or \"finance_transactions\".\"kind\" = 'expense'"
+        },
+        "finance_transactions_note": {
+          "name": "finance_transactions_note",
+          "value": "length(trim(\"finance_transactions\".\"note\")) <= 240"
+        },
+        "finance_transactions_occurred_on": {
+          "name": "finance_transactions_occurred_on",
+          "value": "length(\"finance_transactions\".\"occurred_on\") = 10 and \"finance_transactions\".\"occurred_on\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_transactions\".\"occurred_on\", 1, 4) as integer) between 1 and 9999 and date(\"finance_transactions\".\"occurred_on\", '+0 days') is not null and date(\"finance_transactions\".\"occurred_on\", '+0 days') = \"finance_transactions\".\"occurred_on\""
+        }
+      }
+    },
+    "user": {
+      "name": "user",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "verification": {
+      "name": "verification",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "verification_identifier_idx": {
+          "name": "verification_identifier_idx",
+          "columns": [
+            "identifier"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "finance_wealth_asset_valuations": {
+      "name": "finance_wealth_asset_valuations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "valued_on": {
+          "name": "valued_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value_cents": {
+          "name": "value_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_wealth_valuations_owner_date_idx": {
+          "name": "finance_wealth_valuations_owner_date_idx",
+          "columns": [
+            "owner_id",
+            "valued_on"
+          ],
+          "isUnique": false
+        },
+        "finance_wealth_valuations_asset_date_unique": {
+          "name": "finance_wealth_valuations_asset_date_unique",
+          "columns": [
+            "asset_id",
+            "valued_on"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "finance_wealth_asset_valuations_asset_id_finance_wealth_assets_id_fk": {
+          "name": "finance_wealth_asset_valuations_asset_id_finance_wealth_assets_id_fk",
+          "tableFrom": "finance_wealth_asset_valuations",
+          "tableTo": "finance_wealth_assets",
+          "columnsFrom": [
+            "asset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_wealth_valuations_value": {
+          "name": "finance_wealth_valuations_value",
+          "value": "typeof(\"finance_wealth_asset_valuations\".\"value_cents\") = 'integer' and \"finance_wealth_asset_valuations\".\"value_cents\" between 0 and 9007199254740991"
+        },
+        "finance_wealth_valuations_note": {
+          "name": "finance_wealth_valuations_note",
+          "value": "length(trim(\"finance_wealth_asset_valuations\".\"note\")) <= 240"
+        },
+        "finance_wealth_valuations_date": {
+          "name": "finance_wealth_valuations_date",
+          "value": "length(\"finance_wealth_asset_valuations\".\"valued_on\") = 10 and \"finance_wealth_asset_valuations\".\"valued_on\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_wealth_asset_valuations\".\"valued_on\", 1, 4) as integer) between 1 and 9999 and date(\"finance_wealth_asset_valuations\".\"valued_on\", '+0 days') is not null and date(\"finance_wealth_asset_valuations\".\"valued_on\", '+0 days') = \"finance_wealth_asset_valuations\".\"valued_on\""
+        }
+      }
+    },
+    "finance_wealth_assets": {
+      "name": "finance_wealth_assets",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "asset_class": {
+          "name": "asset_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'manual'"
+        },
+        "observed_btc_sats": {
+          "name": "observed_btc_sats",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "quantity_description": {
+          "name": "quantity_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
+        "contributed_cents": {
+          "name": "contributed_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_wealth_assets_owner_idx": {
+          "name": "finance_wealth_assets_owner_idx",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "finance_wealth_assets_entity_idx": {
+          "name": "finance_wealth_assets_entity_idx",
+          "columns": [
+            "entity_id"
+          ],
+          "isUnique": false
+        },
+        "finance_wealth_assets_owner_gomining_btc_unique": {
+          "name": "finance_wealth_assets_owner_gomining_btc_unique",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": true,
+          "where": "\"finance_wealth_assets\".\"source\" = 'gomining-observed-btc'"
+        }
+      },
+      "foreignKeys": {
+        "finance_wealth_assets_entity_id_finance_economic_entities_id_fk": {
+          "name": "finance_wealth_assets_entity_id_finance_economic_entities_id_fk",
+          "tableFrom": "finance_wealth_assets",
+          "tableTo": "finance_economic_entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_wealth_assets_class": {
+          "name": "finance_wealth_assets_class",
+          "value": "\"finance_wealth_assets\".\"asset_class\" in ('securities', 'crypto', 'real_estate', 'business', 'other')"
+        },
+        "finance_wealth_assets_source": {
+          "name": "finance_wealth_assets_source",
+          "value": "\"finance_wealth_assets\".\"source\" in ('manual', 'gomining-observed-btc')"
+        },
+        "finance_wealth_assets_observed_btc": {
+          "name": "finance_wealth_assets_observed_btc",
+          "value": "(\"finance_wealth_assets\".\"source\" = 'manual' and \"finance_wealth_assets\".\"observed_btc_sats\" is null) or (\"finance_wealth_assets\".\"source\" = 'gomining-observed-btc' and \"finance_wealth_assets\".\"asset_class\" = 'crypto' and typeof(\"finance_wealth_assets\".\"observed_btc_sats\") = 'integer' and \"finance_wealth_assets\".\"observed_btc_sats\" >= 0 and \"finance_wealth_assets\".\"observed_btc_sats\" <= 9007199254740991)"
+        },
+        "finance_wealth_assets_name": {
+          "name": "finance_wealth_assets_name",
+          "value": "length(trim(\"finance_wealth_assets\".\"name\")) between 1 and 100"
+        },
+        "finance_wealth_assets_quantity": {
+          "name": "finance_wealth_assets_quantity",
+          "value": "length(trim(\"finance_wealth_assets\".\"quantity_description\")) <= 80"
+        },
+        "finance_wealth_assets_contributed": {
+          "name": "finance_wealth_assets_contributed",
+          "value": "typeof(\"finance_wealth_assets\".\"contributed_cents\") = 'integer' and \"finance_wealth_assets\".\"contributed_cents\" between 0 and 9007199254740991"
+        }
+      }
+    },
+    "finance_wealth_debt_balances": {
+      "name": "finance_wealth_debt_balances",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "debt_id": {
+          "name": "debt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "as_of_date": {
+          "name": "as_of_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "outstanding_cents": {
+          "name": "outstanding_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "monthly_payment_cents": {
+          "name": "monthly_payment_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "annual_rate_basis_points": {
+          "name": "annual_rate_basis_points",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "remaining_months": {
+          "name": "remaining_months",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_wealth_debt_balances_owner_date_idx": {
+          "name": "finance_wealth_debt_balances_owner_date_idx",
+          "columns": [
+            "owner_id",
+            "as_of_date"
+          ],
+          "isUnique": false
+        },
+        "finance_wealth_debt_balances_debt_date_unique": {
+          "name": "finance_wealth_debt_balances_debt_date_unique",
+          "columns": [
+            "debt_id",
+            "as_of_date"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "finance_wealth_debt_balances_debt_id_finance_wealth_debts_id_fk": {
+          "name": "finance_wealth_debt_balances_debt_id_finance_wealth_debts_id_fk",
+          "tableFrom": "finance_wealth_debt_balances",
+          "tableTo": "finance_wealth_debts",
+          "columnsFrom": [
+            "debt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_wealth_debt_balances_outstanding": {
+          "name": "finance_wealth_debt_balances_outstanding",
+          "value": "typeof(\"finance_wealth_debt_balances\".\"outstanding_cents\") = 'integer' and \"finance_wealth_debt_balances\".\"outstanding_cents\" >= 0 and \"finance_wealth_debt_balances\".\"outstanding_cents\" <= 9007199254740991"
+        },
+        "finance_wealth_debt_balances_payment": {
+          "name": "finance_wealth_debt_balances_payment",
+          "value": "typeof(\"finance_wealth_debt_balances\".\"monthly_payment_cents\") = 'integer' and \"finance_wealth_debt_balances\".\"monthly_payment_cents\" > 0 and \"finance_wealth_debt_balances\".\"monthly_payment_cents\" <= 9007199254740991"
+        },
+        "finance_wealth_debt_balances_rate": {
+          "name": "finance_wealth_debt_balances_rate",
+          "value": "\"finance_wealth_debt_balances\".\"annual_rate_basis_points\" between 0 and 100000"
+        },
+        "finance_wealth_debt_balances_months": {
+          "name": "finance_wealth_debt_balances_months",
+          "value": "\"finance_wealth_debt_balances\".\"remaining_months\" between 1 and 600"
+        },
+        "finance_wealth_debt_balances_date": {
+          "name": "finance_wealth_debt_balances_date",
+          "value": "length(\"finance_wealth_debt_balances\".\"as_of_date\") = 10 and \"finance_wealth_debt_balances\".\"as_of_date\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_wealth_debt_balances\".\"as_of_date\", 1, 4) as integer) between 1 and 9999 and date(\"finance_wealth_debt_balances\".\"as_of_date\", '+0 days') is not null and date(\"finance_wealth_debt_balances\".\"as_of_date\", '+0 days') = \"finance_wealth_debt_balances\".\"as_of_date\""
+        }
+      }
+    },
+    "finance_wealth_debts": {
+      "name": "finance_wealth_debts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_wealth_debts_owner_idx": {
+          "name": "finance_wealth_debts_owner_idx",
+          "columns": [
+            "owner_id"
+          ],
+          "isUnique": false
+        },
+        "finance_wealth_debts_entity_idx": {
+          "name": "finance_wealth_debts_entity_idx",
+          "columns": [
+            "entity_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_wealth_debts_entity_id_finance_economic_entities_id_fk": {
+          "name": "finance_wealth_debts_entity_id_finance_economic_entities_id_fk",
+          "tableFrom": "finance_wealth_debts",
+          "tableTo": "finance_economic_entities",
+          "columnsFrom": [
+            "entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_wealth_debts_name": {
+          "name": "finance_wealth_debts_name",
+          "value": "length(trim(\"finance_wealth_debts\".\"name\")) between 1 and 100"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

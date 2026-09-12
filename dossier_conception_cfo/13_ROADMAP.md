@@ -417,6 +417,8 @@ L'ingestion automatisée est L16. Ce registre minimal passe avant toute fonction
 
 **Incrément local, 12 septembre 2026 :** le registre résout côté serveur une règle manuelle à une date demandée par POST ; la date et le nom ne sont jamais placés dans l’URL. Un nom normalisé qui ne donne aucune règle applicable est indisponible ; deux règles applicables ou plus signalent un chevauchement ; une seule règle est restituée. Aucun zéro, taux de repli, calcul fiscal ou source externe n’est introduit. La conservation immuable des versions et le rattachement à une future simulation restent à réaliser.
 
+**Complément local, 12 septembre 2026 (D27) :** chaque modification crée une révision complète et immuable ; les règles existantes sont conservées comme révision 1 lors de la migration. Le résolveur ne considère que la révision courante de chaque règle, tandis que l’interface rend toutes les révisions consultables. Le rattachement d’une version précise à une future simulation reste à réaliser.
+
 ### L14 — Moteur CFO explicable
 
 **But :** proposer quoi faire du cash disponible avec une justification vérifiable.

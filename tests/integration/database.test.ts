@@ -116,6 +116,27 @@ describe('persistance SQLite privée', () => {
     }
   });
 
+  it('convertit une règle existante en première révision immuable', () => {
+    const legacyDirectory = mkdtempSync(join(tmpdir(), 'portfolio-regulatory-legacy-test-'));
+    const legacyMigrations = join(legacyDirectory, 'migrations');
+    mkdirSync(join(legacyMigrations, 'meta'), { recursive: true });
+    for (const filename of readdirSync('drizzle').filter((name) => /^00(?:0[0-9]|1[0-5])_.*\.sql$/.test(name))) copyFileSync(join('drizzle', filename), join(legacyMigrations, filename));
+    const journal = JSON.parse(readFileSync('drizzle/meta/_journal.json', 'utf8')) as { entries: { idx: number }[] };
+    journal.entries = journal.entries.filter((entry) => entry.idx <= 15);
+    writeFileSync(join(legacyMigrations, 'meta', '_journal.json'), JSON.stringify(journal));
+    const legacy = openDatabase({ path: join(legacyDirectory, 'legacy.sqlite'), environment: 'test' });
+    try {
+      migrateDatabase(legacy.db, legacyMigrations);
+      legacy.sqlite.prepare("insert into finance_regulatory_rules (id, owner_id, name, value, source, verified_on, valid_from, valid_to, note, created_at, updated_at) values ('rule-legacy', 'owner-legacy', 'Règle ancienne', '10 %', 'Source synthétique', '2026-09-11', '2026-01-01', null, '', '2026-09-11T00:00:00.000Z', '2026-09-11T00:00:00.000Z')").run();
+      migrateDatabase(legacy.db);
+      expect(legacy.sqlite.prepare("select id, series_id as seriesId, revision, value from finance_regulatory_rules where id = 'rule-legacy'").get()).toEqual({ id: 'rule-legacy', seriesId: 'rule-legacy', revision: 1, value: '10 %' });
+      expect(() => legacy.sqlite.prepare("update finance_regulatory_rules set value = '11 %' where id = 'rule-legacy'").run()).toThrow('immutable');
+    } finally {
+      legacy.close();
+      rmSync(legacyDirectory, { recursive: true, force: true });
+    }
+  });
+
   it('filtre les lectures et refuse un rattachement à une autre identité', () => {
     const repository = accountsRepository(connection.db, 'owner-test');
     const other = accountsRepository(connection.db, 'other-test');
@@ -385,6 +406,13 @@ describe('persistance SQLite privée', () => {
     expect(owner.resolve({ name: 'Règle synthétique', asOf: '2026-03-31' })).toMatchObject({ status: 'missing', rules: [] });
     expect(owner.resolve({ name: 'Règle synthétique', asOf: '2026-06-15' })).toMatchObject({ status: 'overlap', rules: expect.arrayContaining([expect.objectContaining({ value: '15 %' }), expect.objectContaining({ value: '16 %' })]) });
     expect(owner.dashboard('2026-03-31')).toMatchObject({ asOf: '2026-03-31', coverage: [expect.objectContaining({ name: 'Règle synthétique', status: 'missing' })] });
+    const revised = owner.update({ id: rule.id, name: 'Règle synthétique', value: '12,35 %', source: 'Source synthétique révisée', verifiedOn: '2026-09-12', validFrom: '2026-01-01', validTo: '2026-02-28', note: 'Révision synthétique' });
+    expect(revised).toMatchObject({ seriesId: rule.seriesId, revision: 2, value: '12,35 %' });
+    expect(revised.id).not.toBe(rule.id);
+    expect(owner.list()).toEqual(expect.arrayContaining([expect.objectContaining({ id: revised.id, revision: 2 })]));
+    expect(owner.history(revised.id)).toEqual([expect.objectContaining({ id: revised.id, revision: 2 }), expect.objectContaining({ id: rule.id, revision: 1, value: '12,34 %' })]);
+    expect(() => connection.sqlite.prepare('update finance_regulatory_rules set value = ? where id = ?').run('modification interdite', rule.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('delete from finance_regulatory_rules where id = ?').run(rule.id)).toThrow('immutable');
     expect(() => other.update({ id: rule.id, name: 'Interdit', value: '0', source: 'Source', verifiedOn: '2026-09-11', validFrom: '2026-01-01', validTo: null, note: '' })).toThrow('Règle introuvable');
     expect(() => owner.create({ name: 'Période invalide', value: '0', source: 'Source', verifiedOn: '2026-09-11', validFrom: '2026-02-01', validTo: '2026-01-31', note: '' })).toThrow('Période invalide');
   });
