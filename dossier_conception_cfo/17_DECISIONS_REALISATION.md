@@ -337,5 +337,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-11 | D23 — Capacité des projets | « A » | Capacité mensuelle et comparaison informative avec les charges des projets en cours |
 | 2026-09-11 | D24 — Limite des projets actifs | « A » | Limite souple de deux projets en cours, avec signal sans blocage |
 | 2026-09-11 | D25 — Provisions business | « A » | Provisions déclaratives par entité et période, sans fiscalité automatique |
+| 2026-09-12 | L06 — Sauvegarde/restauration locale | « A » | Copie SQLite cohérente vérifiée ; restauration uniquement vers une base neuve et séparée, sans cloud ni déploiement |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

@@ -223,6 +223,8 @@ Travail :
 
 **Arbitrages :** D04 pour le moment de la première mise en ligne ; D10 pour les paramètres réels d'exploitation. Préparer ces éléments ne crée pas automatiquement des ressources Fly.io.
 
+**Réalisation locale, 12 septembre 2026 :** les commandes `db:backup` et `db:restore` créent une copie SQLite cohérente et vérifiée, y compris avec WAL. La restauration vise obligatoirement un nouveau fichier distinct de la base active ; aucun écrasement, stockage cloud ou déploiement n’est effectué. Un test restaure des données synthétiques dans une base isolée. Restent le stockage persistant, le chiffrement/confinement de la conservation, HTTPS et l’exploitation sur l’environnement réellement choisi.
+
 ### L07 — Comptes et transactions
 
 **But :** enregistrer fidèlement les mouvements réels.

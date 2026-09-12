@@ -21,6 +21,8 @@
     "db:generate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=.env ./scripts/db/migrate.ts",
     "db:check": "node --env-file-if-exists=.env ./scripts/db/check.ts",
+    "db:backup": "node --env-file-if-exists=.env ./scripts/db/backup.ts",
+    "db:restore": "node --env-file-if-exists=.env ./scripts/db/restore.ts",
     "auth:bootstrap": "node --env-file-if-exists=.env ./scripts/auth/bootstrap.ts",
     "auth:status": "node --env-file-if-exists=.env ./scripts/auth/status.ts",
     "auth:reset-password": "node --env-file-if-exists=.env ./scripts/auth/reset-password.ts"

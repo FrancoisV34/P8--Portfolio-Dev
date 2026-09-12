@@ -63,6 +63,18 @@ npm run db:check
 
 Ces commandes créent ou mettent à jour `data/development.sqlite`, sans ajouter de données de démonstration. Les migrations sont explicites ; elles ne sont pas exécutées pendant une requête HTTP. `DATABASE_PATH` permet de choisir un fichier `.sqlite` ou `.db` privé et est obligatoire en production. Les tests utilisent exclusivement des bases temporaires distinctes. Ne jamais placer la base dans `public/` ou `build/client/`.
 
+### Sauvegarde et restauration locale
+
+Une sauvegarde est une copie SQLite cohérente, y compris lorsque le journal WAL est actif. Elle est vérifiée avant confirmation et reste ignorée par Git. Choisir un nom de fichier inédit, hors des fichiers publics :
+
+```sh
+npm run db:backup -- data/backups/portfolio-2026-09-12.sqlite
+npm run db:restore -- data/backups/portfolio-2026-09-12.sqlite data/restored/portfolio-2026-09-12.sqlite
+DATABASE_PATH=data/restored/portfolio-2026-09-12.sqlite npm run db:check
+```
+
+La restauration refuse toujours une destination existante, la base active et un chemin public. Elle ne remplace donc jamais une base en place. Conserver la sauvegarde dans un emplacement privé hors Git ; le chiffrement, le stockage persistant, HTTPS et la procédure d’exploitation restent à définir avant toute mise en ligne.
+
 Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les tables du compte privé et le journal de transactions seront ajoutés avec les prochains lots. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
 
 ## Organisation

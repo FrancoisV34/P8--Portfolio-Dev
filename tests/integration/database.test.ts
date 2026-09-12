@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { copyFileSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from '../../app/.server/db/connection';
+import { createBackup, privateSqlitePath, restoreBackup } from '../../app/.server/db/backup';
 import { databasePath } from '../../app/.server/db/config';
 import { migrateDatabase } from '../../app/.server/db/migrate';
 import { accountsRepository } from '../../app/.server/repositories/accounts';
@@ -44,6 +45,30 @@ describe('persistance SQLite privée', () => {
     migrateDatabase(connection.db);
     expect(accountsRepository(connection.db, 'owner-test').listAccounts()).toEqual([account]);
     expect(connection.sqlite.pragma('quick_check', { simple: true })).toBe('ok');
+  });
+
+  it('sauvegarde une base WAL et la restaure dans un nouveau fichier distinct', async () => {
+    const repository = accountsRepository(connection.db, 'owner-test');
+    const entity = repository.createEntity({ name: 'Entité de sauvegarde', type: 'personal' });
+    const account = repository.createAccount({ entityId: entity.id, name: 'Compte de sauvegarde', type: 'checking', openingBalanceCents: 12345, openingDate: '2026-09-11' });
+    const snapshot = join(directory, 'backup.sqlite');
+    const restored = join(directory, 'restored.sqlite');
+
+    await createBackup(connection.sqlite, join(directory, 'test.sqlite'), snapshot);
+    await restoreBackup(snapshot, restored);
+
+    expect(statSync(snapshot).mode & 0o777).toBe(0o600);
+    expect(statSync(restored).mode & 0o777).toBe(0o600);
+
+    const restoredConnection = openDatabase({ path: restored, environment: 'test' });
+    try {
+      expect(accountsRepository(restoredConnection.db, 'owner-test').listAccounts()).toEqual([account]);
+      expect(restoredConnection.sqlite.pragma('quick_check', { simple: true })).toBe('ok');
+    } finally {
+      restoredConnection.close();
+    }
+    await expect(restoreBackup(snapshot, restored)).rejects.toThrow('nouveau fichier distinct');
+    expect(() => privateSqlitePath('public/snapshot.sqlite', directory)).toThrow('fichiers publics');
   });
 
   it('fait évoluer un actif existant vers une position manuelle sans perte', () => {
