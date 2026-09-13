@@ -14,6 +14,7 @@ import { planningRepository } from '../../app/.server/repositories/planning';
 import { gominingRepository } from '../../app/.server/repositories/gomining';
 import { goalsRepository } from '../../app/.server/repositories/goals';
 import { regulatoryRepository } from '../../app/.server/repositories/regulatory';
+import { simulationRepository } from '../../app/.server/repositories/simulations';
 import { wealthRepository } from '../../app/.server/repositories/wealth';
 
 let directory: string;
@@ -429,6 +430,24 @@ describe('persistance SQLite privée', () => {
     expect(() => connection.sqlite.prepare('delete from finance_cfo_comparisons where id = ?').run(comparison.id)).toThrow('immutable');
     expect(() => connection.sqlite.prepare('update finance_cfo_rule_sets set placements_basis_points = 1 where id = ?').run(configured.id)).toThrow('immutable');
     expect(() => connection.sqlite.prepare('delete from finance_cfo_rule_sets where id = ?').run(configured.id)).toThrow('immutable');
+  });
+
+  it('versionne les hypothèses et les exécutions L15 par propriétaire', () => {
+    const owner = simulationRepository(connection.db, 'owner-test');
+    const other = simulationRepository(connection.db, 'other-test');
+    const values = { months: 12, profile: { annualPlacementReturnBasisPoints: 600, businessMonthlyGrowthBasisPoints: 200, householdExpenseAnnualInflationBasisPoints: 200 }, openingHouseholdCashCents: 10_000, frozenObservedAssetCents: 20_000, monthlyHouseholdIncomeCents: 10_000, monthlyHouseholdExpenseCents: 4_000, weights: { placements: 5_000, business: 0, material: 0, projects: 0, opportunities: 0, debt: 5_000 }, businesses: [], debts: [{ id: 'debt-test', outstandingCents: 10_000, monthlyPaymentCents: 1_000, annualRateBasisPoints: 500 }], goals: [] };
+    const first = owner.saveAssumptions(values);
+    const second = owner.saveAssumptions({ ...values, monthlyHouseholdIncomeCents: 11_000 });
+    expect(owner.current()).toMatchObject({ id: second.id, revision: 2, snapshot: { monthlyHouseholdIncomeCents: 11_000 } });
+    expect(other.current()).toBeNull();
+    const run = owner.run(second.id);
+    expect(owner.list()).toEqual([expect.objectContaining({ id: run.id, assumptionId: second.id, input: expect.objectContaining({ monthlyHouseholdIncomeCents: 11_000 }), result: expect.objectContaining({ months: expect.any(Array) }) })]);
+    expect(() => other.run(second.id)).toThrow('Hypothèse de simulation introuvable');
+    expect(() => connection.sqlite.prepare('update finance_simulation_assumptions set snapshot = ? where id = ?').run('{}', first.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('delete from finance_simulation_assumptions where id = ?').run(first.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare("insert into finance_simulation_runs (id, owner_id, assumption_id, input, result, created_at) values ('simulation-cross-owner', 'other-test', ?, '{}', '{}', '2026-09-13T00:00:00.000Z')").run(second.id)).toThrow('Invalid simulation assumption');
+    expect(() => connection.sqlite.prepare('update finance_simulation_runs set result = ? where id = ?').run('{}', run.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('delete from finance_simulation_runs where id = ?').run(run.id)).toThrow('immutable');
   });
 
   it('isole les règles réglementaires manuelles et leurs périodes datées', () => {

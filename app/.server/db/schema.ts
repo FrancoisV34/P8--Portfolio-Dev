@@ -537,3 +537,30 @@ export const cfoComparisons = sqliteTable('finance_cfo_comparisons', {
   check('finance_cfo_comparisons_name', sql`length(trim(${table.name})) between 1 and 100`),
   check('finance_cfo_comparisons_allocation', sql`length(${table.allocation}) between 2 and 10000 and json_valid(${table.allocation})`),
 ]);
+
+// Les hypothèses et résultats de simulation sont des instantanés privés. Une
+// nouvelle saisie crée une révision ; elle ne réécrit jamais une projection.
+export const simulationAssumptions = sqliteTable('finance_simulation_assumptions', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  revision: integer('revision').notNull(),
+  snapshot: text('snapshot').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  uniqueIndex('finance_simulation_assumptions_owner_revision_idx').on(table.ownerId, table.revision),
+  check('finance_simulation_assumptions_revision', sql`${table.revision} >= 1`),
+  check('finance_simulation_assumptions_snapshot', sql`length(${table.snapshot}) between 2 and 50000 and json_valid(${table.snapshot})`),
+]);
+
+export const simulationRuns = sqliteTable('finance_simulation_runs', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  assumptionId: text('assumption_id').notNull().references(() => simulationAssumptions.id, { onDelete: 'restrict' }),
+  input: text('input').notNull(),
+  result: text('result').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_simulation_runs_owner_created_idx').on(table.ownerId, table.createdAt),
+  check('finance_simulation_runs_input', sql`length(${table.input}) between 2 and 50000 and json_valid(${table.input})`),
+  check('finance_simulation_runs_result', sql`length(${table.result}) between 2 and 200000 and json_valid(${table.result})`),
+]);
