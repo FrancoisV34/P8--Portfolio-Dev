@@ -36,6 +36,8 @@ export type SimulationMonth = {
   allocableSurplusCents: EuroCents;
   householdCashCents: EuroCents;
   placementCents: EuroCents;
+  /** CA moins charges planifiées : indicateur, pas une distribution foyer. */
+  businessMonthlyNetCents: EuroCents;
   businessCashCents: EuroCents;
   materialCents: EuroCents;
   debtCents: EuroCents;
@@ -48,6 +50,7 @@ export type SimulationResult = {
   finalDebtCents: EuroCents;
   totalInterestCents: EuroCents;
   finalBusinessCashCents: EuroCents;
+  finalBusinessMonthlyNetCents: EuroCents;
   goals: Array<{ id: string; projectedProgressCents: EuroCents; targetCents: EuroCents }>;
   freedomRateBasisPoints: number | null;
 };
@@ -121,10 +124,12 @@ export function projectSimulation(raw: SimulationInput): SimulationResult {
     const unallocatedBusinessCents = businesses.length === 0 ? businessAllocation : euroCents(0);
     const share = businesses.length === 0 ? 0 : Math.floor(businessAllocation / businesses.length);
     let businessRemainder = businessAllocation - share * businesses.length;
+    let businessMonthlyNetCents = euroCents(0);
     for (const business of businesses) {
       const charges = sumEuroCents(business.charges.filter((charge) => due(charge, month)).map((charge) => charge.amountCents));
       const allocatedCash = euroCents(share + (businessRemainder > 0 ? 1 : 0));
       businessRemainder -= allocatedCash > share ? 1 : 0;
+      businessMonthlyNetCents = euroCents(businessMonthlyNetCents + business.revenueCents - charges);
       business.cashCents = euroCents(Math.max(0, business.cashCents + business.revenueCents - charges + allocatedCash));
       business.revenueCents = rounded(new decimal(business.revenueCents).mul(businessGrowth));
     }
@@ -137,13 +142,13 @@ export function projectSimulation(raw: SimulationInput): SimulationResult {
     const debtCents = sumEuroCents(debts.map((debt) => debt.remainingCents));
     const businessCashCents = sumEuroCents(businesses.map((business) => business.cashCents));
     const netWealthCents = euroCents(frozenObservedAssetCents + householdCash + placements + businessCashCents + material - debtCents);
-    rows.push({ month, householdIncomeCents: householdIncome, householdExpenseCents, gominingContributionCents, scheduledDebtPaymentCents, extraDebtPaymentCents: euroCents(requestedExtraDebtPaymentCents - unpaidDebtAllocationCents), allocableSurplusCents: surplus, householdCashCents: householdCash, placementCents: placements, businessCashCents, materialCents: material, debtCents, netWealthCents });
+    rows.push({ month, householdIncomeCents: householdIncome, householdExpenseCents, gominingContributionCents, scheduledDebtPaymentCents, extraDebtPaymentCents: euroCents(requestedExtraDebtPaymentCents - unpaidDebtAllocationCents), allocableSurplusCents: surplus, householdCashCents: householdCash, placementCents: placements, businessMonthlyNetCents, businessCashCents, materialCents: material, debtCents, netWealthCents });
   }
   const last = rows.at(-1)!;
-  return { months: rows, finalNetWealthCents: last.netWealthCents, minimumHouseholdCashCents: minimumHouseholdCash, finalDebtCents: last.debtCents, totalInterestCents: totalInterest, finalBusinessCashCents: last.businessCashCents, goals: goals.map(({ id, progressCents, targetCents }) => ({ id, projectedProgressCents: progressCents, targetCents })), freedomRateBasisPoints: householdExpenseCentsForFreedom(last.householdExpenseCents, businesses) };
+  return { months: rows, finalNetWealthCents: last.netWealthCents, minimumHouseholdCashCents: minimumHouseholdCash, finalDebtCents: last.debtCents, totalInterestCents: totalInterest, finalBusinessCashCents: last.businessCashCents, finalBusinessMonthlyNetCents: last.businessMonthlyNetCents, goals: goals.map(({ id, progressCents, targetCents }) => ({ id, projectedProgressCents: progressCents, targetCents })), freedomRateBasisPoints: householdExpenseCentsForFreedom(last.householdExpenseCents, last.businessMonthlyNetCents) };
 }
 
-function householdExpenseCentsForFreedom(expenseCents: EuroCents, businesses: Array<{ cashCents: EuroCents }>) {
+function householdExpenseCentsForFreedom(expenseCents: EuroCents, businessMonthlyNetCents: EuroCents) {
   if (expenseCents === 0) return null;
-  return Math.round(sumEuroCents(businesses.map((business) => business.cashCents)) * 10_000 / expenseCents);
+  return Math.round(Math.max(0, businessMonthlyNetCents) * 10_000 / expenseCents);
 }

@@ -19,7 +19,14 @@ describe('moteur de simulation mensuelle', () => {
   it('applique les charges business seulement aux échéances définies et conserve le cash dans le business', () => {
     const result = projectSimulation({ ...base, months: 3, weights: { placements: 0, business: 10_000, material: 0, projects: 0, opportunities: 0, debt: 0 }, debts: [], businesses: [{ id: 'app', openingCashCents: 1_000, monthlyRevenueCents: 10_000, charges: [{ name: 'SaaS', amountCents: 2_000, frequency: 'monthly', startMonth: 1, endMonth: null }, { name: 'Licence', amountCents: 3_000, frequency: 'quarterly', startMonth: 1, endMonth: null }] }] });
     expect(result.months.map((month) => month.businessCashCents)).toEqual([21_000, 44_000, 67_000]);
+    expect(result.months.map((month) => month.businessMonthlyNetCents)).toEqual([5_000, 8_000, 8_000]);
     expect(result.months[0]?.householdCashCents).toBe(10_000);
+  });
+
+  it('calcule le taux de liberté depuis le dégagement mensuel, sans transformer le cash business retenu en revenu foyer', () => {
+    const result = projectSimulation({ ...base, months: 1, debts: [], weights: { placements: 0, business: 0, material: 0, projects: 0, opportunities: 10_000, debt: 0 }, businesses: [{ id: 'app', openingCashCents: 500_000, monthlyRevenueCents: 10_000, charges: [{ name: 'Hébergement', amountCents: 4_000, frequency: 'monthly', startMonth: 1, endMonth: null }] }] });
+    expect(result).toMatchObject({ finalBusinessCashCents: 506_000, finalBusinessMonthlyNetCents: 6_000, freedomRateBasisPoints: 12_000 });
+    expect(result.months[0]?.householdCashCents).toBe(25_000);
   });
 
   it('applique le rendement aux seuls nouveaux placements et sert les objectifs par priorité', () => {
