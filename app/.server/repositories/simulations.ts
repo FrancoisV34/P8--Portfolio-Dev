@@ -18,7 +18,7 @@ const input = z.object({
   gominingScenarioId: z.uuid().nullable().optional(),
   gominingContributionCentsByMonth: z.array(cents).max(120).optional(),
   weights: z.object({ placements: z.number().int().min(0).max(10_000), business: z.number().int().min(0).max(10_000), material: z.number().int().min(0).max(10_000), projects: z.number().int().min(0).max(10_000), opportunities: z.number().int().min(0).max(10_000), debt: z.number().int().min(0).max(10_000) }).strict().refine((value) => Object.values(value).reduce((sum, item) => sum + item, 0) === 10_000, 'La répartition doit totaliser 100 %.'),
-  businesses: z.array(z.object({ id: identifier, openingCashCents: cents, monthlyRevenueCents: cents, charges: z.array(charge).max(60) }).strict()).max(30),
+  businesses: z.array(z.object({ id: identifier, openingCashCents: cents, monthlyRevenueCents: cents, monthlyGrowthBasisPoints: bps.optional(), charges: z.array(charge).max(60) }).strict()).max(30),
   debts: z.array(z.object({ id: identifier, outstandingCents: cents, monthlyPaymentCents: cents, annualRateBasisPoints: bps }).strict()).max(30),
   goals: z.array(z.object({ id: identifier, targetCents: cents, progressCents: cents, priority: z.number().int().min(1).max(999) }).strict()).max(100),
 }).strict();

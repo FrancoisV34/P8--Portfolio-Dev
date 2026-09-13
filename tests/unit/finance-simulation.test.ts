@@ -23,6 +23,11 @@ describe('moteur de simulation mensuelle', () => {
     expect(result.months[0]?.householdCashCents).toBe(10_000);
   });
 
+  it('laisse chaque activité déroger explicitement à la croissance du profil', () => {
+    const result = projectSimulation({ ...base, months: 2, profile: { ...base.profile, businessMonthlyGrowthBasisPoints: 1_000 }, debts: [], businesses: [{ id: 'stable', openingCashCents: 0, monthlyRevenueCents: 10_000, monthlyGrowthBasisPoints: 0, charges: [] }, { id: 'growth', openingCashCents: 0, monthlyRevenueCents: 10_000, monthlyGrowthBasisPoints: 2_000, charges: [] }] });
+    expect(result.months[1]?.businessMonthlyNetCents).toBe(22_000);
+  });
+
   it('calcule le taux de liberté depuis le dégagement mensuel, sans transformer le cash business retenu en revenu foyer', () => {
     const result = projectSimulation({ ...base, months: 1, debts: [], weights: { placements: 0, business: 0, material: 0, projects: 0, opportunities: 10_000, debt: 0 }, businesses: [{ id: 'app', openingCashCents: 500_000, monthlyRevenueCents: 10_000, charges: [{ name: 'Hébergement', amountCents: 4_000, frequency: 'monthly', startMonth: 1, endMonth: null }] }] });
     expect(result).toMatchObject({ finalBusinessCashCents: 506_000, finalBusinessMonthlyNetCents: 6_000, freedomRateBasisPoints: 12_000 });

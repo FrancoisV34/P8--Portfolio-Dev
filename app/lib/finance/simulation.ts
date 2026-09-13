@@ -11,7 +11,7 @@ export type SimulationProfile = {
 };
 export type SimulationProfileKind = 'prudent' | 'central' | 'ambitious' | 'custom';
 export type SimulationCharge = { name: string; amountCents: number; frequency: 'once' | 'monthly' | 'quarterly' | 'annual'; startMonth: number; endMonth: number | null };
-export type SimulationBusiness = { id: string; openingCashCents: number; monthlyRevenueCents: number; charges: readonly SimulationCharge[] };
+export type SimulationBusiness = { id: string; openingCashCents: number; monthlyRevenueCents: number; monthlyGrowthBasisPoints?: number; charges: readonly SimulationCharge[] };
 export type SimulationDebt = { id: string; outstandingCents: number; monthlyPaymentCents: number; annualRateBasisPoints: number };
 export type SimulationGoal = { id: string; targetCents: number; progressCents: number; priority: number };
 export type SimulationInput = {
@@ -95,12 +95,11 @@ export function projectSimulation(raw: SimulationInput): SimulationResult {
   const householdIncome = cents(raw.monthlyHouseholdIncomeCents);
   const initialExpense = cents(raw.monthlyHouseholdExpenseCents);
   let placements = euroCents(0); let material = euroCents(0); let totalInterest = euroCents(0); let minimumHouseholdCash = householdCash;
-  const businesses = raw.businesses.map((item) => ({ ...item, cashCents: cents(item.openingCashCents), revenueCents: cents(item.monthlyRevenueCents), charges: item.charges.map((charge) => ({ ...charge, amountCents: cents(charge.amountCents) })) }));
+  const businesses = raw.businesses.map((item) => ({ ...item, cashCents: cents(item.openingCashCents), revenueCents: cents(item.monthlyRevenueCents), monthlyGrowthBasisPoints: item.monthlyGrowthBasisPoints === undefined ? profile.businessMonthlyGrowthBasisPoints : bps(item.monthlyGrowthBasisPoints, 'Croissance activité'), charges: item.charges.map((charge) => ({ ...charge, amountCents: cents(charge.amountCents) })) }));
   const debts = raw.debts.map((item) => ({ ...item, remainingCents: cents(item.outstandingCents), paymentCents: cents(item.monthlyPaymentCents), annualRateBasisPoints: bps(item.annualRateBasisPoints, 'Taux de dette') }));
   const goals = raw.goals.map((item) => ({ ...item, targetCents: cents(item.targetCents), progressCents: cents(item.progressCents) })).sort((a, b) => a.priority - b.priority);
   const placementRate = monthlyCompoundRate(profile.annualPlacementReturnBasisPoints);
   const expenseRate = monthlyCompoundRate(profile.householdExpenseAnnualInflationBasisPoints);
-  const businessGrowth = new decimal(1).plus(new decimal(profile.businessMonthlyGrowthBasisPoints).div(10_000));
   const rows: SimulationMonth[] = [];
 
   for (let month = 1; month <= raw.months; month += 1) {
@@ -135,7 +134,7 @@ export function projectSimulation(raw: SimulationInput): SimulationResult {
       businessRemainder -= allocatedCash > share ? 1 : 0;
       businessMonthlyNetCents = euroCents(businessMonthlyNetCents + business.revenueCents - charges);
       business.cashCents = euroCents(Math.max(0, business.cashCents + business.revenueCents - charges + allocatedCash));
-      business.revenueCents = rounded(new decimal(business.revenueCents).mul(businessGrowth));
+      business.revenueCents = rounded(new decimal(business.revenueCents).mul(new decimal(1).plus(new decimal(business.monthlyGrowthBasisPoints).div(10_000))));
     }
     let projectAllocation = allocated.get('projects')!;
     for (const goal of goals) { const contribution = Math.min(Math.max(0, goal.targetCents - goal.progressCents), projectAllocation); goal.progressCents = euroCents(goal.progressCents + contribution); projectAllocation = euroCents(projectAllocation - contribution); }
