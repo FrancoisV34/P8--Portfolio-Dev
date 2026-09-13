@@ -12,8 +12,10 @@ const charge = z.object({ name: z.string().trim().min(1).max(100), amountCents: 
   .refine(({ startMonth, endMonth }) => endMonth === null || endMonth >= startMonth, 'Période de charge invalide.');
 const input = z.object({
   months: z.number().int().min(1).max(120),
+  profileKind: z.enum(['prudent', 'central', 'ambitious', 'custom']).optional(),
   profile: z.object({ annualPlacementReturnBasisPoints: bps, businessMonthlyGrowthBasisPoints: bps, householdExpenseAnnualInflationBasisPoints: bps }).strict(),
   openingHouseholdCashCents: cents, frozenObservedAssetCents: cents, monthlyHouseholdIncomeCents: cents, monthlyHouseholdExpenseCents: cents,
+  gominingScenarioId: z.uuid().nullable().optional(),
   gominingContributionCentsByMonth: z.array(cents).max(120).optional(),
   weights: z.object({ placements: z.number().int().min(0).max(10_000), business: z.number().int().min(0).max(10_000), material: z.number().int().min(0).max(10_000), projects: z.number().int().min(0).max(10_000), opportunities: z.number().int().min(0).max(10_000), debt: z.number().int().min(0).max(10_000) }).strict().refine((value) => Object.values(value).reduce((sum, item) => sum + item, 0) === 10_000, 'La répartition doit totaliser 100 %.'),
   businesses: z.array(z.object({ id: identifier, openingCashCents: cents, monthlyRevenueCents: cents, charges: z.array(charge).max(60) }).strict()).max(30),

@@ -9,17 +9,21 @@ export type SimulationProfile = {
   businessMonthlyGrowthBasisPoints: number;
   householdExpenseAnnualInflationBasisPoints: number;
 };
+export type SimulationProfileKind = 'prudent' | 'central' | 'ambitious' | 'custom';
 export type SimulationCharge = { name: string; amountCents: number; frequency: 'once' | 'monthly' | 'quarterly' | 'annual'; startMonth: number; endMonth: number | null };
 export type SimulationBusiness = { id: string; openingCashCents: number; monthlyRevenueCents: number; charges: readonly SimulationCharge[] };
 export type SimulationDebt = { id: string; outstandingCents: number; monthlyPaymentCents: number; annualRateBasisPoints: number };
 export type SimulationGoal = { id: string; targetCents: number; progressCents: number; priority: number };
 export type SimulationInput = {
   months: number;
+  profileKind?: SimulationProfileKind;
   profile: SimulationProfile;
   openingHouseholdCashCents: number;
   frozenObservedAssetCents: number;
   monthlyHouseholdIncomeCents: number;
   monthlyHouseholdExpenseCents: number;
+  /** Identifiant de la source incluse, pour rendre le choix auditable. */
+  gominingScenarioId?: string | null;
   gominingContributionCentsByMonth?: readonly number[];
   weights: SimulationWeights;
   businesses: readonly SimulationBusiness[];
