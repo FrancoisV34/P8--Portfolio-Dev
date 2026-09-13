@@ -194,6 +194,21 @@ describe('route finance privée', () => {
     await expect(loader({ request: new Request(`${origin}/finance/cfo?period=2026-09`, { headers: { cookie } }), params: { '*': 'cfo' } })).resolves.toMatchObject({ cfo: { history: expect.arrayContaining([expect.objectContaining({ id: evaluation.id, decisions: [expect.objectContaining({ outcome: 'ignored', note: 'Décision route synthétique' })] }), expect.objectContaining({ id: comparisonEvaluation.id, comparisons: [expect.objectContaining({ name: 'Hypothèse route synthétique' })] })]) } });
   });
 
+  it('versionne puis lance une simulation privée sans modifier le journal réel', async () => {
+    const initial = await loader({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { headers: { cookie } }), params: { '*': 'simulations' } });
+    const form = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'saveSimulation', months: '12', placementReturn: '6,00', businessGrowth: '2,00', expenseInflation: '2,00', openingHouseholdCash: '100,00', frozenObservedAssets: '50,00', monthlyHouseholdIncome: '200,00', monthlyHouseholdExpense: '100,00', gominingScenarioId: '', placementsWeight: '50,00', businessWeight: '10,00', materialWeight: '0,00', projectsWeight: '10,00', opportunitiesWeight: '10,00', debtWeight: '20,00' })) form.set(key, value);
+    for (const { activity } of initial.business.activities) { form.set(`businessCash-${activity.id}`, '0,00'); form.set(`businessRevenue-${activity.id}`, '0,00'); }
+    await expect(action({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { method: 'POST', body: form, headers: { cookie, origin } }) })).resolves.toMatchObject({ status: 302 });
+    const saved = await loader({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { headers: { cookie } }), params: { '*': 'simulations' } });
+    const assumption = saved.simulations.current;
+    if (!assumption) throw new Error('Hypothèse de simulation absente.');
+    expect(assumption.snapshot).toMatchObject({ months: 12, monthlyHouseholdIncomeCents: 20_000 });
+    const run = new FormData(); run.set('intent', 'runSimulation'); run.set('assumptionId', assumption.id);
+    await expect(action({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { method: 'POST', body: run, headers: { cookie, origin } }) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { headers: { cookie } }), params: { '*': 'simulations' } })).resolves.toMatchObject({ simulations: { runs: [expect.objectContaining({ assumptionId: assumption.id, result: expect.objectContaining({ months: expect.any(Array) }) })] }, transactions: [] });
+  });
+
   it('résout une règle réglementaire uniquement côté serveur, sans valeur de repli', async () => {
     const rule = new FormData();
     for (const [key, value] of Object.entries({ intent: 'createRegulatoryRule', name: 'Règle route synthétique', value: '10 %', source: 'Source route synthétique', verifiedOn: '2026-09-12', validFrom: '2026-01-01', validTo: '2026-03-31', note: '' })) rule.set(key, value);
