@@ -65,6 +65,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D26 | Validé : L13 | Résolution des règles datées | Une seule règle applicable ; choisir une règle la plus récente ; valeur de repli | Rendre les absences et chevauchements visibles avant tout calcul |
 | D27 | Validé : L13 | Historique des règles | Révisions immuables ; modification en place ; historique différé | Préserver les valeurs réellement vérifiées sans imposer de calcul |
 | D28 | Validé : L14 | Premier incrément du moteur CFO | Priorités de sécurité seules ; allocation complète ; diagnostic et allocation progressive | Définit les règles réellement appliquées et la première restitution « meilleure action » |
+| D29 | Validé : L15 | Fondations de simulation | Horizon 10 ans et profils complets ; horizon libre ; hypothèses sans profils | Fixe les hypothèses et sorties du premier simulateur reproductible |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -96,6 +97,24 @@ rendements ou de patrimoine projeté relève de L15.
 Un apport GoMining prévu est réservé par le CFO uniquement lorsqu'il est relié
 à une catégorie de dépense. Cette règle rend visible le conflit de trésorerie
 sans transformer le scénario en transaction ou en engagement bancaire réel.
+
+## D29 — Fondations de simulation globale
+
+**État : validé le 13 septembre 2026 — simulation mensuelle, 10 ans par défaut.**
+
+La simulation fonctionne au mois avec jalons 1, 3, 5 et 10 ans. Les profils
+prudent, central, ambitieux et personnalisé peuvent modifier les revenus
+business, les rendements et les dépenses. Chaque activité business reçoit une
+croissance mensuelle manuelle, explicitement saisie et versionnée ; aucune
+courbe de revenu n'est inventée depuis le MRR observé.
+
+Le comparateur distribue un même surplus entre placements, business, matériel,
+projets, opportunités et remboursement anticipé. Cette dernière affectation
+réduit immédiatement le capital restant dû dans le mois simulé. La v1 exclut
+la fiscalité et le dit explicitement. Elle restitue patrimoine final, cash
+minimum, dette et intérêts, progression des objectifs, jalons annuels,
+explication des hypothèses et taux de liberté. Chaque lancement conserve un
+instantané privé, déterministe et immuable, sans écrire dans le journal réel.
 
 ## D16 — Premier bilan patrimoine
 
@@ -369,5 +388,7 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-12 | L06 — Sauvegarde/restauration locale | « A » | Copie SQLite cohérente vérifiée ; restauration uniquement vers une base neuve et séparée, sans cloud ni déploiement |
 | 2026-09-12 | D26 — Résolution réglementaire | « A » | Une règle unique est applicable ; absence ou chevauchement bloque toute valeur implicite |
 | 2026-09-12 | D27 — Historique réglementaire | « A » | Chaque modification devient une révision immuable, consultable sans écrasement |
+
+| 2026-09-13 | D29 — Fondations L15 | « 1A, 2A, 3A, 4A, 5 oui, 6 oui, 7 oui » | Horizon 10 ans, profils complets, croissance manuelle par activité, comparateur du surplus, remboursement anticipé, fiscalité exclue et taux de liberté |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

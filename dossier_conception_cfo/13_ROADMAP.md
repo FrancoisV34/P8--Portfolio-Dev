@@ -470,6 +470,22 @@ ne diminue pas le cash CFO.
 
 **But :** projeter les choix sur 5/10/20 ans et comprendre leurs effets.
 
+**Cadrage validé le 13 septembre 2026 (D29) :** la première version utilise
+un pas mensuel, un horizon de 10 ans par défaut et des jalons à 1, 3, 5 et 10
+ans. Elle propose les profils prudent, central et ambitieux, ainsi qu'un profil
+personnalisé ; chacun peut faire varier revenus business, rendements et
+dépenses. Les activités business reçoivent une hypothèse manuelle de croissance
+mensuelle, explicite et versionnée. La fiscalité est hors modèle à ce stade et
+l'interface doit l'indiquer, sans appliquer de taux implicite.
+
+Le comparateur arbitre exactement le même surplus entre placements, business,
+matériel, projets, opportunités et remboursement anticipé de dette. Un montant
+affecté à la dette réduit immédiatement le capital restant dû dans le mois
+simulé. Les sorties initiales comprennent patrimoine final, cash minimum,
+dette et intérêts restants, progression des objectifs, jalons annuels,
+explication des hypothèses et taux de liberté. Chaque exécution est un
+instantané reproductible et ne modifie jamais les données observées.
+
 Travail :
 - orchestrer le pas mensuel : revenus, dépenses, événements, décisions CFO, placements et dettes ;
 - brancher les moteurs métier, dont GoMining avec agrégation mensuelle si son calcul est journalier ;
