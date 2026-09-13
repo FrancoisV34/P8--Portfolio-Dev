@@ -120,6 +120,34 @@
       "when": 1789205403871,
       "tag": "0016_regulatory-rule-versions",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1789240711308,
+      "tag": "0017_cfo-evaluations",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1789241764549,
+      "tag": "0018_cfo-decisions",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1789289487567,
+      "tag": "0019_cfo-rule-sets-and-modified-plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1789299789998,
+      "tag": "0020_cfo-allocation-comparisons",
+      "breakpoints": true
     }
   ]
 }

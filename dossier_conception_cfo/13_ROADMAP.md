@@ -436,6 +436,36 @@ Travail :
 
 Accepter une proposition enregistre un plan interne ; cela ne passe aucun ordre et ne prouve pas qu'un paiement réel a eu lieu. Un contexte sans business est possible ; les règles dépendantes d'un module absent sont explicitement indisponibles.
 
+**Premier incrément réalisé localement, 12 septembre 2026 (D28, approche
+progressive) :** une évaluation datée rassemble les liquidités des comptes
+suivis, engagements restant à payer, mensualités de dette, provisions business,
+réserve, part crypto observée, état du cash business et capacité des projets.
+Le moteur applique dans cet ordre : obligations, réserve de sécurité, plafond
+spéculatif initial de 5 %, complétude des données, puis proposition
+d'allocation. Les poids initiaux sont 35 % placements, 25 % business, 15 %
+matériel, 10 % projets et 15 % cash/opportunités ; chaque centime est alloué.
+Chaque résultat et son contexte sont immuables, privés et consultables ; aucun
+ordre, transfert, transaction ou calcul fiscal n'est créé. L'acceptation, la
+formelle comme plan interne et l'ignorance avec note sont également
+historisées, sans effet sur les comptes. La modification détaillée d'une
+proposition est disponible : les cinq montants doivent redistribuer exactement
+le cash allouable, puis sont conservés comme plan ponctuel. Les poids récurrents
+sont aussi configurables pour les évaluations futures, totalisent toujours
+100 % et créent une nouvelle révision immuable. Les évaluations antérieures ne
+sont jamais recalculées. Une hypothèse alternative peut désormais redistribuer
+ce même cash allouable, être conservée de façon immuable et être affichée face
+à la proposition avec les écarts par destination ; elle n'a aucun effet sur les
+données réelles ni sur les poids futurs. Les comparaisons de rendements,
+patrimoine ou horizons restent dans L15.
+
+**Complément local, 13 septembre 2026 :** lorsqu'un scénario GoMining a un
+apport actif pour la période et est explicitement rattaché à une catégorie de
+dépense, son montant prévu est inclus dans le contexte CFO comme montant à
+réserver. Il bloque donc une nouvelle allocation au même titre qu'un autre
+montant déjà prévu, sans créer de transaction ni assimiler une projection à un
+paiement réel. Un scénario non rattaché à une catégorie reste une hypothèse et
+ne diminue pas le cash CFO.
+
 ### L15 — Simulations globales et comparaison
 
 **But :** projeter les choix sur 5/10/20 ans et comprendre leurs effets.
@@ -513,6 +543,32 @@ Travail envisageable :
 **Terminé lorsque :** les sorties probabilistes sont expliquées et évaluées. L'IA reste une couche d'explication, sans remplacer les calculs financiers déterministes.
 
 L'assistant est optionnel. Tout recours à un service IA externe devra faire l'objet d'un arbitrage dédié sur les données transmises, conformément au périmètre privé.
+
+### Backlog produit confirmé — à développer après le socle CFO déterministe
+
+Ces pistes sont retenues par François le 12 septembre 2026. Elles ne modifient
+pas l'ordre actuel : L14 reste le prochain lot, puis L15 et les prérequis de
+mise en service. Chaque piste fera l'objet d'un cadrage dédié avant écriture de
+données réelles ou intégration externe.
+
+- **Clôture mensuelle et annuelle** : calculer une période à partir des
+  mouvements réellement saisis (entrées moins sorties), vérifier les comptes,
+  figer un bilan explicable et comparer les périodes sans inventer de données.
+- **Écran « meilleure action »** : présenter la priorité et sa justification
+  depuis le moteur CFO ; son comportement précis sera décidé après que les
+  règles et leurs données d'entrée auront été validées.
+- **Import CSV bancaire** : aperçu, mapping, validation, dédoublonnage et
+  écriture atomique. Aucun import ne sera appliqué sans confirmation explicite
+  ni sans conserver une trace de son origine.
+- **Calendrier financier** : rassembler échéances de dettes, engagements,
+  révisions réglementaires, objectifs et signaux business, sans présumer qu'un
+  événement a été payé ou réalisé.
+- **Score par application** : compléter les KPI SaaS avec churn, MRR, stabilité
+  et autres indicateurs pertinents, avec formules et couverture de données
+  visibles ; le score ne remplacera jamais l'analyse des données sources.
+- **Sauvegardes consolidées** : automatiser des copies privées et chiffrées,
+  avec conservation bornée et tests réguliers de restauration, dans le cadre de
+  L18 et de l'environnement de production retenu.
 
 ## 7. Définition commune d'un lot terminé
 

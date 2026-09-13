@@ -5,6 +5,7 @@ import { requireOwner } from '../.server/auth/owner.server.ts';
 import { accountsRepository } from '../.server/repositories/accounts.ts';
 import { businessRepository } from '../.server/repositories/business.ts';
 import { budgetRepository } from '../.server/repositories/budget.ts';
+import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
@@ -12,12 +13,13 @@ import { regulatoryRepository } from '../.server/repositories/regulatory.ts';
 import { wealthRepository } from '../.server/repositories/wealth.ts';
 import { requireSameOrigin } from '../.server/security/same-origin.server.ts';
 import { parseMonth } from '../lib/finance/dates.ts';
+import { cfoBuckets, type CfoInput } from '../lib/finance/cfo.ts';
 import { projectDebtSchedule } from '../lib/finance/debt.ts';
 import { projectMonthlyGoMining } from '../lib/gomining/monthly.ts';
 import { euroCents, eurosDecimal, formatEuros, parseEuros, sumEuroCents } from '../lib/finance/units.ts';
 import './finance.scss';
 
-const sections = ['overview', 'accounts', 'categories', 'transactions', 'budget', 'wealth', 'business', 'goals', 'regulations', 'gomining'] as const;
+const sections = ['overview', 'accounts', 'categories', 'transactions', 'budget', 'wealth', 'business', 'goals', 'cfo', 'regulations', 'gomining'] as const;
 type Section = typeof sections[number];
 type RegulatoryResolution = ReturnType<ReturnType<typeof regulatoryRepository>['resolve']>;
 type ActionData = { error: string } | { regulationResolution: RegulatoryResolution } | undefined;
@@ -72,6 +74,8 @@ function basisPoints(data: FormData, key: string) {
   if (value > 100_000n) throw new Error('invalid');
   return Number(value);
 }
+function cfoWeight(data: FormData, key: string) { const value = basisPoints(data, key); if (value > 10_000) throw new Error('invalid'); return value; }
+function cfoAllocation(data: FormData) { return cfoBuckets.map((bucket) => ({ bucket, amountCents: nonNegativeAmount(data, `${bucket}Amount`) })); }
 function integer(data: FormData, key: string, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) { const value = Number(field(data, key, 24)); if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error('invalid'); return value; }
 function optionalInteger(data: FormData, key: string, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) { const raw = optionalField(data, key, 24); if (raw === null) return null; const value = Number(raw); if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error('invalid'); return value; }
 function goMiningInput(data: FormData) {
@@ -85,6 +89,32 @@ function goMiningInput(data: FormData) {
 }
 function monthDistance(start: string, target: string) { const [startYear, startMonth] = parseMonth(start).split('-').map(Number); const [targetYear, targetMonth] = parseMonth(target).split('-').map(Number); return (targetYear - startYear) * 12 + targetMonth - startMonth + 1; }
 function endOfMonth(period: string) { const [year, month] = parseMonth(period).split('-').map(Number); return `${period}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, '0')}`; }
+function cfoInputFor(
+  period: string,
+  entities: ReturnType<ReturnType<typeof accountsRepository>['listEntities']>,
+  dashboard: ReturnType<ReturnType<typeof budgetRepository>['dashboard']>,
+  planning: ReturnType<ReturnType<typeof planningRepository>['dashboard']>,
+  wealth: ReturnType<ReturnType<typeof wealthRepository>['dashboard']>,
+  business: ReturnType<ReturnType<typeof businessRepository>['dashboard']>,
+  goals: ReturnType<ReturnType<typeof goalsRepository>['dashboard']>,
+  gominingContributionCents: number,
+): CfoInput {
+  const liquidCashCents = Math.max(0, sumEuroCents(dashboard.accounts.map((account) => euroCents(account.balanceCents))));
+  const unpaidCommitmentCents = sumEuroCents(planning.commitments.map(({ commitment, actualCents }) => euroCents(Math.max(0, commitment.plannedAmountCents - actualCents))));
+  const debtPaymentCents = sumEuroCents(wealth.debts.flatMap(({ balance }) => balance ? [euroCents(balance.monthlyPaymentCents)] : []));
+  const speculativeAssetCents = wealth.allocation.rows.find((item) => item.assetClass === 'crypto')?.amountCents ?? 0;
+  const businessEntities = entities.filter((entity) => entity.type === 'business');
+  return {
+    period, liquidCashCents, reserveTargetCents: planning.reserve?.targetAmountCents ?? null, reserveCurrentCents: planning.reserve?.currentAmountCents ?? 0,
+    unpaidCommitmentCents, debtPaymentCents, businessProvisionCents: business.provisionCents, gominingContributionCents,
+    speculativeAssetCents, grossAssetCents: wealth.allocation.totalCents,
+    businessCashComplete: businessEntities.length === 0 || business.cash.length >= businessEntities.length,
+    activeProjectCount: goals.activeProjectCount, projectCapacityStatus: goals.capacityStatus,
+  };
+}
+function gominingBudgetPlansFor(period: string, scenarios: Array<{ scenario: { id: string; name: string; startPeriod: string; budgetCategoryId: string | null }; projection: { months: Array<{ contributionCents: number }> } }>) {
+  return scenarios.flatMap(({ scenario, projection }) => { const month = monthDistance(scenario.startPeriod, period); const contributionCents = projection.months[month - 1]?.contributionCents ?? 0; return scenario.budgetCategoryId && contributionCents > 0 ? [{ scenarioId: scenario.id, name: scenario.name, categoryId: scenario.budgetCategoryId, contributionCents }] : []; });
+}
 function back(request: Request) { const url = new URL(request.url); return redirect(`${url.pathname.replace(/\.data$/, '')}${url.search}`); }
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
 
@@ -110,19 +140,26 @@ export async function loader({ request, params }: { request: Request; params: Re
     const business = businessRepository(database, session.user.id);
     const goals = goalsRepository(database, session.user.id);
     const regulations = regulatoryRepository(database, session.user.id);
+    const cfo = cfoRepository(database, session.user.id);
     const gominingScenarios = mining.listScenarios().map(({ scenario, phases, versions, historyIncomplete }) => ({ scenario, phases, versions, historyIncomplete, projection: projectMonthlyGoMining({ ...scenario, thresholdHashrateMilliTh: 10_000, contributionPhases: phases }) }));
     const transactions = budget.listTransactions(period);
     const dashboard = budget.dashboard(period);
+    const entities = accounts.listEntities();
+    const planningDashboard = planning.dashboard(period, dashboard.accounts, transactions);
+    const wealthDashboard = wealth.dashboard(endOfMonth(period), sumEuroCents(dashboard.accounts.map((account) => euroCents(account.balanceCents))));
+    const businessDashboard = business.dashboard(period);
+    const goalsDashboard = goals.dashboard();
+    const gominingBudgetPlans = gominingBudgetPlansFor(period, gominingScenarios);
+    const cfoRules = cfo.currentRules();
     return {
       name: session.user.name, section: sectionFor(params['*'] ?? ''), period,
-      entities: accounts.listEntities(), accounts: accounts.listAccounts(), categories: budget.listCategories(),
-      transactions, dashboard, commitments: planning.listCommitments(), planning: planning.dashboard(period, dashboard.accounts, transactions),
-      wealth: wealth.dashboard(endOfMonth(period), sumEuroCents(dashboard.accounts.map((account) => euroCents(account.balanceCents)))),
-      business: business.dashboard(period),
-      goals: goals.dashboard(),
+      entities, accounts: accounts.listAccounts(), categories: budget.listCategories(),
+      transactions, dashboard, commitments: planning.listCommitments(), planning: planningDashboard,
+      wealth: wealthDashboard, business: businessDashboard, goals: goalsDashboard,
+      cfo: { context: cfoInputFor(period, entities, dashboard, planningDashboard, wealthDashboard, businessDashboard, goalsDashboard, sumEuroCents(gominingBudgetPlans.map((plan) => euroCents(plan.contributionCents)))), rules: cfoRules, history: cfo.list() },
       regulations: regulations.dashboard(endOfMonth(period)),
       gomining: gominingScenarios,
-      gominingBudgetPlans: gominingScenarios.flatMap(({ scenario, projection }) => { const month = monthDistance(scenario.startPeriod, period); const contributionCents = projection.months[month - 1]?.contributionCents ?? 0; return scenario.budgetCategoryId && contributionCents > 0 ? [{ scenarioId: scenario.id, name: scenario.name, categoryId: scenario.budgetCategoryId, contributionCents }] : []; }),
+      gominingBudgetPlans,
     };
   } catch (error) {
     if (error instanceof Response) throw error;
@@ -147,6 +184,7 @@ export async function action({ request }: { request: Request }) {
     const business = businessRepository(database, session.user.id);
     const goals = goalsRepository(database, session.user.id);
     const regulations = regulatoryRepository(database, session.user.id);
+    const cfo = cfoRepository(database, session.user.id);
     switch (intent) {
       case 'createEntity': accounts.createEntity({ name: field(data, 'name', 100), type: field(data, 'type', 20) as 'personal' | 'business' }); break;
       case 'createAccount': accounts.createAccount({ entityId: field(data, 'entityId', 64), name: field(data, 'name', 100), type: field(data, 'type', 20) as 'checking' | 'savings' | 'cash', openingBalanceCents: amount(data, 'openingBalance', true), openingDate: field(data, 'openingDate', 10) }); break;
@@ -183,6 +221,24 @@ export async function action({ request }: { request: Request }) {
       case 'createProject': goals.createProject({ goalId: optionalField(data, 'goalId', 64), name: field(data, 'name', 100), status: field(data, 'status', 16) as 'backlog' | 'active' | 'paused' | 'done', priority: integer(data, 'priority', 1, 999), estimatedCostCents: optionalNonNegativeAmount(data, 'estimatedCostAmount'), estimatedEffortMinutes: optionalInteger(data, 'estimatedEffortMinutes', 0, 44_640), nextAction: field(data, 'nextAction', 240) }); break;
       case 'updateProject': goals.updateProject({ id: field(data, 'id', 64), goalId: optionalField(data, 'goalId', 64), name: field(data, 'name', 100), status: field(data, 'status', 16) as 'backlog' | 'active' | 'paused' | 'done', priority: integer(data, 'priority', 1, 999), estimatedCostCents: optionalNonNegativeAmount(data, 'estimatedCostAmount'), estimatedEffortMinutes: optionalInteger(data, 'estimatedEffortMinutes', 0, 44_640), nextAction: field(data, 'nextAction', 240) }); break;
       case 'setProjectCapacity': goals.setCapacity({ monthlyCapacityMinutes: integer(data, 'monthlyCapacityMinutes', 0, 44_640) }); break;
+      case 'evaluateCfo': {
+        const period = parseMonth(new URL(request.url).searchParams.get('period') ?? currentPeriod());
+        const dashboard = budget.dashboard(period);
+        const planningDashboard = planning.dashboard(period, dashboard.accounts, budget.listTransactions(period));
+        const wealthDashboard = wealth.dashboard(endOfMonth(period), sumEuroCents(dashboard.accounts.map((account) => euroCents(account.balanceCents))));
+        const entities = accounts.listEntities();
+        const gominingScenarios = mining.listScenarios().map(({ scenario, phases }) => ({ scenario, projection: projectMonthlyGoMining({ ...scenario, thresholdHashrateMilliTh: 10_000, contributionPhases: phases }) }));
+        const gominingContributionCents = sumEuroCents(gominingBudgetPlansFor(period, gominingScenarios).map((plan) => euroCents(plan.contributionCents)));
+        cfo.evaluate(cfoInputFor(period, entities, dashboard, planningDashboard, wealthDashboard, business.dashboard(period), goals.dashboard(), gominingContributionCents), cfo.currentRules());
+        break;
+      }
+      case 'setCfoWeights': cfo.setWeights({ placements: cfoWeight(data, 'placementsWeight'), business: cfoWeight(data, 'businessWeight'), material: cfoWeight(data, 'materialWeight'), projects: cfoWeight(data, 'projectsWeight'), opportunities: cfoWeight(data, 'opportunitiesWeight') }); break;
+      case 'decideCfo': {
+        const outcome = field(data, 'outcome', 16) as 'accepted' | 'modified' | 'ignored';
+        cfo.decide({ evaluationId: field(data, 'evaluationId', 64), outcome, note: field(data, 'note', 240), allocation: outcome === 'modified' ? cfoAllocation(data) : undefined });
+        break;
+      }
+      case 'compareCfo': cfo.compare({ evaluationId: field(data, 'evaluationId', 64), name: field(data, 'name', 100), allocation: cfoAllocation(data) }); break;
       case 'createRegulatoryRule': regulations.create({ name: field(data, 'name', 100), value: field(data, 'value', 120), source: field(data, 'source', 500), verifiedOn: field(data, 'verifiedOn', 10), validFrom: field(data, 'validFrom', 10), validTo: optionalField(data, 'validTo', 10), note: field(data, 'note', 240) }); break;
       case 'updateRegulatoryRule': regulations.update({ id: field(data, 'id', 64), name: field(data, 'name', 100), value: field(data, 'value', 120), source: field(data, 'source', 500), verifiedOn: field(data, 'verifiedOn', 10), validFrom: field(data, 'validFrom', 10), validTo: optionalField(data, 'validTo', 10), note: field(data, 'note', 240) }); break;
       case 'resolveRegulatoryRule': return { regulationResolution: regulations.resolve({ name: field(data, 'name', 100), asOf: field(data, 'asOf', 10) }) };
@@ -214,8 +270,8 @@ export default function Finance() {
   const activeCategories = data.categories.filter((item) => item.isActive);
   const balances = new Map(data.dashboard.accounts.map((item) => [item.id, item.balanceCents]));
   return <main className="finance-page">
-    <header className="finance-header"><div><p className="finance-eyebrow">Espace personnel</p><h1>{({ overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories', transactions: 'Transactions', budget: 'Budget', wealth: 'Patrimoine', business: 'Business', goals: 'Objectifs et projets', regulations: 'Règles vérifiées', gomining: 'GoMining' })[data.section]}</h1><p>Bonjour {data.name}.</p></div><Form method="post"><input type="hidden" name="intent" value="signOut" /><button className="finance-button finance-button--quiet">Se déconnecter</button></Form></header>
-    <nav className="finance-nav" aria-label="Navigation financière"><Link to={`/finance?period=${data.period}`} aria-current={data.section === 'overview' ? 'page' : undefined}>Synthèse</Link><Link to={path('accounts', data.period)} aria-current={data.section === 'accounts' ? 'page' : undefined}>Comptes</Link><Link to={path('categories', data.period)} aria-current={data.section === 'categories' ? 'page' : undefined}>Catégories</Link><Link to={path('transactions', data.period)} aria-current={data.section === 'transactions' ? 'page' : undefined}>Transactions</Link><Link to={path('budget', data.period)} aria-current={data.section === 'budget' ? 'page' : undefined}>Budget</Link><Link to={path('wealth', data.period)} aria-current={data.section === 'wealth' ? 'page' : undefined}>Patrimoine</Link><Link to={path('business', data.period)} aria-current={data.section === 'business' ? 'page' : undefined}>Business</Link><Link to={path('goals', data.period)} aria-current={data.section === 'goals' ? 'page' : undefined}>Objectifs</Link><Link to={path('regulations', data.period)} aria-current={data.section === 'regulations' ? 'page' : undefined}>Règles</Link><Link to={path('gomining', data.period)} aria-current={data.section === 'gomining' ? 'page' : undefined}>GoMining</Link></nav>
+    <header className="finance-header"><div><p className="finance-eyebrow">Espace personnel</p><h1>{({ overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories', transactions: 'Transactions', budget: 'Budget', wealth: 'Patrimoine', business: 'Business', goals: 'Objectifs et projets', cfo: 'Moteur CFO', regulations: 'Règles vérifiées', gomining: 'GoMining' })[data.section]}</h1><p>Bonjour {data.name}.</p></div><Form method="post"><input type="hidden" name="intent" value="signOut" /><button className="finance-button finance-button--quiet">Se déconnecter</button></Form></header>
+    <nav className="finance-nav" aria-label="Navigation financière"><Link to={`/finance?period=${data.period}`} aria-current={data.section === 'overview' ? 'page' : undefined}>Synthèse</Link><Link to={path('accounts', data.period)} aria-current={data.section === 'accounts' ? 'page' : undefined}>Comptes</Link><Link to={path('categories', data.period)} aria-current={data.section === 'categories' ? 'page' : undefined}>Catégories</Link><Link to={path('transactions', data.period)} aria-current={data.section === 'transactions' ? 'page' : undefined}>Transactions</Link><Link to={path('budget', data.period)} aria-current={data.section === 'budget' ? 'page' : undefined}>Budget</Link><Link to={path('wealth', data.period)} aria-current={data.section === 'wealth' ? 'page' : undefined}>Patrimoine</Link><Link to={path('business', data.period)} aria-current={data.section === 'business' ? 'page' : undefined}>Business</Link><Link to={path('goals', data.period)} aria-current={data.section === 'goals' ? 'page' : undefined}>Objectifs</Link><Link to={path('cfo', data.period)} aria-current={data.section === 'cfo' ? 'page' : undefined}>CFO</Link><Link to={path('regulations', data.period)} aria-current={data.section === 'regulations' ? 'page' : undefined}>Règles</Link><Link to={path('gomining', data.period)} aria-current={data.section === 'gomining' ? 'page' : undefined}>GoMining</Link></nav>
     {actionError ? <p className="finance-alert" role="alert">{actionError}</p> : null}
     {data.section === 'overview' ? <Overview data={data} /> : null}
     {data.section === 'accounts' ? <Accounts data={data} balances={balances} /> : null}
@@ -225,6 +281,7 @@ export default function Finance() {
     {data.section === 'wealth' ? <Wealth data={data} /> : null}
     {data.section === 'business' ? <Business data={data} /> : null}
     {data.section === 'goals' ? <Goals data={data} /> : null}
+    {data.section === 'cfo' ? <Cfo data={data} /> : null}
     {data.section === 'regulations' ? <Regulations data={data} /> : null}
     {data.section === 'gomining' ? <GoMining data={data} /> : null}
   </main>;
@@ -323,6 +380,24 @@ function Goals({ data }: { data: Data }) {
     <section className="finance-card finance-card--wide"><h2>Projets</h2>{goals.projects.length === 0 ? <p>Aucun projet dans le backlog.</p> : <ul className="finance-records">{goals.projects.map((project) => <li key={project.id}><div><strong>{project.name}</strong><p>{projectStatusLabel[project.status]} · priorité {project.priority} · {project.goalId ? `objectif : ${goalName.get(project.goalId) ?? 'indisponible'}` : 'sans objectif lié'}</p><p>Coût estimé : {project.estimatedCostCents === null ? 'non renseigné' : money(project.estimatedCostCents)} · charge : {project.estimatedEffortMinutes === null ? 'non renseignée' : formatMaintenance(project.estimatedEffortMinutes)} · prochaine action : {project.nextAction || 'non renseignée'}</p></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateProject" /><input type="hidden" name="id" value={project.id} /><label>Objectif lié (facultatif)<select name="goalId" defaultValue={project.goalId ?? ''}><option value="">Aucun</option>{goals.goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label><label>Nom<input name="name" defaultValue={project.name} required maxLength={100} /></label><label>Statut<select name="status" defaultValue={project.status}><option value="backlog">Backlog</option><option value="active">En cours</option><option value="paused">En pause</option><option value="done">Terminé</option></select></label><label>Priorité (1 = première)<input name="priority" type="number" min="1" max="999" step="1" defaultValue={project.priority} required /></label><label>Coût estimé (€ — facultatif)<input name="estimatedCostAmount" defaultValue={project.estimatedCostCents === null ? '' : decimalMoney(project.estimatedCostCents)} inputMode="decimal" /></label><label>Charge estimée (minutes — facultatif)<input name="estimatedEffortMinutes" type="number" min="0" max="44640" step="1" defaultValue={project.estimatedEffortMinutes ?? ''} /></label><label>Prochaine action<input name="nextAction" defaultValue={project.nextAction} maxLength={240} /></label><button className="finance-button">Enregistrer</button></Form></details></li>)}</ul>}</section>
   </section>;
 }
+
+function Cfo({ data }: { data: Data }) {
+  const { context, history } = data.cfo;
+  const latestEvaluation = history[0];
+  const latest = latestEvaluation?.result;
+  return <section className="finance-content finance-grid">
+    <section className="finance-card finance-card--wide"><h2>Évaluer le contexte — {context.period}</h2><p className="finance-help">Cette évaluation enregistre un instantané privé et immuable des données actuellement suivies. Elle ne crée aucun paiement, transfert, ordre ni transaction.</p><section className="finance-metrics"><Metric label="Liquidités suivies" cents={context.liquidCashCents} /><Metric label="Engagements non réglés" cents={context.unpaidCommitmentCents} /><Metric label="Mensualités de dette" cents={context.debtPaymentCents} /><Metric label="Provisions business" cents={context.businessProvisionCents} /><Metric label="Apports GoMining budgétés" cents={context.gominingContributionCents} /><Metric label="Réserve constatée" cents={context.reserveCurrentCents} /><Metric label="Cash potentiellement allouable" cents={Math.max(0, context.liquidCashCents - context.unpaidCommitmentCents - context.debtPaymentCents - context.businessProvisionCents - context.gominingContributionCents - Math.max(0, (context.reserveTargetCents ?? context.reserveCurrentCents) - context.reserveCurrentCents))} emphasis /></section><Form method="post"><input type="hidden" name="intent" value="evaluateCfo" /><button className="finance-button">Évaluer et historiser</button></Form></section>
+    <CfoWeights rules={data.cfo.rules} />
+    {latest ? <section className="finance-card finance-card--wide"><h2>Dernière meilleure action</h2><p><strong>{latest.title}</strong></p><p>{latest.explanation}</p><p>Priorité : {latest.priority} · cash allouable calculé : {money(latest.allocableCashCents)}.</p>{latest.speculativeShareBasisPoints === null ? <p>Part spéculative : non calculable sans patrimoine valorisé.</p> : <p>Part spéculative observée : {formatPercent(latest.speculativeShareBasisPoints)}.</p>}{latest.warnings.length > 0 ? <ul className="finance-records">{latest.warnings.map((warning) => <li key={warning}><p>{warning}</p></li>)}</ul> : null}{latest.allocation ? <><div className="finance-table-wrap"><table className="finance-table"><caption>Allocation indicative — sans écriture réelle</caption><thead><tr><th>Destination</th><th>Poids</th><th>Proposition</th></tr></thead><tbody>{latest.allocation.map((item) => <tr key={item.bucket}><td>{({ placements: 'Placements', business: 'Business', material: 'Matériel', projects: 'Projets', opportunities: 'Cash / opportunités' })[item.bucket]}</td><td>{formatPercent(item.weightBasisPoints)}</td><td>{money(item.amountCents)}</td></tr>)}</tbody></table></div><section className="finance-grid"><Form method="post" className="finance-form"><input type="hidden" name="intent" value="decideCfo" /><input type="hidden" name="evaluationId" value={latestEvaluation!.id} /><input type="hidden" name="outcome" value="accepted" /><label>Note sur le plan (facultative)<input name="note" maxLength={240} /></label><button className="finance-button">Accepter comme plan interne</button></Form><Form method="post" className="finance-form"><input type="hidden" name="intent" value="decideCfo" /><input type="hidden" name="evaluationId" value={latestEvaluation!.id} /><input type="hidden" name="outcome" value="ignored" /><label>Pourquoi ignorer ? (facultatif)<input name="note" maxLength={240} /></label><button className="finance-button finance-button--quiet">Ignorer la proposition</button></Form></section></> : <p className="finance-help">Aucune allocation n’est proposée tant qu’une priorité ou un avertissement bloquant reste présent.</p>}</section> : <section className="finance-empty"><h2>Pas encore d’évaluation</h2><p>Le moteur utilisera seulement les données déjà saisies dans les modules privés. Commence par l’évaluation ci-dessus.</p></section>}
+    {latestEvaluation?.result.allocation ? <><CfoModifiedPlan evaluation={latestEvaluation} /><CfoComparison evaluation={latestEvaluation} /></> : null}
+    <section className="finance-card finance-card--wide"><h2>Historique immuable</h2>{history.length === 0 ? <p>Aucune évaluation enregistrée.</p> : <ul className="finance-records">{history.map((evaluation) => <li key={evaluation.id}><div><strong>{evaluation.createdAt.slice(0, 16).replace('T', ' ')} UTC · {evaluation.period}</strong><p>{evaluation.result.title} · règle {evaluation.ruleVersion} · cash allouable : {money(evaluation.result.allocableCashCents)}</p><p>{evaluation.result.explanation}</p>{evaluation.decisions.map((decision) => <p key={decision.id}>Décision : {({ accepted: 'plan interne accepté', modified: 'plan interne adapté', ignored: 'proposition ignorée' })[decision.outcome]} le {decision.createdAt.slice(0, 16).replace('T', ' ')} UTC{decision.note ? ` · ${decision.note}` : ''}.</p>)}{evaluation.comparisons.map((comparison) => <p key={comparison.id}>Comparaison « {comparison.name} » enregistrée le {comparison.createdAt.slice(0, 16).replace('T', ' ')} UTC.</p>)}</div></li>)}</ul>}<p className="finance-help">Une évaluation, ses décisions et ses comparaisons ne peuvent être ni modifiées ni supprimées : un nouveau calcul ou une nouvelle hypothèse crée toujours un nouvel instantané.</p></section>
+  </section>;
+}
+
+const cfoBucketLabel = { placements: 'Placements', business: 'Business', material: 'Matériel', projects: 'Projets', opportunities: 'Cash / opportunités' } as const;
+function CfoWeights({ rules }: { rules: Data['cfo']['rules'] }) { return <section className="finance-card"><h2>Poids pour les prochaines évaluations</h2><p className="finance-help">Règle active : {rules.version}. Les cinq poids doivent totaliser 100 %. Enregistrer crée une nouvelle révision ; les évaluations déjà produites restent inchangées.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="setCfoWeights" />{cfoBuckets.map((bucket) => <label key={bucket}>{cfoBucketLabel[bucket]} (%)<input name={`${bucket}Weight`} defaultValue={(rules.weights[bucket] / 100).toFixed(2).replace('.', ',')} inputMode="decimal" required /></label>)}<button className="finance-button">Créer une nouvelle règle</button></Form></section>; }
+function CfoModifiedPlan({ evaluation }: { evaluation: Data['cfo']['history'][number] }) { const allocation = new Map(evaluation.result.allocation!.map((item) => [item.bucket, item.amountCents])); return <section className="finance-card"><h2>Adapter cette proposition</h2><p className="finance-help">Modification ponctuelle : répartis exactement {money(evaluation.result.allocableCashCents)}. Elle crée un plan interne distinct et ne modifie pas les poids futurs.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="decideCfo" /><input type="hidden" name="evaluationId" value={evaluation.id} /><input type="hidden" name="outcome" value="modified" />{cfoBuckets.map((bucket) => <label key={bucket}>{cfoBucketLabel[bucket]} (€)<input name={`${bucket}Amount`} defaultValue={decimalMoney(allocation.get(bucket) ?? 0)} inputMode="decimal" required /></label>)}<label>Note sur l’adaptation (facultative)<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le plan adapté</button></Form></section>; }
+function CfoComparison({ evaluation }: { evaluation: Data['cfo']['history'][number] }) { const allocation = new Map(evaluation.result.allocation!.map((item) => [item.bucket, item.amountCents])); const latest = evaluation.comparisons.at(-1); const alternative = latest ? new Map(latest.allocation.map((item) => [item.bucket, item.amountCents])) : null; return <section className="finance-card finance-card--wide"><h2>Comparer une autre répartition</h2><p className="finance-help">Hypothèse ponctuelle, sans modifier la proposition ni les poids récurrents. Elle répartit exactement {money(evaluation.result.allocableCashCents)} et ne prédit pas encore les rendements.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="compareCfo" /><input type="hidden" name="evaluationId" value={evaluation.id} /><label>Nom de l’hypothèse<input name="name" maxLength={100} required placeholder="Ex. Priorité placements" /></label>{cfoBuckets.map((bucket) => <label key={bucket}>{cfoBucketLabel[bucket]} (€)<input name={`${bucket}Amount`} defaultValue={decimalMoney(allocation.get(bucket) ?? 0)} inputMode="decimal" required /></label>)}<button className="finance-button finance-button--quiet">Comparer sans modifier</button></Form>{alternative ? <div className="finance-table-wrap"><table className="finance-table"><caption>Dernière comparaison : {latest!.name}</caption><thead><tr><th>Destination</th><th>Proposition</th><th>Hypothèse</th><th>Écart</th></tr></thead><tbody>{cfoBuckets.map((bucket) => { const base = allocation.get(bucket) ?? 0; const value = alternative.get(bucket) ?? 0; return <tr key={bucket}><td>{cfoBucketLabel[bucket]}</td><td>{money(base)}</td><td>{money(value)}</td><td>{value === base ? '—' : `${value > base ? '+' : '−'}${money(Math.abs(value - base))}`}</td></tr>; })}</tbody></table></div> : null}</section>; }
 
 function Regulations({ data }: { data: Data }) {
   const actionData = useActionData<ActionData>();

@@ -64,11 +64,38 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D25 | Validé : L11 | Provisions business | Provisions manuelles ; registre réglementaire ; automatisation fiscale | Rendre les réserves explicites sans inventer un calcul fiscal |
 | D26 | Validé : L13 | Résolution des règles datées | Une seule règle applicable ; choisir une règle la plus récente ; valeur de repli | Rendre les absences et chevauchements visibles avant tout calcul |
 | D27 | Validé : L13 | Historique des règles | Révisions immuables ; modification en place ; historique différé | Préserver les valeurs réellement vérifiées sans imposer de calcul |
+| D28 | Validé : L14 | Premier incrément du moteur CFO | Priorités de sécurité seules ; allocation complète ; diagnostic et allocation progressive | Définit les règles réellement appliquées et la première restitution « meilleure action » |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
 
 D10 sera découpé en petites questions lorsque les mesures techniques seront disponibles. Aucune donnée secrète n'est demandée dans ce journal.
+
+## D28 — Premier incrément du moteur CFO
+
+**État : validé le 12 septembre 2026 — diagnostic et allocation progressive.**
+
+Le moteur commence par une évaluation privée, datée et immuable. Il explique
+une seule priorité à la fois : obligations connues, réserve de sécurité,
+plafond spéculatif, données à compléter, absence de cash, puis allocation
+indicative. Cette dernière n'est affichée que dans un contexte suffisamment
+renseigné. Les poids initiaux sont visibles et déterministes ; ils ne sont pas
+encore configurables.
+
+La première restitution « meilleure action » ne passe aucun ordre et ne crée
+aucune transaction. Accepter une allocation comme plan interne ou l'ignorer
+avec une note est conservé dans un journal immuable. Modifier une proposition,
+en redistribuant exactement le cash proposé est un plan ponctuel distinct.
+Les poids récurrents sont modifiables pour les évaluations futures uniquement :
+ils totalisent 100 % et chaque modification crée une révision immuable.
+Une comparaison d'allocation est également une hypothèse ponctuelle immuable :
+elle redistribue le même cash allouable, affiche les écarts avec la proposition
+et ne modifie ni les données réelles ni les poids récurrents. La comparaison de
+rendements ou de patrimoine projeté relève de L15.
+
+Un apport GoMining prévu est réservé par le CFO uniquement lorsqu'il est relié
+à une catégorie de dépense. Cette règle rend visible le conflit de trésorerie
+sans transformer le scénario en transaction ou en engagement bancaire réel.
 
 ## D16 — Premier bilan patrimoine
 

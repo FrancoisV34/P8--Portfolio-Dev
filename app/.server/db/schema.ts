@@ -467,3 +467,73 @@ export const monthlyBudgets = sqliteTable('finance_monthly_budgets', {
   check('finance_budgets_amount', sql`typeof(${table.plannedAmountCents}) = 'integer' and ${table.plannedAmountCents} > 0 and ${table.plannedAmountCents} <= 9007199254740991`),
   check('finance_budgets_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
 ]);
+
+// Une évaluation CFO est un constat versionné : elle conserve son contexte et
+// son résultat sans modifier les comptes, transactions ou placements sources.
+export const cfoEvaluations = sqliteTable('finance_cfo_evaluations', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  period: text('period').notNull(),
+  ruleVersion: text('rule_version').notNull(),
+  input: text('input').notNull(),
+  result: text('result').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_cfo_evaluations_owner_created_idx').on(table.ownerId, table.createdAt),
+  check('finance_cfo_evaluations_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
+  check('finance_cfo_evaluations_rule_version', sql`length(trim(${table.ruleVersion})) between 1 and 80`),
+  check('finance_cfo_evaluations_input', sql`length(${table.input}) between 2 and 10000 and json_valid(${table.input})`),
+  check('finance_cfo_evaluations_result', sql`length(${table.result}) between 2 and 10000 and json_valid(${table.result})`),
+]);
+
+// Chaque jeu de poids est une révision complète. La règle active est la plus
+// récente, tandis qu'une évaluation conserve déjà son résultat et sa version.
+export const cfoRuleSets = sqliteTable('finance_cfo_rule_sets', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  revision: integer('revision').notNull(),
+  placementsBasisPoints: integer('placements_basis_points').notNull(),
+  businessBasisPoints: integer('business_basis_points').notNull(),
+  materialBasisPoints: integer('material_basis_points').notNull(),
+  projectsBasisPoints: integer('projects_basis_points').notNull(),
+  opportunitiesBasisPoints: integer('opportunities_basis_points').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  uniqueIndex('finance_cfo_rule_sets_owner_revision_idx').on(table.ownerId, table.revision),
+  check('finance_cfo_rule_sets_revision', sql`${table.revision} >= 2`),
+  check('finance_cfo_rule_sets_weights', sql`${table.placementsBasisPoints} between 0 and 10000 and ${table.businessBasisPoints} between 0 and 10000 and ${table.materialBasisPoints} between 0 and 10000 and ${table.projectsBasisPoints} between 0 and 10000 and ${table.opportunitiesBasisPoints} between 0 and 10000 and ${table.placementsBasisPoints} + ${table.businessBasisPoints} + ${table.materialBasisPoints} + ${table.projectsBasisPoints} + ${table.opportunitiesBasisPoints} = 10000`),
+]);
+
+// Les décisions restent des plans internes : elles ne déclenchent jamais une
+// écriture financière. Plusieurs décisions peuvent documenter une révision de
+// jugement sur la même évaluation, sans réécrire le passé.
+export const cfoDecisions = sqliteTable('finance_cfo_decisions', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  evaluationId: text('evaluation_id').notNull().references(() => cfoEvaluations.id, { onDelete: 'restrict' }),
+  outcome: text('outcome', { enum: ['accepted', 'modified', 'ignored'] }).notNull(),
+  note: text('note').notNull().default(''),
+  plan: text('plan'),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_cfo_decisions_owner_evaluation_idx').on(table.ownerId, table.evaluationId, table.createdAt),
+  check('finance_cfo_decisions_outcome', sql`${table.outcome} in ('accepted', 'modified', 'ignored')`),
+  check('finance_cfo_decisions_note', sql`length(trim(${table.note})) <= 240`),
+  check('finance_cfo_decisions_plan', sql`${table.plan} is null or (length(${table.plan}) between 2 and 10000 and json_valid(${table.plan}))`),
+]);
+
+// Une comparaison conserve une hypothèse d'allocation parallèle. Elle sert à
+// éclairer le choix, sans modifier la proposition, les poids ou les données
+// financières qui ont produit l'évaluation.
+export const cfoComparisons = sqliteTable('finance_cfo_comparisons', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  evaluationId: text('evaluation_id').notNull().references(() => cfoEvaluations.id, { onDelete: 'restrict' }),
+  name: text('name').notNull(),
+  allocation: text('allocation').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_cfo_comparisons_owner_evaluation_idx').on(table.ownerId, table.evaluationId, table.createdAt),
+  check('finance_cfo_comparisons_name', sql`length(trim(${table.name})) between 1 and 100`),
+  check('finance_cfo_comparisons_allocation', sql`length(${table.allocation}) between 2 and 10000 and json_valid(${table.allocation})`),
+]);

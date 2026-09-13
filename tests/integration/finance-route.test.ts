@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from '../../app/.server/db/connection';
 import { migrateDatabase } from '../../app/.server/db/migrate';
+import { cfoRepository } from '../../app/.server/repositories/cfo';
 
 const directory = mkdtempSync(join(tmpdir(), 'portfolio-finance-route-test-'));
 const database = join(directory, 'finance.sqlite');
@@ -164,6 +165,33 @@ describe('route finance privée', () => {
     await expect(loader({ request: new Request(`${origin}/finance/goals?period=2026-09`, { headers: { cookie } }), params: { '*': 'goals' } })).resolves.toMatchObject({
       section: 'goals', goals: { goals: [expect.objectContaining({ id: createdGoal.id, targetCents: 100_000, progressCents: 25_000 })], projects: [expect.objectContaining({ goalId: createdGoal.id, status: 'active', estimatedCostCents: 5_000, estimatedEffortMinutes: 120 })], capacity: expect.objectContaining({ monthlyCapacityMinutes: 90 }), activeEffortMinutes: 120, capacityStatus: 'watch' }, transactions: [],
     });
+  });
+
+  it('évalue le CFO côté serveur et conserve un instantané sans mouvement financier', async () => {
+    const weights = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'setCfoWeights', placementsWeight: '50,00', businessWeight: '20,00', materialWeight: '10,00', projectsWeight: '10,00', opportunitiesWeight: '10,00' })) weights.set(key, value);
+    await expect(action({ request: request('POST', weights) })).resolves.toMatchObject({ status: 302 });
+    const form = new FormData();
+    form.set('intent', 'evaluateCfo');
+    await expect(action({ request: request('POST', form) })).resolves.toMatchObject({ status: 302 });
+    const loaded = await loader({ request: new Request(`${origin}/finance/cfo?period=2026-09`, { headers: { cookie } }), params: { '*': 'cfo' } });
+    expect(loaded).toMatchObject({ section: 'cfo', cfo: { context: expect.objectContaining({ gominingContributionCents: 100 }), rules: expect.objectContaining({ version: 'cfo-v2' }) }, transactions: [] });
+    const evaluation = loaded.cfo.history.find((item) => item.ruleVersion === 'cfo-v2');
+    if (!evaluation) throw new Error('Évaluation CFO de test absente.');
+    const ignored = new FormData();
+    ignored.set('intent', 'decideCfo');
+    ignored.set('evaluationId', evaluation.id);
+    ignored.set('outcome', 'ignored');
+    ignored.set('note', 'Décision route synthétique');
+    await expect(action({ request: request('POST', ignored) })).resolves.toMatchObject({ status: 302 });
+    const comparisonConnection = openDatabase({ path: database, environment: 'test' });
+    const owner = comparisonConnection.sqlite.prepare('select id from user where email = ?').get('owner-route@example.test') as { id: string };
+    const comparisonEvaluation = cfoRepository(comparisonConnection.db, owner.id).evaluate({ period: '2026-09', liquidCashCents: 10_000, reserveTargetCents: 0, reserveCurrentCents: 0, unpaidCommitmentCents: 0, debtPaymentCents: 0, businessProvisionCents: 0, gominingContributionCents: 0, speculativeAssetCents: 0, grossAssetCents: 10_000, businessCashComplete: true, activeProjectCount: 0, projectCapacityStatus: 'compatible' });
+    comparisonConnection.close();
+    const comparison = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'compareCfo', evaluationId: comparisonEvaluation.id, name: 'Hypothèse route synthétique', placementsAmount: '40,00', businessAmount: '30,00', materialAmount: '10,00', projectsAmount: '10,00', opportunitiesAmount: '10,00' })) comparison.set(key, value);
+    await expect(action({ request: request('POST', comparison) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/cfo?period=2026-09`, { headers: { cookie } }), params: { '*': 'cfo' } })).resolves.toMatchObject({ cfo: { history: expect.arrayContaining([expect.objectContaining({ id: evaluation.id, decisions: [expect.objectContaining({ outcome: 'ignored', note: 'Décision route synthétique' })] }), expect.objectContaining({ id: comparisonEvaluation.id, comparisons: [expect.objectContaining({ name: 'Hypothèse route synthétique' })] })]) } });
   });
 
   it('résout une règle réglementaire uniquement côté serveur, sans valeur de repli', async () => {

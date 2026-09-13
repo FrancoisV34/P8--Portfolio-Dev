@@ -9,6 +9,7 @@ import { migrateDatabase } from '../../app/.server/db/migrate';
 import { accountsRepository } from '../../app/.server/repositories/accounts';
 import { businessRepository } from '../../app/.server/repositories/business';
 import { budgetRepository } from '../../app/.server/repositories/budget';
+import { cfoRepository } from '../../app/.server/repositories/cfo';
 import { planningRepository } from '../../app/.server/repositories/planning';
 import { gominingRepository } from '../../app/.server/repositories/gomining';
 import { goalsRepository } from '../../app/.server/repositories/goals';
@@ -392,6 +393,42 @@ describe('persistance SQLite privée', () => {
     expect(owner.dashboard()).toMatchObject({ activeProjectCount: 2, activeProjectLimitStatus: 'within-limit' });
     owner.createProject({ goalId: null, name: 'Projet actif 4', status: 'active', priority: 4, estimatedCostCents: null, estimatedEffortMinutes: 10, nextAction: '' });
     expect(owner.dashboard()).toMatchObject({ activeProjectCount: 3, activeProjectLimit: 2, activeProjectLimitStatus: 'watch' });
+  });
+
+  it('conserve les évaluations CFO par propriétaire sans modifier leurs instantanés', () => {
+    const owner = cfoRepository(connection.db, 'owner-test');
+    const other = cfoRepository(connection.db, 'other-test');
+    const evaluation = owner.evaluate({ period: '2026-09', liquidCashCents: 30_000, reserveTargetCents: 10_000, reserveCurrentCents: 10_000, unpaidCommitmentCents: 0, debtPaymentCents: 0, businessProvisionCents: 0, gominingContributionCents: 0, speculativeAssetCents: 0, grossAssetCents: 30_000, businessCashComplete: true, activeProjectCount: 0, projectCapacityStatus: 'compatible' });
+    expect(owner.list()).toEqual([expect.objectContaining({ id: evaluation.id, result: expect.objectContaining({ priority: 'allocation', allocableCashCents: 30_000 }) })]);
+    const configured = owner.setWeights({ placements: 5_000, business: 2_000, material: 1_000, projects: 1_000, opportunities: 1_000 });
+    expect(owner.currentRules()).toMatchObject({ revision: configured.revision, version: 'cfo-v2', weights: { placements: 5_000, business: 2_000 } });
+    const configuredEvaluation = owner.evaluate({ period: '2026-10', liquidCashCents: 30_000, reserveTargetCents: 10_000, reserveCurrentCents: 10_000, unpaidCommitmentCents: 0, debtPaymentCents: 0, businessProvisionCents: 0, gominingContributionCents: 0, speculativeAssetCents: 0, grossAssetCents: 30_000, businessCashComplete: true, activeProjectCount: 0, projectCapacityStatus: 'compatible' }, owner.currentRules());
+    expect(owner.get(configuredEvaluation.id)).toMatchObject({ ruleVersion: 'cfo-v2', result: { allocation: expect.arrayContaining([expect.objectContaining({ bucket: 'placements', amountCents: 15_000 })]) } });
+    expect(other.list()).toEqual([]);
+    expect(() => other.get(evaluation.id)).toThrow('Évaluation introuvable');
+    const accepted = owner.decide({ evaluationId: evaluation.id, outcome: 'accepted', note: 'Plan synthétique' });
+    const modified = owner.decide({ evaluationId: evaluation.id, outcome: 'modified', note: 'Plan adapté', allocation: [{ bucket: 'placements', amountCents: 12_000 }, { bucket: 'business', amountCents: 6_000 }, { bucket: 'material', amountCents: 4_000 }, { bucket: 'projects', amountCents: 3_000 }, { bucket: 'opportunities', amountCents: 5_000 }] });
+    const ignored = owner.decide({ evaluationId: evaluation.id, outcome: 'ignored', note: '' });
+    const comparison = owner.compare({ evaluationId: evaluation.id, name: 'Plus de placements', allocation: [{ bucket: 'placements', amountCents: 15_000 }, { bucket: 'business', amountCents: 5_000 }, { bucket: 'material', amountCents: 3_000 }, { bucket: 'projects', amountCents: 2_000 }, { bucket: 'opportunities', amountCents: 5_000 }] });
+    const stored = owner.list().find((item) => item.id === evaluation.id);
+    expect(stored?.decisions).toEqual(expect.arrayContaining([expect.objectContaining({ id: accepted.id, outcome: 'accepted', plan: expect.objectContaining({ evaluationId: evaluation.id }) }), expect.objectContaining({ id: modified.id, outcome: 'modified' }), expect.objectContaining({ id: ignored.id, outcome: 'ignored', plan: null })]));
+    expect(stored?.decisions.find((item) => item.id === modified.id)?.plan).toMatchObject({ allocation: expect.arrayContaining([expect.objectContaining({ bucket: 'placements', amountCents: 12_000 })]) });
+    expect(stored?.comparisons).toEqual([expect.objectContaining({ id: comparison.id, name: 'Plus de placements', allocation: expect.arrayContaining([expect.objectContaining({ bucket: 'placements', amountCents: 15_000 })]) })]);
+    expect(() => owner.decide({ evaluationId: evaluation.id, outcome: 'modified', note: '', allocation: [{ bucket: 'placements', amountCents: 1 }, { bucket: 'business', amountCents: 0 }, { bucket: 'material', amountCents: 0 }, { bucket: 'projects', amountCents: 0 }, { bucket: 'opportunities', amountCents: 0 }] })).toThrow('répartir exactement');
+    expect(() => owner.compare({ evaluationId: evaluation.id, name: 'Même proposition', allocation: [{ bucket: 'placements', amountCents: 10_500 }, { bucket: 'business', amountCents: 7_500 }, { bucket: 'material', amountCents: 4_500 }, { bucket: 'projects', amountCents: 3_000 }, { bucket: 'opportunities', amountCents: 4_500 }] })).toThrow('doit différer');
+    expect(() => owner.compare({ evaluationId: evaluation.id, name: 'Total invalide', allocation: [{ bucket: 'placements', amountCents: 1 }, { bucket: 'business', amountCents: 0 }, { bucket: 'material', amountCents: 0 }, { bucket: 'projects', amountCents: 0 }, { bucket: 'opportunities', amountCents: 0 }] })).toThrow('répartir exactement');
+    expect(() => other.decide({ evaluationId: evaluation.id, outcome: 'ignored', note: '' })).toThrow('Évaluation introuvable');
+    expect(() => other.compare({ evaluationId: evaluation.id, name: 'Interdit', allocation: [{ bucket: 'placements', amountCents: 15_000 }, { bucket: 'business', amountCents: 5_000 }, { bucket: 'material', amountCents: 3_000 }, { bucket: 'projects', amountCents: 2_000 }, { bucket: 'opportunities', amountCents: 5_000 }] })).toThrow('Évaluation introuvable');
+    expect(() => connection.sqlite.prepare('update finance_cfo_evaluations set result = ? where id = ?').run('{}', evaluation.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('delete from finance_cfo_evaluations where id = ?').run(evaluation.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare("insert into finance_cfo_decisions (id, owner_id, evaluation_id, outcome, note, created_at) values ('cfo-cross-owner', 'other-test', ?, 'ignored', '', '2026-09-12T00:00:00.000Z')").run(evaluation.id)).toThrow('Invalid CFO decision evaluation');
+    expect(() => connection.sqlite.prepare('update finance_cfo_decisions set note = ? where id = ?').run('interdit', accepted.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('delete from finance_cfo_decisions where id = ?').run(accepted.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare("insert into finance_cfo_comparisons (id, owner_id, evaluation_id, name, allocation, created_at) values ('cfo-comparison-cross-owner', 'other-test', ?, 'Interdit', '[]', '2026-09-12T00:00:00.000Z')").run(evaluation.id)).toThrow('Invalid CFO comparison evaluation');
+    expect(() => connection.sqlite.prepare('update finance_cfo_comparisons set name = ? where id = ?').run('interdit', comparison.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('delete from finance_cfo_comparisons where id = ?').run(comparison.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('update finance_cfo_rule_sets set placements_basis_points = 1 where id = ?').run(configured.id)).toThrow('immutable');
+    expect(() => connection.sqlite.prepare('delete from finance_cfo_rule_sets where id = ?').run(configured.id)).toThrow('immutable');
   });
 
   it('isole les règles réglementaires manuelles et leurs périodes datées', () => {
