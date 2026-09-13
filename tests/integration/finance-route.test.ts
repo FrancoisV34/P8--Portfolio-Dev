@@ -196,8 +196,10 @@ describe('route finance privée', () => {
 
   it('versionne puis lance une simulation privée sans modifier le journal réel', async () => {
     const initial = await loader({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { headers: { cookie } }), params: { '*': 'simulations' } });
+    const gominingScenario = initial.gomining[0]?.scenario;
+    if (!gominingScenario) throw new Error('Scénario GoMining de test absent.');
     const form = new FormData();
-    for (const [key, value] of Object.entries({ intent: 'saveSimulation', months: '12', profileKind: 'central', placementReturn: '6,00', businessGrowth: '2,00', expenseInflation: '2,00', openingHouseholdCash: '100,00', frozenObservedAssets: '50,00', monthlyHouseholdIncome: '200,00', monthlyHouseholdExpense: '100,00', gominingScenarioId: '', placementsWeight: '50,00', businessWeight: '10,00', materialWeight: '0,00', projectsWeight: '10,00', opportunitiesWeight: '10,00', debtWeight: '20,00' })) form.set(key, value);
+    for (const [key, value] of Object.entries({ intent: 'saveSimulation', months: '12', profileKind: 'central', placementReturn: '6,00', businessGrowth: '2,00', expenseInflation: '2,00', openingHouseholdCash: '100,00', frozenObservedAssets: '50,00', monthlyHouseholdIncome: '200,00', monthlyHouseholdExpense: '100,00', gominingScenarioId: gominingScenario.id, placementsWeight: '50,00', businessWeight: '10,00', materialWeight: '0,00', projectsWeight: '10,00', opportunitiesWeight: '10,00', debtWeight: '20,00' })) form.set(key, value);
     for (const { activity } of initial.business.activities) { form.set(`businessCash-${activity.id}`, '0,00'); form.set(`businessRevenue-${activity.id}`, '0,00'); }
     const firstActivity = initial.business.activities[0]?.activity;
     if (firstActivity) { for (const [key, value] of Object.entries({ [`businessChargeName-${firstActivity.id}-0`]: 'Charge route synthétique', [`businessChargeAmount-${firstActivity.id}-0`]: '12,00', [`businessChargeFrequency-${firstActivity.id}-0`]: 'quarterly', [`businessChargeStart-${firstActivity.id}-0`]: '1', [`businessChargeEnd-${firstActivity.id}-0`]: '12' })) form.set(key, value); }
@@ -205,7 +207,7 @@ describe('route finance privée', () => {
     const saved = await loader({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { headers: { cookie } }), params: { '*': 'simulations' } });
     const assumption = saved.simulations.current;
     if (!assumption) throw new Error('Hypothèse de simulation absente.');
-    expect(assumption.snapshot).toMatchObject({ months: 12, profileKind: 'central', monthlyHouseholdIncomeCents: 20_000, gominingScenarioId: null, businesses: firstActivity ? [expect.objectContaining({ id: firstActivity.id, charges: [expect.objectContaining({ name: 'Charge route synthétique', frequency: 'quarterly' })] })] : [] });
+    expect(assumption.snapshot).toMatchObject({ months: 12, profileKind: 'central', monthlyHouseholdIncomeCents: 20_000, gominingScenarioId: gominingScenario.id, gominingContributionCentsByMonth: expect.arrayContaining([100]), businesses: firstActivity ? [expect.objectContaining({ id: firstActivity.id, charges: [expect.objectContaining({ name: 'Charge route synthétique', frequency: 'quarterly' })] })] : [] });
     const run = new FormData(); run.set('intent', 'runSimulation'); run.set('assumptionId', assumption.id);
     await expect(action({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { method: 'POST', body: run, headers: { cookie, origin } }) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { headers: { cookie } }), params: { '*': 'simulations' } })).resolves.toMatchObject({ simulations: { runs: [expect.objectContaining({ assumptionId: assumption.id, result: expect.objectContaining({ months: expect.any(Array) }) })] }, transactions: [] });
