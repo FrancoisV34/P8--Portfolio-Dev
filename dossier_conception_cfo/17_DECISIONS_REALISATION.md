@@ -408,5 +408,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-12 | D27 — Historique réglementaire | « A » | Chaque modification devient une révision immuable, consultable sans écrasement |
 
 | 2026-09-13 | D29 — Fondations L15 | « 1A, 2A, 3A, 4A, 5 oui, 6 oui, 7 oui », précisions business puis « 1A, 2 ok » | Horizon 10 ans, profils complets, foyer modifiable avec historique, CA moins charges planifiées par activité, cash business conservé, comparateur du surplus, avalanche, fiscalité exclue, taux de liberté, rendement des seuls nouveaux placements et échéances business explicites |
+| 2026-09-13 | L15 — Réalisation locale | Cadrage D29 appliqué | Moteur mensuel déterministe, hypothèses et exécutions immuables, profils, charges récurrentes, croissance business par activité, unique source GoMining vérifiée et comparaison des instantanés ; aucun mouvement réel ni fiscalité implicite |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

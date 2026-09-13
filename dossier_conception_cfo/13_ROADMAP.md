@@ -518,6 +518,19 @@ Travail :
 
 **Terminé lorsque :** une exécution déterministe est reproductible et aucune simulation ne modifie le journal réel. Pas de double application d'un rendement aux TH, ni de double comptage du cash business ou des apports.
 
+**Réalisé localement le 13 septembre 2026 :** le moteur mensuel déterministe
+conserve une révision immuable des hypothèses et une exécution immuable, sans
+écriture dans le journal réel. L'écran privé propose les profils prudent,
+central, ambitieux et personnalisé, avec leurs taux modifiables, puis permet
+de comparer les exécutions sauvegardées. Les revenus du foyer, les poids du
+surplus, les charges business à échéance et la croissance propre à chaque
+activité sont versionnés. Une activité sans croissance propre suit le profil.
+Le choix éventuel d'un scénario GoMining appartient à l'instantané, est
+contrôlé côté serveur et ne peut désigner qu'un scénario du propriétaire. Les
+sorties affichent patrimoine final, cash minimum, dette, intérêts, objectifs,
+jalons et taux de liberté ; ce dernier utilise le dégagement business mensuel
+(`CA − charges`) sans transformer le cash retenu en distribution foyer.
+
 ### L16 — Actualisation réglementaire et comparateur de statuts
 
 **But :** réduire la saisie et préparer des revues de structure sur des données vérifiées.
