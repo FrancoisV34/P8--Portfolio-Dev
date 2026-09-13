@@ -478,6 +478,15 @@ dépenses. Les activités business reçoivent une hypothèse manuelle de croissa
 mensuelle, explicite et versionnée. La fiscalité est hors modèle à ce stade et
 l'interface doit l'indiquer, sans appliquer de taux implicite.
 
+Les revenus foyer hors business partent du dernier mois observé, restent fixes
+par défaut et peuvent être ajustés dans une hypothèse versionnée. Pour chaque
+activité business, la projection expose un CA encaissé et une liste libre de
+charges : une charge est ponctuelle ou récurrente à échéances définies. Le
+dégagement du mois est `CA − charges planifiées` ; il est présenté séparément
+du cash business disponible, qui inclut le cash conservé au départ. Par défaut,
+ce cash reste dans le business et ne devient jamais automatiquement du cash
+foyer. Une éventuelle distribution devra être une hypothèse explicite.
+
 Le comparateur arbitre exactement le même surplus entre placements, business,
 matériel, projets, opportunités et remboursement anticipé de dette. Un montant
 affecté à la dette réduit immédiatement le capital restant dû dans le mois
@@ -485,6 +494,10 @@ simulé. Les sorties initiales comprennent patrimoine final, cash minimum,
 dette et intérêts restants, progression des objectifs, jalons annuels,
 explication des hypothèses et taux de liberté. Chaque exécution est un
 instantané reproductible et ne modifie jamais les données observées.
+Un unique scénario GoMining, ou aucun, est sélectionné pour une simulation afin
+de ne pas additionner des scénarios alternatifs. Le remboursement anticipé suit
+la méthode avalanche : dette au taux le plus élevé d'abord. Le bucket projets
+alimente les objectifs non atteints par ordre de priorité.
 
 Travail :
 - orchestrer le pas mensuel : revenus, dépenses, événements, décisions CFO, placements et dettes ;

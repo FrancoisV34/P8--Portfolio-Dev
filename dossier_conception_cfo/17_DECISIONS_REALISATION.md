@@ -106,7 +106,15 @@ La simulation fonctionne au mois avec jalons 1, 3, 5 et 10 ans. Les profils
 prudent, central, ambitieux et personnalisé peuvent modifier les revenus
 business, les rendements et les dépenses. Chaque activité business reçoit une
 croissance mensuelle manuelle, explicitement saisie et versionnée ; aucune
-courbe de revenu n'est inventée depuis le MRR observé.
+courbe de revenu n'est inventée depuis le MRR observé. Les revenus foyer hors
+business partent du dernier mois observé, restent fixes sauf modification
+versionnée par François.
+
+Pour le business, chaque activité expose un CA encaissé et une liste libre de
+charges ponctuelles ou récurrentes à échéances définies. Le dégagement mensuel
+est simplement `CA − charges planifiées`. Le cash business disponible conserve
+en plus le cash de départ ; il reste dans l'entité par défaut, sans devenir
+automatiquement du cash foyer ni une distribution réelle.
 
 Le comparateur distribue un même surplus entre placements, business, matériel,
 projets, opportunités et remboursement anticipé. Cette dernière affectation
@@ -115,6 +123,9 @@ la fiscalité et le dit explicitement. Elle restitue patrimoine final, cash
 minimum, dette et intérêts, progression des objectifs, jalons annuels,
 explication des hypothèses et taux de liberté. Chaque lancement conserve un
 instantané privé, déterministe et immuable, sans écrire dans le journal réel.
+Un seul scénario GoMining, ou aucun, est inclus par simulation. Le remboursement
+anticipé utilise l'ordre des taux décroissants et les montants du bucket projets
+servent les objectifs non atteints par ordre de priorité.
 
 ## D16 — Premier bilan patrimoine
 
@@ -389,6 +400,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-12 | D26 — Résolution réglementaire | « A » | Une règle unique est applicable ; absence ou chevauchement bloque toute valeur implicite |
 | 2026-09-12 | D27 — Historique réglementaire | « A » | Chaque modification devient une révision immuable, consultable sans écrasement |
 
-| 2026-09-13 | D29 — Fondations L15 | « 1A, 2A, 3A, 4A, 5 oui, 6 oui, 7 oui » | Horizon 10 ans, profils complets, croissance manuelle par activité, comparateur du surplus, remboursement anticipé, fiscalité exclue et taux de liberté |
+| 2026-09-13 | D29 — Fondations L15 | « 1A, 2A, 3A, 4A, 5 oui, 6 oui, 7 oui » puis précision business | Horizon 10 ans, profils complets, foyer modifiable avec historique, CA moins charges planifiées par activité, cash business conservé, comparateur du surplus, avalanche, fiscalité exclue et taux de liberté |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.
