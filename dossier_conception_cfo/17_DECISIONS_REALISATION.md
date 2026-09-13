@@ -110,6 +110,13 @@ courbe de revenu n'est inventée depuis le MRR observé. Les revenus foyer hors
 business partent du dernier mois observé, restent fixes sauf modification
 versionnée par François.
 
+Le rendement des profils concerne uniquement les nouveaux versements simulés
+vers placements. Les valorisations déjà observées restent figées : aucun taux
+générique ne s'applique à crypto, GoMining, immobilier ou business. Les charges
+business acceptent les fréquences ponctuelle, mensuelle, trimestrielle et
+annuelle, avec début et fin facultative ; elles sont explicites et ne reçoivent
+pas l'inflation des dépenses foyer.
+
 Pour le business, chaque activité expose un CA encaissé et une liste libre de
 charges ponctuelles ou récurrentes à échéances définies. Le dégagement mensuel
 est simplement `CA − charges planifiées`. Le cash business disponible conserve
@@ -400,6 +407,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-12 | D26 — Résolution réglementaire | « A » | Une règle unique est applicable ; absence ou chevauchement bloque toute valeur implicite |
 | 2026-09-12 | D27 — Historique réglementaire | « A » | Chaque modification devient une révision immuable, consultable sans écrasement |
 
-| 2026-09-13 | D29 — Fondations L15 | « 1A, 2A, 3A, 4A, 5 oui, 6 oui, 7 oui » puis précision business | Horizon 10 ans, profils complets, foyer modifiable avec historique, CA moins charges planifiées par activité, cash business conservé, comparateur du surplus, avalanche, fiscalité exclue et taux de liberté |
+| 2026-09-13 | D29 — Fondations L15 | « 1A, 2A, 3A, 4A, 5 oui, 6 oui, 7 oui », précisions business puis « 1A, 2 ok » | Horizon 10 ans, profils complets, foyer modifiable avec historique, CA moins charges planifiées par activité, cash business conservé, comparateur du surplus, avalanche, fiscalité exclue, taux de liberté, rendement des seuls nouveaux placements et échéances business explicites |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

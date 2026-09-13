@@ -478,6 +478,14 @@ dépenses. Les activités business reçoivent une hypothèse manuelle de croissa
 mensuelle, explicite et versionnée. La fiscalité est hors modèle à ce stade et
 l'interface doit l'indiquer, sans appliquer de taux implicite.
 
+Le rendement du profil s'applique uniquement aux nouveaux montants affectés au
+bucket placements pendant la simulation. Le patrimoine déjà observé reste à sa
+dernière valorisation : aucune croissance générique n'est appliquée à la crypto,
+GoMining, l'immobilier ou le business. Les charges business utilisent les
+fréquences ponctuelle, mensuelle, trimestrielle ou annuelle, avec période de
+début et de fin facultative ; leur montant est explicite et n'est pas modifié
+par l'inflation des dépenses foyer.
+
 Les revenus foyer hors business partent du dernier mois observé, restent fixes
 par défaut et peuvent être ajustés dans une hypothèse versionnée. Pour chaque
 activité business, la projection expose un CA encaissé et une liste libre de
