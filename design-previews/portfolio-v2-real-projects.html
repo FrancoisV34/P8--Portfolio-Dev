@@ -49,11 +49,10 @@
       .browser__bar { position: absolute; z-index: 2; inset: 0 0 auto; height: 29px; display: flex; gap: 5px; align-items: center; padding: 0 11px; border-bottom: 1px solid #dededb; background: #f9f9f7; }
       .browser__bar i { width: 7px; height: 7px; border-radius: 50%; background: #b6b6b1; }
       .browser__url { margin-left: 7px; color: #868681; font: .59rem var(--mono); }
-      .browser iframe { display: block; width: 200%; height: 700px; border: 0; transform: scale(.5); transform-origin: 0 0; background: #fff; }
-      .browser--posalio iframe { transform: scale(.5) translateY(-3px); }
-      .browser--alissar iframe { transform: scale(.5) translateY(-17px); }
-      .browser--belisa iframe { transform: scale(.5) translateY(-1px); }
-      .browser__fallback { position: absolute; inset: 29px 0 0; display: grid; place-items: center; padding: 24px; color: #6a6a64; background: #efefea; font-size: .78rem; text-align: center; pointer-events: none; opacity: 0; }
+      .browser__image { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+      .browser--posalio .browser__image { object-position: center top; }
+      .browser--alissar .browser__image { object-position: center 42%; }
+      .browser--belisa .browser__image { object-position: center 34%; }
       .project__eyebrow { margin: 0 0 22px; font: 600 .72rem var(--mono); letter-spacing: .09em; color: var(--muted); text-transform: uppercase; }
       h3 { margin-bottom: 16px; font-size: clamp(1.9rem, 3.1vw, 3.1rem); line-height: 1; letter-spacing: -.06em; font-weight: 630; }
       .project__desc { max-width: 410px; color: var(--muted); font-size: .99rem; line-height: 1.58; }
@@ -90,7 +89,7 @@
         .hero__foot, .contact__top { display: block; } .hero__foot span + span { display: block; margin-top: 8px; }
         .section-head { display: block; padding-bottom: 28px; } .section-head p { margin-top: 18px; }
         .project, .project:nth-child(even) { display: flex; flex-direction: column; gap: 29px; align-items: stretch; min-height: auto; padding: 52px 0; } .project:nth-child(even) .project__media { order: 0; }
-        .browser { height: 250px; } .browser iframe { height: 500px; }
+        .browser { height: 250px; }
         .proof, .timeline, .contact { padding: 75px 0; } .proof-grid, .timeline-grid { grid-template-columns: 1fr; }
         .proof-card { min-height: 155px; } .proof-card h3 { margin-top: 28px; }
         .timeline-item:nth-child(odd), .timeline-item:nth-child(even) { margin: 0; } .timeline-item { grid-template-columns: 105px 1fr; }
@@ -121,17 +120,17 @@
       <div class="section-head"><div><p class="label">Réalisations</p><h2 id="projects-title">Ce que je construis.</h2></div><p>Des produits concrets, pensés pour les personnes qui les utilisent — pas des démonstrations techniques.</p></div>
 
       <article class="project">
-        <div class="project__media"><div class="browser browser--posalio"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">posalio.fr</span></div><iframe title="Aperçu du site public POSALIO" src="https://posalio.fr/" loading="lazy"></iframe><span class="browser__fallback">Aperçu live de POSALIO</span></div></div>
+        <div class="project__media"><div class="browser browser--posalio"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">posalio.fr</span></div><img class="browser__image" src="https://posalio.fr/static/og-landing.e47eaaa07168.png" alt="Aperçu public de POSALIO" loading="lazy"></div></div>
         <div><p class="project__eyebrow">01 · SaaS métier · PWA</p><h3>POSALIO</h3><p class="project__desc">Un logiciel de gestion pensé pour les artisans : chantiers, clients, devis, factures, planning et site vitrine. L’IA aide aussi à valoriser les réalisations et leur visibilité en ligne.</p><div class="tags"><span>Produit SaaS</span><span>PWA</span><span>IA appliquée</span><span>UX métier</span></div><a class="project__link" href="https://posalio.fr/" target="_blank" rel="noopener noreferrer">Découvrir la vitrine <span aria-hidden="true">↗</span></a></div>
       </article>
 
       <article class="project">
-        <div class="project__media"><div class="browser browser--alissar"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">alissar-vitrine.fly.dev</span></div><iframe title="Aperçu du site Alissar Atik" src="https://alissar-vitrine.fly.dev/" loading="lazy"></iframe><span class="browser__fallback">Aperçu live du site Alissar Atik</span></div></div>
+        <div class="project__media"><div class="browser browser--alissar"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">alissar-vitrine.fly.dev</span></div><img class="browser__image" src="https://alissar-vitrine.fly.dev/assets/FaceCab.jpg" alt="Façade du cabinet Alissar Atik" loading="lazy"></div></div>
         <div><p class="project__eyebrow">02 · Site vitrine · Personnalisation</p><h3>Alissar Atik</h3><p class="project__desc">Un site vitrine utilisé au quotidien par une ostéopathe, avec gestion des visuels et une personnalisation qui adapte l’identité de la page à sa pratique.</p><div class="tags"><span>Site vitrine</span><span>CMS léger</span><span>Personnalisation</span><span>Responsive</span></div><a class="project__link" href="https://alissar-vitrine.fly.dev/" target="_blank" rel="noopener noreferrer">Voir le site <span aria-hidden="true">↗</span></a></div>
       </article>
 
       <article class="project">
-        <div class="project__media"><div class="browser browser--belisa"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">belisa-wagner.fr</span></div><iframe title="Aperçu du site Belisa Wagner" src="https://belisa-wagner.fr/" loading="lazy"></iframe><span class="browser__fallback">Aperçu live du site Belisa Wagner</span></div></div>
+        <div class="project__media"><div class="browser browser--belisa"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">belisa-wagner.fr</span></div><img class="browser__image" src="https://belisa-wagner.fr/photo-belisa.jpg" alt="Portrait de Belisa Wagner" loading="lazy"></div></div>
         <div><p class="project__eyebrow">03 · Communauté · Administration</p><h3>Belisa Wagner</h3><p class="project__desc">Un espace pour les lecteurs de romans et thrillers, complété par une modération de forum et une gestion des utilisateurs côté administration.</p><div class="tags"><span>Communauté</span><span>Forum</span><span>Modération</span><span>Gestion utilisateurs</span></div><a class="project__link" href="https://belisa-wagner.fr/" target="_blank" rel="noopener noreferrer">Voir le site <span aria-hidden="true">↗</span></a></div>
       </article>
     </section>
