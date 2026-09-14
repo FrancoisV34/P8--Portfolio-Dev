@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Maquette V2 — François Vittecoq</title>
+    <style>
+      :root {
+        --ink: #121212;
+        --paper: #f6f6f3;
+        --line: #d6d6d1;
+        --muted: #676761;
+        --soft: #e9e9e4;
+        --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --mono: "SFMono-Regular", Consolas, monospace;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { margin: 0; color: var(--ink); background: var(--paper); font-family: var(--sans); }
+      a { color: inherit; }
+      .wrap { width: min(1200px, calc(100% - 48px)); margin: 0 auto; }
+
+      .nav { height: 80px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+      .brand { text-decoration: none; font: 700 1rem var(--mono); letter-spacing: -.08em; }
+      .nav__links { display: flex; gap: 28px; align-items: center; font-size: .84rem; }
+      .nav__links a { color: var(--muted); text-decoration: none; }
+      .nav__links .nav__contact { padding: 10px 14px; border: 1px solid var(--ink); color: var(--ink); border-radius: 99px; }
+
+      .hero { min-height: min(710px, calc(100svh - 80px)); padding: clamp(86px, 13vw, 155px) 0 42px; display: flex; flex-direction: column; justify-content: space-between; }
+      .label { margin: 0; color: var(--muted); font: 600 .72rem var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+      h1, h2, h3, p { margin-top: 0; }
+      h1 { max-width: 900px; margin: 20px 0 26px; font-size: clamp(3.15rem, 7.2vw, 6.65rem); line-height: .98; letter-spacing: -.07em; font-weight: 650; }
+      .hero__intro { max-width: 560px; font-size: clamp(1rem, 1.6vw, 1.18rem); line-height: 1.58; color: var(--muted); }
+      .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 28px; }
+      .button { display: inline-flex; min-height: 45px; align-items: center; justify-content: center; padding: 0 17px; gap: 9px; border: 1px solid var(--ink); border-radius: 99px; font-size: .86rem; font-weight: 650; text-decoration: none; }
+      .button--filled { color: var(--paper); background: var(--ink); }
+      .hero__foot { display: flex; gap: 28px; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font: .72rem var(--mono); }
+
+      .section-head { display: grid; grid-template-columns: 1fr minmax(220px, 340px); gap: 32px; align-items: end; padding: 0 0 36px; }
+      h2 { margin-bottom: 0; font-size: clamp(2.15rem, 4.4vw, 4.5rem); line-height: .98; letter-spacing: -.065em; font-weight: 630; }
+      .section-head p { margin: 0; color: var(--muted); font-size: .95rem; line-height: 1.55; }
+      .projects { border-top: 1px solid var(--line); }
+      .project { display: grid; grid-template-columns: minmax(0, 1.13fr) minmax(300px, .87fr); gap: clamp(32px, 6vw, 88px); align-items: center; min-height: 625px; padding: 72px 0; border-bottom: 1px solid var(--line); }
+      .project:nth-child(even) { grid-template-columns: minmax(300px, .87fr) minmax(0, 1.13fr); }
+      .project:nth-child(even) .project__media { order: 2; }
+      .project__media { overflow: hidden; border: 1px solid var(--line); background: var(--soft); }
+      .browser { position: relative; height: 350px; overflow: hidden; background: #fff; }
+      .browser__bar { position: absolute; z-index: 2; inset: 0 0 auto; height: 29px; display: flex; gap: 5px; align-items: center; padding: 0 11px; border-bottom: 1px solid #dededb; background: #f9f9f7; }
+      .browser__bar i { width: 7px; height: 7px; border-radius: 50%; background: #b6b6b1; }
+      .browser__url { margin-left: 7px; color: #868681; font: .59rem var(--mono); }
+      .browser iframe { display: block; width: 200%; height: 700px; border: 0; transform: scale(.5); transform-origin: 0 0; background: #fff; }
+      .browser--posalio iframe { transform: scale(.5) translateY(-3px); }
+      .browser--alissar iframe { transform: scale(.5) translateY(-17px); }
+      .browser--belisa iframe { transform: scale(.5) translateY(-1px); }
+      .browser__fallback { position: absolute; inset: 29px 0 0; display: grid; place-items: center; padding: 24px; color: #6a6a64; background: #efefea; font-size: .78rem; text-align: center; pointer-events: none; opacity: 0; }
+      .project__eyebrow { margin: 0 0 22px; font: 600 .72rem var(--mono); letter-spacing: .09em; color: var(--muted); text-transform: uppercase; }
+      h3 { margin-bottom: 16px; font-size: clamp(1.9rem, 3.1vw, 3.1rem); line-height: 1; letter-spacing: -.06em; font-weight: 630; }
+      .project__desc { max-width: 410px; color: var(--muted); font-size: .99rem; line-height: 1.58; }
+      .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 25px; }
+      .tags span { border: 1px solid var(--line); padding: 6px 9px; border-radius: 99px; color: var(--muted); font: .67rem var(--mono); }
+      .project__link { display: inline-flex; gap: 8px; align-items: center; margin-top: 29px; font-size: .85rem; font-weight: 700; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 4px; }
+
+      .proof { padding: 115px 0; background: var(--ink); color: var(--paper); }
+      .proof .label, .proof .section-head p { color: #adada8; }
+      .proof-grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #3c3c3a; border-left: 1px solid #3c3c3a; }
+      .proof-card { min-height: 200px; padding: 27px; border-right: 1px solid #3c3c3a; border-bottom: 1px solid #3c3c3a; }
+      .proof-card__number { color: #adada8; font: .7rem var(--mono); }
+      .proof-card h3 { margin: 42px 0 10px; font-size: 1.14rem; letter-spacing: -.035em; }
+      .proof-card p { color: #adada8; font-size: .88rem; line-height: 1.55; }
+
+      .timeline { padding: 115px 0; }
+      .timeline-grid { display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid var(--line); }
+      .timeline-item { display: grid; grid-template-columns: 120px 1fr; padding: 25px 0; border-bottom: 1px solid var(--line); }
+      .timeline-item:nth-child(odd) { margin-right: 36px; }
+      .timeline-item:nth-child(even) { margin-left: 36px; }
+      .timeline-item__date { color: var(--muted); font: .72rem var(--mono); }
+      .timeline-item h3 { margin-bottom: 7px; font-size: 1.02rem; letter-spacing: -.03em; }
+      .timeline-item p { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.5; }
+
+      .contact { padding: 112px 0 25px; background: var(--soft); }
+      .contact__top { display: flex; align-items: end; justify-content: space-between; gap: 40px; padding-bottom: 100px; }
+      .contact h2 { max-width: 650px; }
+      .footer { display: flex; justify-content: space-between; gap: 16px; border-top: 1px solid #c9c9c3; padding-top: 17px; color: var(--muted); font: .7rem var(--mono); }
+
+      @media (max-width: 760px) {
+        .wrap { width: min(100% - 32px, 1200px); }
+        .nav { height: 66px; } .nav__links { gap: 12px; } .nav__links a:not(.nav__contact) { display: none; }
+        .hero { min-height: min(650px, calc(100svh - 66px)); padding-top: 85px; } h1 { letter-spacing: -.065em; }
+        .hero__foot, .contact__top { display: block; } .hero__foot span + span { display: block; margin-top: 8px; }
+        .section-head { display: block; padding-bottom: 28px; } .section-head p { margin-top: 18px; }
+        .project, .project:nth-child(even) { display: flex; flex-direction: column; gap: 29px; align-items: stretch; min-height: auto; padding: 52px 0; } .project:nth-child(even) .project__media { order: 0; }
+        .browser { height: 250px; } .browser iframe { height: 500px; }
+        .proof, .timeline, .contact { padding: 75px 0; } .proof-grid, .timeline-grid { grid-template-columns: 1fr; }
+        .proof-card { min-height: 155px; } .proof-card h3 { margin-top: 28px; }
+        .timeline-item:nth-child(odd), .timeline-item:nth-child(even) { margin: 0; } .timeline-item { grid-template-columns: 105px 1fr; }
+        .contact__top .button { margin-top: 28px; } .contact__top { padding-bottom: 70px; } .footer { flex-wrap: wrap; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <nav class="nav" aria-label="Navigation de la maquette">
+        <a class="brand" href="#top">FV</a>
+        <div class="nav__links"><a href="#projets">Projets</a><a href="#approche">Approche</a><a href="#parcours">Parcours</a><a class="nav__contact" href="#contact">Contact</a></div>
+      </nav>
+      <main id="top">
+        <section class="hero" aria-labelledby="hero-title">
+          <div>
+            <p class="label">Développeur IA · Produits web</p>
+            <h1 id="hero-title">Des produits utiles.<br>Une exécution fiable.</h1>
+            <p class="hero__intro">Je conçois des applications métier, des sites et des outils IA — de l’idée aux tests, à la sécurité et à la mise en production.</p>
+            <div class="actions"><a class="button button--filled" href="#projets">Voir les réalisations <span aria-hidden="true">↓</span></a><a class="button" href="#contact">Me contacter</a></div>
+          </div>
+          <div class="hero__foot"><span>François Vittecoq · Montpellier, France</span><span>Développeur IA · Référent IA · Formateur Claude Code</span></div>
+        </section>
+      </main>
+    </div>
+
+    <section id="projets" class="projects wrap" aria-labelledby="projects-title">
+      <div class="section-head"><div><p class="label">Réalisations</p><h2 id="projects-title">Ce que je construis.</h2></div><p>Des produits concrets, pensés pour les personnes qui les utilisent — pas des démonstrations techniques.</p></div>
+
+      <article class="project">
+        <div class="project__media"><div class="browser browser--posalio"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">posalio.fr</span></div><iframe title="Aperçu du site public POSALIO" src="https://posalio.fr/" loading="lazy"></iframe><span class="browser__fallback">Aperçu live de POSALIO</span></div></div>
+        <div><p class="project__eyebrow">01 · SaaS métier · PWA</p><h3>POSALIO</h3><p class="project__desc">Un logiciel de gestion pensé pour les artisans : chantiers, clients, devis, factures, planning et site vitrine. L’IA aide aussi à valoriser les réalisations et leur visibilité en ligne.</p><div class="tags"><span>Produit SaaS</span><span>PWA</span><span>IA appliquée</span><span>UX métier</span></div><a class="project__link" href="https://posalio.fr/" target="_blank" rel="noopener noreferrer">Découvrir la vitrine <span aria-hidden="true">↗</span></a></div>
+      </article>
+
+      <article class="project">
+        <div class="project__media"><div class="browser browser--alissar"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">alissar-vitrine.fly.dev</span></div><iframe title="Aperçu du site Alissar Atik" src="https://alissar-vitrine.fly.dev/" loading="lazy"></iframe><span class="browser__fallback">Aperçu live du site Alissar Atik</span></div></div>
+        <div><p class="project__eyebrow">02 · Site vitrine · Personnalisation</p><h3>Alissar Atik</h3><p class="project__desc">Un site vitrine utilisé au quotidien par une ostéopathe, avec gestion des visuels et une personnalisation qui adapte l’identité de la page à sa pratique.</p><div class="tags"><span>Site vitrine</span><span>CMS léger</span><span>Personnalisation</span><span>Responsive</span></div><a class="project__link" href="https://alissar-vitrine.fly.dev/" target="_blank" rel="noopener noreferrer">Voir le site <span aria-hidden="true">↗</span></a></div>
+      </article>
+
+      <article class="project">
+        <div class="project__media"><div class="browser browser--belisa"><div class="browser__bar"><i></i><i></i><i></i><span class="browser__url">belisa-wagner.fr</span></div><iframe title="Aperçu du site Belisa Wagner" src="https://belisa-wagner.fr/" loading="lazy"></iframe><span class="browser__fallback">Aperçu live du site Belisa Wagner</span></div></div>
+        <div><p class="project__eyebrow">03 · Communauté · Administration</p><h3>Belisa Wagner</h3><p class="project__desc">Un espace pour les lecteurs de romans et thrillers, complété par une modération de forum et une gestion des utilisateurs côté administration.</p><div class="tags"><span>Communauté</span><span>Forum</span><span>Modération</span><span>Gestion utilisateurs</span></div><a class="project__link" href="https://belisa-wagner.fr/" target="_blank" rel="noopener noreferrer">Voir le site <span aria-hidden="true">↗</span></a></div>
+      </article>
+    </section>
+
+    <section id="approche" class="proof" aria-labelledby="approach-title"><div class="wrap"><div class="section-head"><div><p class="label">Approche</p><h2 id="approach-title">Faire juste,<br>puis faire solide.</h2></div><p>Une pratique de l’IA ancrée dans le produit, avec une attention constante à la qualité de livraison.</p></div><div class="proof-grid"><article class="proof-card"><span class="proof-card__number">01</span><h3>Comprendre le métier</h3><p>Des parcours lisibles et des outils qui résolvent un problème concret, pour les équipes comme pour leurs clients.</p></article><article class="proof-card"><span class="proof-card__number">02</span><h3>Mettre l’IA au travail</h3><p>Claude Code, Claude Design, Cowork et MCP pour accélérer les équipes et automatiser les bons flux.</p></article><article class="proof-card"><span class="proof-card__number">03</span><h3>Vérifier ce qui compte</h3><p>Tests, intégration continue GitLab, bonnes pratiques de sécurité et revue OWASP intégrés au projet.</p></article></div></div></section>
+
+    <section id="parcours" class="timeline" aria-labelledby="timeline-title"><div class="wrap"><div class="section-head"><div><p class="label">Parcours</p><h2 id="timeline-title">En ce moment.</h2></div><p>Un profil qui relie développement, outillage IA et exigences de production.</p></div><div class="timeline-grid"><article class="timeline-item"><span class="timeline-item__date">2026 — aujourd’hui</span><div><h3>Développeur IA · Référent IA du groupe</h3><p>Conception et développement d’une application de gestion de centre de formation, de bout en bout.</p></div></article><article class="timeline-item"><span class="timeline-item__date">LundiMatin</span><div><h3>Formateur Claude Code</h3><p>Accompagnement des équipes sur Claude Code, Claude Design, Cowork et les usages MCP.</p></div></article><article class="timeline-item"><span class="timeline-item__date">Production</span><div><h3>Qualité et sécurité</h3><p>Tests, CI GitLab et pentests basés sur l’OWASP Top 10 au service d’un produit fiable.</p></div></article><article class="timeline-item"><span class="timeline-item__date">Montpellier</span><div><h3>Produits web et IA appliquée</h3><p>Une progression pragmatique, orientée produit et exécution.</p></div></article></div></div></section>
+
+    <section id="contact" class="contact" aria-labelledby="contact-title"><div class="wrap"><div class="contact__top"><h2 id="contact-title">Parlons de votre<br>prochain produit.</h2><a class="button button--filled" href="mailto:bonjour@example.com">Écrire à François <span aria-hidden="true">↗</span></a></div><footer class="footer"><span>François Vittecoq — 2026</span><span>LinkedIn · GitHub · CV</span></footer></div></section>
+  </body>
+</html>
