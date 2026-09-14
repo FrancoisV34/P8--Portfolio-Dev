@@ -14,6 +14,7 @@ import { planningRepository } from '../../app/.server/repositories/planning';
 import { gominingRepository } from '../../app/.server/repositories/gomining';
 import { goalsRepository } from '../../app/.server/repositories/goals';
 import { regulatoryRepository } from '../../app/.server/repositories/regulatory';
+import { regulatorySourceRepository } from '../../app/.server/repositories/regulatory-sources';
 import { simulationRepository } from '../../app/.server/repositories/simulations';
 import { statusComparisonRepository } from '../../app/.server/repositories/status-comparisons';
 import { wealthRepository } from '../../app/.server/repositories/wealth';
@@ -40,6 +41,17 @@ describe('persistance SQLite privée', () => {
     expect(other.list()).toEqual([]);
     expect(() => connection.sqlite.prepare('update finance_status_comparisons set input = ? where id = ?').run('{}', comparison.id)).toThrow();
     expect(() => connection.sqlite.prepare('delete from finance_status_comparisons where id = ?').run(comparison.id)).toThrow();
+  });
+
+  it('historise le contrôle manuel des sources sans remplacer une règle', async () => {
+    const owner = regulatorySourceRepository(connection.db, 'owner-test');
+    const inspect = async () => ({ sourceUrl: 'https://www.impots.gouv.fr/professionnel/tva', contentHash: 'a'.repeat(64), statusCode: 200, available: true });
+    expect((await owner.check('micro-bic-services', inspect)).state).toBe('review');
+    expect((await owner.check('micro-bic-services', inspect)).state).toBe('unchanged');
+    expect((await owner.check('micro-bic-services', async () => ({ sourceUrl: 'https://www.impots.gouv.fr/professionnel/tva', contentHash: 'b'.repeat(64), statusCode: 200, available: true }))).state).toBe('changed');
+    const latest = owner.dashboard().find((source) => source.sourceKey === 'micro-bic-services')?.latest;
+    expect(latest).toMatchObject({ state: 'changed' });
+    expect(() => connection.sqlite.prepare('delete from finance_regulatory_source_checks where id = ?').run(latest!.id)).toThrow();
   });
 
   it('initialise une base vide avec WAL et clés étrangères', () => {

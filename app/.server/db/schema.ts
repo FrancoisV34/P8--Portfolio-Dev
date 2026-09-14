@@ -578,3 +578,23 @@ export const statusComparisons = sqliteTable('finance_status_comparisons', {
   check('finance_status_comparisons_input', sql`length(${table.input}) between 2 and 10000 and json_valid(${table.input})`),
   check('finance_status_comparisons_result', sql`length(${table.result}) between 2 and 10000 and json_valid(${table.result})`),
 ]);
+
+// Les contrôles de sources officielles sont eux aussi append-only : une source
+// détectée modifiée exige une revue humaine avant toute nouvelle règle.
+export const regulatorySourceChecks = sqliteTable('finance_regulatory_source_checks', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  sourceKey: text('source_key').notNull(),
+  sourceUrl: text('source_url').notNull(),
+  contentHash: text('content_hash'),
+  state: text('state', { enum: ['review', 'unchanged', 'changed', 'unavailable'] }).notNull(),
+  statusCode: integer('status_code'),
+  checkedAt: text('checked_at').notNull(),
+}, (table) => [
+  index('finance_regulatory_source_checks_owner_key_checked_idx').on(table.ownerId, table.sourceKey, table.checkedAt),
+  check('finance_regulatory_source_checks_key', sql`length(trim(${table.sourceKey})) between 1 and 80`),
+  check('finance_regulatory_source_checks_url', sql`length(${table.sourceUrl}) between 1 and 500`),
+  check('finance_regulatory_source_checks_hash', sql`${table.contentHash} is null or length(${table.contentHash}) = 64`),
+  check('finance_regulatory_source_checks_state', sql`${table.state} in ('review', 'unchanged', 'changed', 'unavailable')`),
+  check('finance_regulatory_source_checks_status', sql`${table.statusCode} is null or ${table.statusCode} between 100 and 599`),
+]);
