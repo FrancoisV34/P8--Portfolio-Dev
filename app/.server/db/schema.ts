@@ -564,3 +564,17 @@ export const simulationRuns = sqliteTable('finance_simulation_runs', {
   check('finance_simulation_runs_input', sql`length(${table.input}) between 2 and 50000 and json_valid(${table.input})`),
   check('finance_simulation_runs_result', sql`length(${table.result}) between 2 and 200000 and json_valid(${table.result})`),
 ]);
+
+// Le comparateur de statuts fige les hypothèses et son résultat. Il ne décide
+// jamais d'un statut ni ne crée une écriture financière ou fiscale.
+export const statusComparisons = sqliteTable('finance_status_comparisons', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  input: text('input').notNull(),
+  result: text('result').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_status_comparisons_owner_created_idx').on(table.ownerId, table.createdAt),
+  check('finance_status_comparisons_input', sql`length(${table.input}) between 2 and 10000 and json_valid(${table.input})`),
+  check('finance_status_comparisons_result', sql`length(${table.result}) between 2 and 10000 and json_valid(${table.result})`),
+]);

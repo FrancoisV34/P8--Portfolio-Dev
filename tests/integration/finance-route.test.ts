@@ -213,6 +213,13 @@ describe('route finance privée', () => {
     await expect(loader({ request: new Request(`${origin}/finance/simulations?period=2026-09`, { headers: { cookie } }), params: { '*': 'simulations' } })).resolves.toMatchObject({ simulations: { runs: [expect.objectContaining({ assumptionId: assumption.id, result: expect.objectContaining({ months: expect.any(Array) }) })] }, transactions: [] });
   });
 
+  it('conserve une comparaison micro BIC services contre SASU sans écrire de transaction', async () => {
+    const form = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'compareMicroToSasu', annualRevenue: '1 000,00', annualOperatingExpense: '200,00', microSocialRate: '20,00', sasuCorporateTaxRate: '25,00' })) form.set(key, value);
+    await expect(action({ request: request('POST', form) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/statuses?period=2026-09`, { headers: { cookie } }), params: { '*': 'statuses' } })).resolves.toMatchObject({ section: 'statuses', statusComparisons: [expect.objectContaining({ input: expect.objectContaining({ annualRevenueCents: 100_000, microBicServiceSocialRateBasisPoints: 2_000 }), result: expect.objectContaining({ microCashBeforePersonalTaxCents: 60_000, sasuPotentialGrossDividendsCents: 60_000 }) })], transactions: [] });
+  });
+
   it('résout une règle réglementaire uniquement côté serveur, sans valeur de repli', async () => {
     const rule = new FormData();
     for (const [key, value] of Object.entries({ intent: 'createRegulatoryRule', name: 'Règle route synthétique', value: '10 %', source: 'Source route synthétique', verifiedOn: '2026-09-12', validFrom: '2026-01-01', validTo: '2026-03-31', note: '' })) rule.set(key, value);

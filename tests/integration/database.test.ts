@@ -15,6 +15,7 @@ import { gominingRepository } from '../../app/.server/repositories/gomining';
 import { goalsRepository } from '../../app/.server/repositories/goals';
 import { regulatoryRepository } from '../../app/.server/repositories/regulatory';
 import { simulationRepository } from '../../app/.server/repositories/simulations';
+import { statusComparisonRepository } from '../../app/.server/repositories/status-comparisons';
 import { wealthRepository } from '../../app/.server/repositories/wealth';
 
 let directory: string;
@@ -31,6 +32,16 @@ afterEach(() => {
 });
 
 describe('persistance SQLite privée', () => {
+  it('conserve les comparaisons de statuts par propriétaire sans pouvoir les réécrire', () => {
+    const owner = statusComparisonRepository(connection.db, 'owner-test');
+    const other = statusComparisonRepository(connection.db, 'other-test');
+    const comparison = owner.create({ annualRevenueCents: 100_000, annualOperatingExpenseCents: 20_000, microBicServiceSocialRateBasisPoints: 2_000, sasuCorporateTaxRateBasisPoints: 2_500 });
+    expect(owner.list()).toEqual([expect.objectContaining({ id: comparison.id, result: expect.objectContaining({ sasuPotentialGrossDividendsCents: 60_000 }) })]);
+    expect(other.list()).toEqual([]);
+    expect(() => connection.sqlite.prepare('update finance_status_comparisons set input = ? where id = ?').run('{}', comparison.id)).toThrow();
+    expect(() => connection.sqlite.prepare('delete from finance_status_comparisons where id = ?').run(comparison.id)).toThrow();
+  });
+
   it('initialise une base vide avec WAL et clés étrangères', () => {
     expect(connection.sqlite.pragma('journal_mode', { simple: true })).toBe('wal');
     expect(connection.sqlite.pragma('foreign_keys', { simple: true })).toBe(1);
