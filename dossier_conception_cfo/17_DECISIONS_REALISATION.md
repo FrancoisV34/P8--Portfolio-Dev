@@ -66,6 +66,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D27 | Validé : L13 | Historique des règles | Révisions immuables ; modification en place ; historique différé | Préserver les valeurs réellement vérifiées sans imposer de calcul |
 | D28 | Validé : L14 | Premier incrément du moteur CFO | Priorités de sécurité seules ; allocation complète ; diagnostic et allocation progressive | Définit les règles réellement appliquées et la première restitution « meilleure action » |
 | D29 | Validé : L15 | Fondations de simulation | Horizon 10 ans et profils complets ; horizon libre ; hypothèses sans profils | Fixe les hypothèses et sorties du premier simulateur reproductible |
+| D30 | Validé : L16 | Comparaison réglementaire initiale | France micro BIC services contre SASU ; autres pays/statuts ; registre manuel seul | Détermine les sources et les limites du premier comparateur de statuts |
 | D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
@@ -409,5 +410,6 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 
 | 2026-09-13 | D29 — Fondations L15 | « 1A, 2A, 3A, 4A, 5 oui, 6 oui, 7 oui », précisions business puis « 1A, 2 ok » | Horizon 10 ans, profils complets, foyer modifiable avec historique, CA moins charges planifiées par activité, cash business conservé, comparateur du surplus, avalanche, fiscalité exclue, taux de liberté, rendement des seuls nouveaux placements et échéances business explicites |
 | 2026-09-13 | L15 — Réalisation locale | Cadrage D29 appliqué | Moteur mensuel déterministe, hypothèses et exécutions immuables, profils, charges récurrentes, croissance business par activité, unique source GoMining vérifiée et comparaison des instantanés ; aucun mouvement réel ni fiscalité implicite |
+| 2026-09-14 | D30 — L16 France | « France micro entreprise », « micro entreprise vs SASU », vérification « manuel », prestation de services BIC et SASU « 100 % dividendes » | Comparaison annuelle informative hors impôt personnel ; taux explicitement saisis, résultats immuables et contrôle manuel des sources officielles sans mise à jour automatique |
 
 Les réponses ultérieures seront consignées ici et répercutées dans la roadmap. Ne pas marquer un lot terminé sur la seule base d'un choix de planification.

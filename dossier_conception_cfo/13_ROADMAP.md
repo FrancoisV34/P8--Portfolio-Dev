@@ -545,6 +545,17 @@ Travail :
 
 **Terminé lorsque :** une panne de source ne détruit pas l'historique, les données périmées sont identifiées et aucune bascule de statut n'est déclenchée automatiquement.
 
+**Premier incrément réalisé localement, 14 septembre 2026 :** le périmètre
+retenu est France, prestation de services BIC, micro-entreprise comparée à une
+SASU sans rémunération (100 % dividendes potentiels). La comparaison annuelle
+fige CA, charges, taux de cotisations micro et taux d'IS, puis sépare le cash
+micro avant impôt personnel du bénéfice SASU après IS, potentiellement
+distribuable. L'impôt personnel, les dividendes réellement versés, la TVA,
+l'éligibilité, les frais juridiques et comptables restent explicitement hors
+modèle. Les pages officielles Impôts et URSSAF sont contrôlables manuellement
+depuis l'espace privé : seules leurs URLs prédéfinies et un hash sont utilisés,
+un changement ou une panne n'écrase jamais une règle et exige une revue humaine.
+
 ### L17 — Finaliser le portfolio et le blog
 
 **But :** obtenir la présentation professionnelle prévue par le design system.
