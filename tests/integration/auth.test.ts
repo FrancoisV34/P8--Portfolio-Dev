@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
+import Database from 'better-sqlite3';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from '../../app/.server/db/connection';
@@ -14,6 +15,9 @@ let close: () => void;
 let requireOwner: typeof import('../../app/.server/auth/owner.server')['requireOwner'];
 let handler: typeof import('../../app/routes/api-auth')['action'];
 let loginAction: typeof import('../../app/routes/login')['action'];
+let backupAction: typeof import('../../app/routes/finance-backup')['action'];
+let ownerCookie = '';
+let otherCookie = '';
 
 function request(path: string, method = 'POST', cookie?: string) {
   return new Request(`https://portfolio.example/api/auth${path}`, {
@@ -35,6 +39,7 @@ beforeAll(async () => {
   ({ requireOwner } = await import('../../app/.server/auth/owner.server'));
   ({ action: handler } = await import('../../app/routes/api-auth'));
   ({ action: loginAction } = await import('../../app/routes/login'));
+  ({ action: backupAction } = await import('../../app/routes/finance-backup'));
 });
 
 afterAll(() => {
@@ -67,8 +72,8 @@ describe('compte financier unique', () => {
     // Cette seconde création représente une corruption administrative simulée :
     // elle ne peut pas être atteinte par l’HTTP public, déjà refusé ci-dessus.
     await auth.api.signUpEmail({ body: { email: 'other@example.test', password: 'mot-de-passe-test-456', name: 'Autre test' } });
-    const ownerCookie = await signIn(ownerEmail, 'mot-de-passe-test-123');
-    const otherCookie = await signIn('other@example.test', 'mot-de-passe-test-456');
+    ownerCookie = await signIn(ownerEmail, 'mot-de-passe-test-123');
+    otherCookie = await signIn('other@example.test', 'mot-de-passe-test-456');
     await expect(requireOwner(request('/get-session', 'GET', ownerCookie))).resolves.toMatchObject({ user: { email: ownerEmail } });
     await expect(requireOwner(request('/get-session', 'GET', otherCookie))).rejects.toMatchObject({ status: 403 });
     const { loader: loginLoader } = await import('../../app/routes/login');
@@ -86,5 +91,24 @@ describe('compte financier unique', () => {
     const noSession = await handler({ request: request('/get-session', 'GET') });
     expect(noSession.status).toBe(200);
     expect(await noSession.json()).toBeNull();
+  });
+
+  it('télécharge une sauvegarde vérifiée uniquement pour le propriétaire et la même origine', async () => {
+    await expect(backupAction({ request: new Request('https://portfolio.example/api/finance/backup', { method: 'POST', headers: { origin: 'https://portfolio.example' } }) })).rejects.toMatchObject({ status: 401 });
+    await expect(backupAction({ request: new Request('https://portfolio.example/api/finance/backup', { method: 'POST', headers: { origin: 'https://outside.example', cookie: ownerCookie } }) })).rejects.toMatchObject({ status: 403 });
+    await expect(backupAction({ request: new Request('https://portfolio.example/api/finance/backup', { method: 'POST', headers: { origin: 'https://portfolio.example', cookie: otherCookie } }) })).rejects.toMatchObject({ status: 403 });
+
+    const response = await backupAction({ request: new Request('https://portfolio.example/api/finance/backup', { method: 'POST', headers: { origin: 'https://portfolio.example', cookie: ownerCookie } }) });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toContain('no-store');
+    expect(response.headers.get('content-disposition')).toMatch(/^attachment; filename="finance-backup-[0-9TZ-]+\.sqlite"$/);
+    expect(response.headers.get('content-type')).toBe('application/vnd.sqlite3');
+    const downloaded = join(directory, 'downloaded.sqlite');
+    writeFileSync(downloaded, Buffer.from(await response.arrayBuffer()));
+    const backup = new Database(downloaded, { readonly: true });
+    try { expect(backup.pragma('quick_check', { simple: true })).toBe('ok'); } finally { backup.close(); }
+
+    const tooSoon = await backupAction({ request: new Request('https://portfolio.example/api/finance/backup', { method: 'POST', headers: { origin: 'https://portfolio.example', cookie: ownerCookie } }) });
+    expect(tooSoon.status).toBe(429);
   });
 });

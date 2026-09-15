@@ -169,6 +169,13 @@
       "when": 1789411471308,
       "tag": "0023_bright_bulldozer",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1789449570854,
+      "tag": "0024_manual-backup-audit",
+      "breakpoints": true
     }
   ]
 }

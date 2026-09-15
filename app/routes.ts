@@ -8,6 +8,7 @@ export default [
   route('co', 'routes/login.tsx'),
   route('login', 'routes/legacy-login.ts'),
   route('api/auth/*', 'routes/api-auth.ts'),
+  route('api/finance/backup', 'routes/finance-backup.ts'),
   route('finance/*', 'routes/finance.tsx'),
   route('api/finance/*', 'routes/finance-api.ts'),
   route('robots.txt', 'routes/robots.ts'),

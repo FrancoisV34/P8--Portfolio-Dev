@@ -92,10 +92,13 @@ déploiement prévu possède une seule Machine Node et un volume SQLite en régi
 Paris. Cette simplicité assume une interruption courte lors d'un déploiement ou
 d'une panne plutôt qu'une réplication SQLite non maîtrisée.
 
-Le choix de la destination privée chiffrée des sauvegardes hors volume, la
-rétention correspondante, le budget réellement observé et la création des
-ressources Fly restent à décider avant toute saisie financière réelle. Aucun
-secret ne figure dans la configuration versionnée.
+Pour le premier déploiement, la sauvegarde est manuelle : un bouton privé crée
+une copie SQLite vérifiée et la télécharge sur le Mac de François, qui en gère
+la conservation dans un emplacement privé et chiffré. Il n'y a ni cloud tiers,
+ni planification, ni copie durable sur Fly. Une sauvegarde hors appareil ou
+automatisée reste une amélioration nécessaire si l'usage devient critique.
+Le budget réellement observé et la création des ressources Fly restent à
+décider. Aucun secret ne figure dans la configuration versionnée.
 
 ## D28 — Premier incrément du moteur CFO
 

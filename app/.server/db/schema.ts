@@ -52,6 +52,19 @@ export const verification = sqliteTable('verification', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 }, (table) => [index('verification_identifier_idx').on(table.identifier)]);
 
+// Journal minimal des opérations sensibles. Il ne conserve aucun montant, URL,
+// navigateur ni contenu de sauvegarde.
+export const securityEvents = sqliteTable('finance_security_events', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull().references(() => user.id, { onDelete: 'cascade' }),
+  kind: text('kind', { enum: ['backup-download'] }).notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_security_events_owner_kind_created_idx').on(table.ownerId, table.kind, table.createdAt),
+  check('finance_security_events_kind', sql`${table.kind} = 'backup-download'`),
+  check('finance_security_events_created', sql`length(${table.createdAt}) between 20 and 30`),
+]);
+
 // Les tables métier appartiennent au seul propriétaire autorisé. Le lien vers
 // les tables d'auth sera ajouté avec L04 ; aucun endpoint ne les expose avant.
 export const economicEntities = sqliteTable('finance_economic_entities', {

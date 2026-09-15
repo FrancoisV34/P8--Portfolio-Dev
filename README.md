@@ -113,10 +113,16 @@ Après le démarrage, créer le compte unique depuis une session SSH Fly avec
 interactive et n’est pas enregistré dans l’historique de commande.
 
 Les snapshots Fly (14 jours prévus) ne remplacent pas une sauvegarde SQLite
-cohérente hors du volume. **Avant toute saisie financière réelle**, L18 exige
-donc une destination privée et chiffrée pour les sauvegardes automatisées, puis
-un test de restauration depuis cette copie externe. Aucun stockage externe ou
-secret de sauvegarde n’est créé par cette configuration.
+cohérente hors du volume. Le bouton « Télécharger la sauvegarde » de l'espace
+privé crée une copie vérifiée et la télécharge directement sur le Mac de
+François. Le fichier temporaire est supprimé du serveur avant la réponse ; il
+reste ensuite à François de le placer dans un emplacement privé et chiffré de
+son Mac. Le bouton est réservé au propriétaire, limité à une demande par minute
+et ne lance aucun envoi vers un cloud tiers.
+
+Cette sauvegarde manuelle ne protège pas d'une indisponibilité du Mac : une
+copie hors appareil ou automatisée pourra être ajoutée ultérieurement. Aucun
+stockage externe ou secret de sauvegarde n’est créé par cette configuration.
 
 Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les tables du compte privé et le journal de transactions seront ajoutés avec les prochains lots. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
 

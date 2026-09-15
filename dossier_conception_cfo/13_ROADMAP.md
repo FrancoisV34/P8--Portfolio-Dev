@@ -600,9 +600,10 @@ Ce lot consolide L06 ; il ne repousse pas les sauvegardes ou la confidentialité
 point de départ est une Machine unique en région Paris avec un volume SQLite
 unique ; migrations au démarrage sur cette Machine, HTTPS forcé et contrôle de
 santé. Aucune Machine, volume, secret, sauvegarde distante ou donnée réelle
-n'est créé pendant la préparation versionnée. Une sauvegarde chiffrée hors
-volume et sa restauration restent des prérequis avant la première saisie
-financière réelle.
+n'est créé pendant la préparation versionnée. Une sauvegarde manuelle,
+vérifiée et téléchargée par le propriétaire sur son Mac remplace pour l'instant
+l'automatisation hors volume ; François conserve le fichier dans un emplacement
+privé et chiffré. L'absence de copie hors appareil reste une limite connue.
 
 ### L19 — Intelligence avancée, après validation du modèle déterministe
 
