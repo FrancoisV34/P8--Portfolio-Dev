@@ -75,6 +75,49 @@ DATABASE_PATH=data/restored/portfolio-2026-09-12.sqlite npm run db:check
 
 La restauration refuse toujours une destination existante, la base active et un chemin public. Elle ne remplace donc jamais une base en place. Conserver la sauvegarde dans un emplacement privé hors Git ; le chiffrement, le stockage persistant, HTTPS et la procédure d’exploitation restent à définir avant toute mise en ligne.
 
+## Préparer Fly.io (L18)
+
+La configuration versionnée prépare une seule Machine Node en région Paris avec
+un volume persistant `/data` pour SQLite. La Machine applique les migrations
+avant de démarrer le serveur. Une courte interruption pendant un déploiement est
+préférable à deux écrivains SQLite concurrents. L’URL de départ prévue est
+`https://francoisv34-portfolio-cfo.fly.dev`; le nom de l’application reste à
+changer uniquement si Fly.io le signale déjà pris.
+
+Avant le premier déploiement, exécuter les vérifications locales :
+
+```sh
+npm run check
+npm run build
+```
+
+Puis, après connexion locale à `flyctl`, créer l’application sans la déployer
+automatiquement. Si Fly.io indique que le nom est pris, changer ensemble
+`app` et `SITE_URL` dans `fly.toml`, puis utiliser le nouveau nom :
+
+```sh
+fly apps create francoisv34-portfolio-cfo
+fly deploy
+```
+
+Ne jamais inscrire les valeurs suivantes dans `fly.toml`, Git, le terminal
+partagé ou un fichier `.env` envoyé à Fly. Elles sont configurées avec les
+secrets Fly, en remplaçant les exemples localement :
+
+```sh
+fly secrets set BETTER_AUTH_SECRET='…' FINANCE_OWNER_EMAIL='…' FINANCE_OWNER_NAME='…'
+```
+
+Après le démarrage, créer le compte unique depuis une session SSH Fly avec
+`npm run auth:bootstrap`. Le mot de passe est alors demandé de manière
+interactive et n’est pas enregistré dans l’historique de commande.
+
+Les snapshots Fly (14 jours prévus) ne remplacent pas une sauvegarde SQLite
+cohérente hors du volume. **Avant toute saisie financière réelle**, L18 exige
+donc une destination privée et chiffrée pour les sauvegardes automatisées, puis
+un test de restauration depuis cette copie externe. Aucun stockage externe ou
+secret de sauvegarde n’est créé par cette configuration.
+
 Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les tables du compte privé et le journal de transactions seront ajoutés avec les prochains lots. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
 
 ## Organisation

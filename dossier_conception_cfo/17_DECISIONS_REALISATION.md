@@ -67,11 +67,35 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D28 | Validé : L14 | Premier incrément du moteur CFO | Priorités de sécurité seules ; allocation complète ; diagnostic et allocation progressive | Définit les règles réellement appliquées et la première restitution « meilleure action » |
 | D29 | Validé : L15 | Fondations de simulation | Horizon 10 ans et profils complets ; horizon libre ; hypothèses sans profils | Fixe les hypothèses et sorties du premier simulateur reproductible |
 | D30 | Validé : L16 | Comparaison réglementaire initiale | France micro BIC services contre SASU ; autres pays/statuts ; registre manuel seul | Détermine les sources et les limites du premier comparateur de statuts |
-| D08 | Avant finition L17 | Profondeur de la refonte publique | Améliorations ciblées de l'existant ; refonte visuelle complète avec animations narratives | Taille du lot public ; le port fonctionnel est déjà dans L02 |
+| D08 | Validé le 15 septembre 2026 | Visuel public | Conserver l'existant sans changement visuel | L17 est écarté du périmètre actuel ; les maquettes exploratoires ne modifient pas le site public |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
 
 D10 sera découpé en petites questions lorsque les mesures techniques seront disponibles. Aucune donnée secrète n'est demandée dans ce journal.
+
+## D08 — Visuel public conservé
+
+**État : validé le 15 septembre 2026 — aucun changement.**
+
+François conserve intégralement le visuel actuel du portfolio public. Les
+maquettes produites pour explorer une direction différente ne sont pas intégrées
+à l'application et ne redéfinissent ni les sections, ni les animations, ni le
+contenu public. L17 est donc écarté du périmètre de livraison en cours.
+
+## D10 — Première orientation d'exploitation
+
+**État : partiellement validé le 15 septembre 2026.**
+
+La prochaine mise en ligne cible Fly.io, d'abord sous une adresse temporaire
+`*.fly.dev`; François examinera un domaine personnalisé ultérieurement. Le
+déploiement prévu possède une seule Machine Node et un volume SQLite en région
+Paris. Cette simplicité assume une interruption courte lors d'un déploiement ou
+d'une panne plutôt qu'une réplication SQLite non maîtrisée.
+
+Le choix de la destination privée chiffrée des sauvegardes hors volume, la
+rétention correspondante, le budget réellement observé et la création des
+ressources Fly restent à décider avant toute saisie financière réelle. Aucun
+secret ne figure dans la configuration versionnée.
 
 ## D28 — Premier incrément du moteur CFO
 

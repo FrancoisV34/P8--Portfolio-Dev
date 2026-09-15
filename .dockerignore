@@ -1,0 +1,17 @@
+.git
+.claude
+.agents
+.env*
+!.env.example
+node_modules
+build
+data
+coverage
+playwright-report
+test-results
+tests
+dossier_conception_cfo
+design-previews
+src
+.DS_Store
+npm-debug.log*

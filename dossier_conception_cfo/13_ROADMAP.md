@@ -573,6 +573,11 @@ Travail :
 
 **Arbitrages :** D08 pour la profondeur de la refonte, D09 pour le blog. Lenis/Motion ne sont pas nécessaires au fonctionnement financier.
 
+**Décision du 15 septembre 2026 :** le visuel public actuel est conservé sans
+aucun changement. L17 ne comporte donc aucune réalisation visuelle dans le
+présent périmètre ; les maquettes exploratoires restent des documents de
+travail, sans incidence sur le portfolio servi.
+
 ### L18 — Consolider la mise en service
 
 **But :** rendre l'application exploitable et maintenable au quotidien.
@@ -589,6 +594,15 @@ Travail :
 **Terminé lorsque :** François peut utiliser la version, comprendre son exploitation et récupérer ses données en cas d'incident.
 
 Ce lot consolide L06 ; il ne repousse pas les sauvegardes ou la confidentialité à la fin du projet.
+
+**Cadrage initial du 15 septembre 2026 :** mise en ligne prochaine sur Fly.io,
+à l'adresse temporaire `*.fly.dev`, puis domaine personnalisé ultérieur. Le
+point de départ est une Machine unique en région Paris avec un volume SQLite
+unique ; migrations au démarrage sur cette Machine, HTTPS forcé et contrôle de
+santé. Aucune Machine, volume, secret, sauvegarde distante ou donnée réelle
+n'est créé pendant la préparation versionnée. Une sauvegarde chiffrée hors
+volume et sa restauration restent des prérequis avant la première saisie
+financière réelle.
 
 ### L19 — Intelligence avancée, après validation du modèle déterministe
 
