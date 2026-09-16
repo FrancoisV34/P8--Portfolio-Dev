@@ -61,6 +61,34 @@ describe('persistance SQLite privée', () => {
     expect(accountsRepository(connection.db, 'owner-test').listAccounts()).toEqual([]);
   });
 
+  it('fige une clôture mensuelle révisable sans réécrire les instantanés précédents', () => {
+    const accounts = accountsRepository(connection.db, 'owner-test');
+    const budget = budgetRepository(connection.db, 'owner-test');
+    const other = budgetRepository(connection.db, 'other-test');
+    const entity = accounts.createEntity({ name: 'Foyer clôture', type: 'personal' });
+    const account = accounts.createAccount({ entityId: entity.id, name: 'Compte clôture', type: 'checking', openingBalanceCents: 10_000, openingDate: '2026-09-01' });
+    const income = budget.createCategory({ name: 'Revenu clôture', kind: 'income' });
+    const expense = budget.createCategory({ name: 'Dépense clôture', kind: 'expense' });
+    budget.createTransaction({ accountId: account.id, categoryId: income.id, kind: 'income', amountCents: 5_000, occurredOn: '2026-09-05', note: '' });
+    budget.createTransaction({ accountId: account.id, categoryId: expense.id, kind: 'expense', amountCents: 3_000, occurredOn: '2026-09-06', note: '' });
+    budget.setBudget({ categoryId: expense.id, period: '2026-09', plannedAmountCents: 4_000 });
+
+    const first = budget.closeMonth({ period: '2026-09' });
+    expect(first.revision).toBe(1);
+    expect(budget.listClosures('2026-09')).toEqual([expect.objectContaining({ closure: expect.objectContaining({ id: first.id, revision: 1 }), snapshot: expect.objectContaining({ incomeCents: 5_000, expenseCents: 3_000, surplusCents: 2_000, transactionCount: 2, accounts: [expect.objectContaining({ id: account.id, balanceCents: 12_000 })], budgets: [expect.objectContaining({ categoryId: expense.id, plannedAmountCents: 4_000, actualCents: 3_000 })] }) })]);
+    expect(other.listClosures('2026-09')).toEqual([]);
+
+    budget.createTransaction({ accountId: account.id, categoryId: expense.id, kind: 'expense', amountCents: 1_000, occurredOn: '2026-09-07', note: 'Correction synthétique' });
+    const second = budget.closeMonth({ period: '2026-09' });
+    const closures = budget.listClosures('2026-09');
+    expect(second.revision).toBe(2);
+    expect(closures.map(({ closure }) => closure.revision)).toEqual([2, 1]);
+    expect(closures[0]?.snapshot.surplusCents).toBe(1_000);
+    expect(closures[1]?.snapshot.surplusCents).toBe(2_000);
+    expect(() => connection.sqlite.prepare('update finance_monthly_closures set revision = 99 where id = ?').run(first.id)).toThrow();
+    expect(() => connection.sqlite.prepare('delete from finance_monthly_closures where id = ?').run(first.id)).toThrow();
+  });
+
   it('préserve les données après redémarrage et réapplication des migrations', () => {
     const repository = accountsRepository(connection.db, 'owner-test');
     const entity = repository.createEntity({ name: 'Entité de test', type: 'personal' });

@@ -1,6 +1,6 @@
-# 16 — Stack validée, accès privé et hébergement envisagé
+# 16 — Stack validée, accès privé et hébergement
 
-Date des arbitrages : 8 septembre 2026. Mise à jour du 9 septembre : démarrage de la migration directe autorisé par François. [État de réalisation](18_MIGRATION_SOCLE.md). Aucun déploiement effectué.
+Date des arbitrages : 8 septembre 2026. Mise à jour du 16 septembre : migration directe réalisée et application déployée sur Fly.io. [État de réalisation](18_MIGRATION_SOCLE.md).
 
 ## Décisions confirmées
 
@@ -20,9 +20,9 @@ Date des arbitrages : 8 septembre 2026. Mise à jour du 9 septembre : démarrage
 | Calculs | decimal.js ; conventions d'unités et d'arrondis explicites |
 | Tests | Vitest et Playwright |
 | Animation | CSS pour la finance ; GSAP selon les besoins du portfolio |
-| Hébergement | Serveur Node avec volume persistant confirmé ; Fly.io à évaluer en priorité |
+| Hébergement | Serveur Node avec volume persistant sur Fly.io, déployé en région Paris |
 | Démonstration publique | Reportée, aucune priorité actuelle |
-| Étape actuelle | Conception ; aucune installation, migration ou publication |
+| Étape actuelle | Socle CFO déterministe en service ; consolidation de l'exploitation et prochaines fonctionnalités |
 
 Les bibliothèques proposées ont été acceptées par François. Son accord pour Drizzle était conditionné à sa compatibilité SQLite : celle-ci est confirmée ci-dessous. Lenis et Motion restent facultatifs selon les interactions du portfolio ; aucun chargement global n'est requis pour le CFO.
 
@@ -44,7 +44,9 @@ SQLite reste le moteur de base de données. better-sqlite3 est la bibliothèque 
 
 Retenir des versions stables compatibles de Node, Drizzle, Drizzle Kit, better-sqlite3 et Better Auth au démarrage de l'implémentation. La documentation peut présenter une branche de préversion : ne pas recopier automatiquement une commande ciblant une RC.
 
-Le schéma SQL fourni dans le dossier reste à compléter avec les tables d'authentification et GoMining. Les migrations et le compte initial seront créés lors de l'implémentation, avec contrôle du propriétaire unique.
+Les migrations versionnées couvrent désormais l'authentification, le budget et
+les modules CFO réalisés. Les modèles futurs seront ajoutés au fil des lots,
+avec le même contrôle de propriétaire unique.
 
 ## Authentification du compte unique
 

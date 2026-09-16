@@ -595,15 +595,16 @@ Travail :
 
 Ce lot consolide L06 ; il ne repousse pas les sauvegardes ou la confidentialité à la fin du projet.
 
-**Cadrage initial du 15 septembre 2026 :** mise en ligne prochaine sur Fly.io,
-à l'adresse temporaire `*.fly.dev`, puis domaine personnalisé ultérieur. Le
-point de départ est une Machine unique en région Paris avec un volume SQLite
-unique ; migrations au démarrage sur cette Machine, HTTPS forcé et contrôle de
-santé. Aucune Machine, volume, secret, sauvegarde distante ou donnée réelle
-n'est créé pendant la préparation versionnée. Une sauvegarde manuelle,
+**Mise en service le 16 septembre 2026 :** l'application est déployée sur
+Fly.io à l'adresse temporaire
+`https://francoisv34-portfolio-cfo.fly.dev`, avec une Machine unique en région
+Paris et un volume SQLite unique. Les migrations s'exécutent au démarrage,
+HTTPS est forcé et le contrôle de santé est actif. Le compte propriétaire a été
+initialisé par procédure interactive sur la Machine. Une sauvegarde manuelle,
 vérifiée et téléchargée par le propriétaire sur son Mac remplace pour l'instant
-l'automatisation hors volume ; François conserve le fichier dans un emplacement
-privé et chiffré. L'absence de copie hors appareil reste une limite connue.
+l'automatisation hors volume ; son intégrité et sa restauration isolée ont été
+contrôlées le même jour. François conserve le fichier dans un emplacement privé
+et chiffré. L'absence de copie hors appareil reste une limite connue.
 
 ### L19 — Intelligence avancée, après validation du modèle déterministe
 
@@ -627,9 +628,12 @@ pas l'ordre actuel : L14 reste le prochain lot, puis L15 et les prérequis de
 mise en service. Chaque piste fera l'objet d'un cadrage dédié avant écriture de
 données réelles ou intégration externe.
 
-- **Clôture mensuelle et annuelle** : calculer une période à partir des
-  mouvements réellement saisis (entrées moins sorties), vérifier les comptes,
-  figer un bilan explicable et comparer les périodes sans inventer de données.
+- **Clôture mensuelle et annuelle** : premier incrément réalisé localement le
+  16 septembre 2026. Une clôture mensuelle enregistre une révision immuable des
+  entrées, sorties, reste du mois, mouvements, soldes et budget constaté. Une
+  correction ne bloque pas le journal : elle nécessite une nouvelle clôture et
+  conserve la version antérieure. Le rapprochement avec un relevé bancaire, la
+  clôture annuelle et la comparaison de périodes restent à développer.
 - **Écran « meilleure action »** : présenter la priorité et sa justification
   depuis le moteur CFO ; son comportement précis sera décidé après que les
   règles et leurs données d'entrée auront été validées.

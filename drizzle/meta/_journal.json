@@ -176,6 +176,13 @@
       "when": 1789449570854,
       "tag": "0024_manual-backup-audit",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1789584249515,
+      "tag": "0025_monthly-closures",
+      "breakpoints": true
     }
   ]
 }

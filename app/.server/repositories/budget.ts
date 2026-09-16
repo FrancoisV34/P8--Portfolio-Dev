@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { monthOf, parseCalendarDate, parseMonth } from '../../lib/finance/dates.ts';
 import { euroCents, sumEuroCents } from '../../lib/finance/units.ts';
 import type { FinanceDatabase } from '../db/connection.ts';
-import { accounts, categories, economicEntities, monthlyBudgets, recurringCommitments, transactions } from '../db/schema.ts';
+import { accounts, categories, economicEntities, monthlyBudgets, monthlyClosures, recurringCommitments, transactions } from '../db/schema.ts';
 
 const name = z.string().trim().min(1).max(100);
 const note = z.string().trim().max(240);
@@ -20,12 +20,20 @@ const transferInput = z.object({
   fromAccountId: z.uuid(), toAccountId: z.uuid(), amountCents: z.number().int().positive().max(Number.MAX_SAFE_INTEGER), occurredOn: z.string(), note,
 }).strict();
 const budgetInput = z.object({ categoryId: z.uuid(), period: z.string(), plannedAmountCents: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) }).strict();
+const closureInput = z.object({ period: z.string() }).strict();
+const closureSnapshot = z.object({
+  period: z.string(), incomeCents: z.number().int(), expenseCents: z.number().int(), surplusCents: z.number().int(), transactionCount: z.number().int().nonnegative(),
+  accounts: z.array(z.object({ id: z.uuid(), name: z.string(), balanceCents: z.number().int() }).strict()).max(100),
+  budgets: z.array(z.object({ categoryId: z.uuid(), categoryName: z.string(), plannedAmountCents: z.number().int().positive().nullable(), actualCents: z.number().int().nonnegative() }).strict()).max(200),
+}).strict();
 
 export type CreateCategory = z.input<typeof categoryInput>;
 export type UpdateCategory = z.input<typeof categoryUpdateInput>;
 export type CreateTransaction = z.input<typeof transactionInput>;
 export type CreateTransfer = z.input<typeof transferInput>;
 export type SetBudget = z.input<typeof budgetInput>;
+
+export type MonthlyClosureSnapshot = z.infer<typeof closureSnapshot>;
 
 function periodBounds(period: string) {
   const value = parseMonth(period);
@@ -159,6 +167,31 @@ export function budgetRepository(db: FinanceDatabase, ownerId: string) {
     deleteBudget(id: string) {
       const deleted = db.delete(monthlyBudgets).where(and(eq(monthlyBudgets.id, id), eq(monthlyBudgets.ownerId, ownerId))).run();
       if (deleted.changes !== 1) throw new Error('Budget introuvable.');
+    },
+    listClosures(period: string) {
+      const value = parseMonth(period);
+      return db.select().from(monthlyClosures).where(and(eq(monthlyClosures.ownerId, ownerId), eq(monthlyClosures.period, value)))
+        .orderBy(desc(monthlyClosures.revision)).all().flatMap((closure) => {
+          try { return [{ closure, snapshot: closureSnapshot.parse(JSON.parse(closure.snapshotJson)) }]; } catch { return []; }
+        });
+    },
+    closeMonth(input: z.input<typeof closureInput>) {
+      const { period } = closureInput.parse(input);
+      const dashboard = this.dashboard(parseMonth(period));
+      const snapshot = closureSnapshot.parse({
+        period: dashboard.period, incomeCents: dashboard.incomeCents, expenseCents: dashboard.expenseCents, surplusCents: dashboard.surplusCents, transactionCount: dashboard.transactionCount,
+        accounts: dashboard.accounts.map(({ id, name, balanceCents }) => ({ id, name, balanceCents })),
+        budgets: dashboard.budgets.map(({ category, budget, actualCents }) => ({ categoryId: category.id, categoryName: category.name, plannedAmountCents: budget?.plannedAmountCents ?? null, actualCents })),
+      });
+      const snapshotJson = JSON.stringify(snapshot);
+      return db.transaction((tx) => {
+        const latest = tx.select({ revision: monthlyClosures.revision }).from(monthlyClosures).where(and(
+          eq(monthlyClosures.ownerId, ownerId), eq(monthlyClosures.period, snapshot.period),
+        )).orderBy(desc(monthlyClosures.revision)).get();
+        const revision = (latest?.revision ?? 0) + 1;
+        if (revision > 1000) throw new Error('Trop de révisions de clôture.');
+        return tx.insert(monthlyClosures).values({ id: randomUUID(), ownerId, period: snapshot.period, revision, snapshotJson, createdAt: now() }).returning().get();
+      });
     },
     dashboard(period: string) {
       const range = periodBounds(period);

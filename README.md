@@ -6,7 +6,11 @@ Une application avec un portfolio public et, à terme, un espace financier enti�
 
 Le premier lot porte l’accueil et le CV sur **React Router 8 en mode framework, React 19, TypeScript strict et Node 24**. Les styles SCSS actuels sont conservés. SQLite/Drizzle, les conventions monétaires et le compte privé unique sont installés. L’accès à `/finance` exige une session propriétaire ; le budget local couvre comptes, journal, prévus/réalisés, réserve issue de comptes sélectionnés et engagements mensuels explicitement rapprochés des paiements. GoMining ajoute des scénarios mensuels privés, une révision immuable à chaque changement et, à titre indicatif, peut afficher l’apport d’un scénario dans une catégorie de budget sans modifier ce budget ni créer de transaction.
 
-La production actuelle reste sur son déploiement existant. Aucun push ou déploiement n’a été effectué. Cette nouvelle application nécessite un serveur Node ; les anciens scripts GitHub Pages ont été retirés.
+L’application est déployée sur Fly.io à l’adresse
+`https://francoisv34-portfolio-cfo.fly.dev`. Le portfolio reste public ;
+l’espace financier exige toujours la session du propriétaire côté serveur.
+Cette application nécessite un serveur Node ; les anciens scripts GitHub Pages
+ont été retirés.
 
 ## Lancer le projet
 
@@ -73,30 +77,26 @@ npm run db:restore -- data/backups/portfolio-2026-09-12.sqlite data/restored/por
 DATABASE_PATH=data/restored/portfolio-2026-09-12.sqlite npm run db:check
 ```
 
-La restauration refuse toujours une destination existante, la base active et un chemin public. Elle ne remplace donc jamais une base en place. Conserver la sauvegarde dans un emplacement privé hors Git ; le chiffrement, le stockage persistant, HTTPS et la procédure d’exploitation restent à définir avant toute mise en ligne.
+La restauration refuse toujours une destination existante, la base active et un chemin public. Elle ne remplace donc jamais une base en place. Conserver la sauvegarde dans un emplacement privé hors Git et chiffré. HTTPS, le stockage persistant et la procédure d’exploitation de base sont en place sur Fly.io ; une conservation chiffrée hors appareil reste à ajouter.
 
-## Préparer Fly.io (L18)
+## Exploiter Fly.io (L18)
 
-La configuration versionnée prépare une seule Machine Node en région Paris avec
+L’application est en service sur une Machine Node unique en région Paris, avec
 un volume persistant `/data` pour SQLite. La Machine applique les migrations
 avant de démarrer le serveur. Une courte interruption pendant un déploiement est
-préférable à deux écrivains SQLite concurrents. L’URL de départ prévue est
-`https://francoisv34-portfolio-cfo.fly.dev`; le nom de l’application reste à
-changer uniquement si Fly.io le signale déjà pris.
+préférable à deux écrivains SQLite concurrents. L’URL actuelle est
+`https://francoisv34-portfolio-cfo.fly.dev`.
 
-Avant le premier déploiement, exécuter les vérifications locales :
+Avant une mise à jour de déploiement, exécuter les vérifications locales :
 
 ```sh
 npm run check
 npm run build
 ```
 
-Puis, après connexion locale à `flyctl`, créer l’application sans la déployer
-automatiquement. Si Fly.io indique que le nom est pris, changer ensemble
-`app` et `SITE_URL` dans `fly.toml`, puis utiliser le nouveau nom :
+Puis, après connexion locale à `flyctl`, déployer la nouvelle version :
 
 ```sh
-fly apps create francoisv34-portfolio-cfo
 fly deploy
 ```
 
@@ -108,9 +108,9 @@ secrets Fly, en remplaçant les exemples localement :
 fly secrets set BETTER_AUTH_SECRET='…' FINANCE_OWNER_EMAIL='…' FINANCE_OWNER_NAME='…'
 ```
 
-Après le démarrage, créer le compte unique depuis une session SSH Fly avec
-`npm run auth:bootstrap`. Le mot de passe est alors demandé de manière
-interactive et n’est pas enregistré dans l’historique de commande.
+Le compte unique a été initialisé sur Fly avec `npm run auth:bootstrap`. Pour
+réinitialiser son mot de passe, suivre la même procédure interactive : le mot
+de passe n’est ni affiché ni enregistré dans l’historique de commande.
 
 Les snapshots Fly (14 jours prévus) ne remplacent pas une sauvegarde SQLite
 cohérente hors du volume. Le bouton « Télécharger la sauvegarde » de l'espace
@@ -120,11 +120,14 @@ reste ensuite à François de le placer dans un emplacement privé et chiffré d
 son Mac. Le bouton est réservé au propriétaire, limité à une demande par minute
 et ne lance aucun envoi vers un cloud tiers.
 
-Cette sauvegarde manuelle ne protège pas d'une indisponibilité du Mac : une
-copie hors appareil ou automatisée pourra être ajoutée ultérieurement. Aucun
-stockage externe ou secret de sauvegarde n’est créé par cette configuration.
+Le 16 septembre 2026, une sauvegarde téléchargée depuis l’espace propriétaire
+a été vérifiée : intégrité SQLite, clés étrangères et 25 migrations, puis
+restauration isolée dans une copie distincte. Cette sauvegarde manuelle ne
+protège pas d'une indisponibilité du Mac : une copie hors appareil ou
+automatisée pourra être ajoutée ultérieurement. Aucun stockage externe ou
+secret de sauvegarde n’est créé par cette configuration.
 
-Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les tables du compte privé et le journal de transactions seront ajoutés avec les prochains lots. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
+Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les évolutions de modèle suivent cette même procédure. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
 
 ## Organisation
 
@@ -136,7 +139,7 @@ Après modification du schéma TypeScript, `npm run db:generate -- --name=descri
 - `tests/` : vérifications unitaires et navigateur.
 - `src/` : anciens composants inactifs conservés comme référence pendant la refonte.
 
-Tailwind/shadcn, les formulaires budgétaires, graphiques et moteurs financiers seront intégrés avec les prochains lots. Les secrets, bases locales et sauvegardes sont exclus de Git. Le dossier de conception contient des paramètres personnels ; il est exclu du serveur de développement et des fichiers servis en production.
+Les composants UI, formulaires financiers et moteurs métier sont livrés progressivement dans l’espace privé. Les secrets, bases locales et sauvegardes sont exclus de Git. Le dossier de conception contient des paramètres personnels ; il est exclu du serveur de développement et des fichiers servis en production.
 
 Références : [roadmap](dossier_conception_cfo/13_ROADMAP.md), [sécurité](SECURITY.md), [authentification](dossier_conception_cfo/20_AUTHENTIFICATION_COMPTE_UNIQUE.md), [arbitrages](dossier_conception_cfo/17_DECISIONS_REALISATION.md), [suivi de migration](dossier_conception_cfo/18_MIGRATION_SOCLE.md), [stack validée](dossier_conception_cfo/16_ARBITRAGES_STACK_PROJET.md), [GoMining](dossier_conception_cfo/15_GOMINING_STRATEGIE_SIMULATION.md), [design system](design-system/README.md).
 

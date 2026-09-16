@@ -67,11 +67,24 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D28 | Validé : L14 | Premier incrément du moteur CFO | Priorités de sécurité seules ; allocation complète ; diagnostic et allocation progressive | Définit les règles réellement appliquées et la première restitution « meilleure action » |
 | D29 | Validé : L15 | Fondations de simulation | Horizon 10 ans et profils complets ; horizon libre ; hypothèses sans profils | Fixe les hypothèses et sorties du premier simulateur reproductible |
 | D30 | Validé : L16 | Comparaison réglementaire initiale | France micro BIC services contre SASU ; autres pays/statuts ; registre manuel seul | Détermine les sources et les limites du premier comparateur de statuts |
+| D31 | Validé : clôture mensuelle | Correction après clôture | Verrouiller le journal ; créer une nouvelle révision immuable ; ne conserver qu'un total | Préserve un bilan explicable sans empêcher de corriger une erreur de saisie |
 | D08 | Validé le 15 septembre 2026 | Visuel public | Conserver l'existant sans changement visuel | L17 est écarté du périmètre actuel ; les maquettes exploratoires ne modifient pas le site public |
 | D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
 
 D10 sera découpé en petites questions lorsque les mesures techniques seront disponibles. Aucune donnée secrète n'est demandée dans ce journal.
+
+## D31 — Première clôture mensuelle
+
+**État : réalisé localement le 16 septembre 2026 — nouvelle révision immuable.**
+
+Une clôture prend un instantané des montants réellement saisis pour une période :
+revenus, dépenses, reste du mois, nombre de mouvements, soldes de comptes et
+budget constaté. Elle ne crée ni transaction ni écriture de rapprochement. Une
+correction ultérieure du journal reste autorisée ; une nouvelle clôture crée une
+révision suivante sans modifier ni supprimer la précédente. Le rapprochement à
+un relevé bancaire, la clôture annuelle et les comparaisons entre périodes sont
+des incréments ultérieurs.
 
 ## D08 — Visuel public conservé
 
@@ -84,21 +97,23 @@ contenu public. L17 est donc écarté du périmètre de livraison en cours.
 
 ## D10 — Première orientation d'exploitation
 
-**État : partiellement validé le 15 septembre 2026.**
+**État : mise en service initiale réalisée le 16 septembre 2026.**
 
-La prochaine mise en ligne cible Fly.io, d'abord sous une adresse temporaire
-`*.fly.dev`; François examinera un domaine personnalisé ultérieurement. Le
-déploiement prévu possède une seule Machine Node et un volume SQLite en région
-Paris. Cette simplicité assume une interruption courte lors d'un déploiement ou
-d'une panne plutôt qu'une réplication SQLite non maîtrisée.
+La mise en ligne cible Fly.io est active à
+`https://francoisv34-portfolio-cfo.fly.dev`; François examinera un domaine
+personnalisé ultérieurement. Le déploiement possède une seule Machine Node et
+un volume SQLite en région Paris. Cette simplicité assume une interruption
+courte lors d'un déploiement ou d'une panne plutôt qu'une réplication SQLite
+non maîtrisée.
 
-Pour le premier déploiement, la sauvegarde est manuelle : un bouton privé crée
+La sauvegarde est manuelle : un bouton privé crée
 une copie SQLite vérifiée et la télécharge sur le Mac de François, qui en gère
-la conservation dans un emplacement privé et chiffré. Il n'y a ni cloud tiers,
-ni planification, ni copie durable sur Fly. Une sauvegarde hors appareil ou
+la conservation dans un emplacement privé et chiffré. Le 16 septembre, une
+copie téléchargée a passé les contrôles d'intégrité, de clés étrangères et de
+migrations, ainsi qu'une restauration isolée. Il n'y a ni cloud tiers, ni
+planification, ni copie durable sur Fly. Une sauvegarde hors appareil ou
 automatisée reste une amélioration nécessaire si l'usage devient critique.
-Le budget réellement observé et la création des ressources Fly restent à
-décider. Aucun secret ne figure dans la configuration versionnée.
+Aucun secret ne figure dans la configuration versionnée.
 
 ## D28 — Premier incrément du moteur CFO
 

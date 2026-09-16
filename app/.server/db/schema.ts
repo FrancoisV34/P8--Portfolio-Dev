@@ -481,6 +481,24 @@ export const monthlyBudgets = sqliteTable('finance_monthly_budgets', {
   check('finance_budgets_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
 ]);
 
+// Une clôture conserve un instantané explicable des mouvements et des soldes
+// d'un mois. Elle n'empêche pas une correction ultérieure : celle-ci produira
+// une nouvelle révision, sans réécrire l'instantané déjà enregistré.
+export const monthlyClosures = sqliteTable('finance_monthly_closures', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  period: text('period').notNull(),
+  revision: integer('revision').notNull(),
+  snapshotJson: text('snapshot_json').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  index('finance_monthly_closures_owner_period_idx').on(table.ownerId, table.period),
+  uniqueIndex('finance_monthly_closures_owner_period_revision_unique').on(table.ownerId, table.period, table.revision),
+  check('finance_monthly_closures_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
+  check('finance_monthly_closures_revision', sql`${table.revision} between 1 and 1000`),
+  check('finance_monthly_closures_snapshot', sql`length(${table.snapshotJson}) between 2 and 100000 and json_valid(${table.snapshotJson})`),
+]);
+
 // Une évaluation CFO est un constat versionné : elle conserve son contexte et
 // son résultat sans modifier les comptes, transactions ou placements sources.
 export const cfoEvaluations = sqliteTable('finance_cfo_evaluations', {
