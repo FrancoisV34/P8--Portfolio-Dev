@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env ./node_modules/@react-router/dev/bin.cjs dev --host 127.0.0.1",
     "build": "react-router build",
-    "start": "node --env-file-if-exists=.env ./node_modules/@react-router/serve/bin.cjs ./build/server/index.js",
+    "start": "node --env-file-if-exists=.env ./scripts/production/server.mjs",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
