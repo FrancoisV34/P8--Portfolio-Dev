@@ -649,6 +649,12 @@ données réelles ou intégration externe.
 - **Score par application** : compléter les KPI SaaS avec churn, MRR, stabilité
   et autres indicateurs pertinents, avec formules et couverture de données
   visibles ; le score ne remplacera jamais l'analyse des données sources.
+
+  Premier incrément local : un indice exploratoire par application normalise les
+  seuls signaux calculables (marge opérationnelle du mois et tendance MRR sur
+  trois mois). La couverture explicite porte sur 50 % par signal ; une donnée
+  inconnue n'est jamais comptée comme un mauvais résultat. Churn, rétention et
+  autres KPI restent à définir à partir de données source suffisamment fiables.
 - **Sauvegardes consolidées** : automatiser des copies privées et chiffrées,
   avec conservation bornée et tests réguliers de restauration, dans le cadre de
   L18 et de l'environnement de production retenu.

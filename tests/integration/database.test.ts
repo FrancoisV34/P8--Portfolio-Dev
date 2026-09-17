@@ -431,6 +431,7 @@ describe('persistance SQLite privée', () => {
       mrrCents: 20_000, mrrActivityCount: 2, activeActivityCount: 2,
       concentration: [expect.objectContaining({ activity: expect.objectContaining({ id: first.id }), mrrCents: 20_000, shareBasisPoints: 10_000 }), expect.objectContaining({ activity: expect.objectContaining({ id: second.id }), mrrCents: 0, shareBasisPoints: 0 })],
       stability: { fromPeriod: '2026-07', toPeriod: '2026-10', changeCents: 0, changeBasisPoints: 0 },
+      activities: expect.arrayContaining([expect.objectContaining({ activity: expect.objectContaining({ id: first.id }), score: expect.objectContaining({ coverageBasisPoints: 5_000, components: [expect.objectContaining({ key: 'mrr-trend', observedBasisPoints: 10_000 })] }) })]),
       mrrHistory: expect.arrayContaining([expect.objectContaining({ period: '2026-07', mrrCents: 20_000, mrrActivityCount: 2, complete: true }), expect.objectContaining({ period: '2026-10', mrrCents: 20_000, mrrActivityCount: 2, complete: true })]),
     });
     record(second.id, '2026-10', null);

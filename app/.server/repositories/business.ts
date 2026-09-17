@@ -3,6 +3,7 @@ import Decimal from 'decimal.js';
 import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import { parseMonth } from '../../lib/finance/dates.ts';
+import { observedBusinessScore } from '../../lib/finance/business-score.ts';
 import { euroCents, sumEuroCents } from '../../lib/finance/units.ts';
 import type { FinanceDatabase } from '../db/connection.ts';
 import { businessActivities, businessEntityMonthlyCash, businessMonthlyMetrics, businessMonthlyProvisions, economicEntities } from '../db/schema.ts';
@@ -118,7 +119,19 @@ export function businessRepository(db: FinanceDatabase, ownerId: string) {
       const latestCash = new Map<string, typeof cashHistory[number]>();
       for (const cash of cashHistory) if (cash.period <= period && !latestCash.has(cash.entityId)) latestCash.set(cash.entityId, cash);
       const currentCash = cashHistory.filter((cash) => cash.period === period);
-      const activityRows = activities.map((activity) => ({ activity, metric: metricByActivity.get(activity.id) ?? null }));
+      const activityRows = activities.map((activity) => {
+        const metric = metricByActivity.get(activity.id) ?? null;
+        const mrrHistoryCents = historyPeriods.map((historyPeriod) => historyMetrics.find((historyMetric) => historyMetric.activityId === activity.id && historyMetric.period === historyPeriod)?.mrrCents ?? null);
+        return {
+          activity,
+          metric,
+          score: observedBusinessScore({
+            revenueCents: metric?.revenueCents ?? 0,
+            operatingExpenseCents: metric?.operatingExpenseCents ?? 0,
+            mrrHistoryCents,
+          }),
+        };
+      });
       const activeActivityIds = new Set(activities.filter((activity) => activity.isActive).map((activity) => activity.id));
       const activeActivityCount = activeActivityIds.size;
       const mrrMetrics = activityRows.flatMap(({ activity, metric }) => !activity.isActive || metric?.mrrCents === null || metric === null ? [] : [euroCents(metric.mrrCents)]);

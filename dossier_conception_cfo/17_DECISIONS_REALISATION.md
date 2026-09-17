@@ -58,6 +58,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D19 | Validé : L11 | Premier suivi du business | Cash business observé ; KPI SaaS d'abord ; approfondir L10 | Distinguer strictement activité économique, cash d'entité et foyer |
 | D20 | Validé : L11 | Premier incrément de métriques SaaS | MRR/ARR et métriques observées ; objectifs/projets d'abord ; stabiliser après tests | Qualifier le revenu récurrent sans confondre CA encaissé et projection |
 | D21 | Validé : L11 | Stabilité et concentration MRR | Stabilité/concentration observées ; objectifs/projets d'abord ; exploitation locale | Montrer la qualité de l'historique sans transformer une absence en zéro |
+| D33 | Validé : L11 | Premier indice par application | Marge et tendance MRR observées, couverture visible ; score opaque ; churn sans source fiable | Donner un repère exploratoire sans le présenter comme une prédiction |
 | D22 | Validé : L12 | Premier suivi objectifs/projets | Objectifs et backlog manuels ; provisions business ; exploitation locale | Organiser les priorités sans automatiser l'allocation financière |
 | D23 | Validé : L12 | Capacité des projets | Capacité manuelle informative ; limite bloquante ; provisions business | Rendre la charge visible sans imposer une règle de planification |
 | D24 | Validé : L12 | Limite des projets en cours | Limite souple de deux ; limite stricte ; aucune limite | Préserver la concentration sans retirer le contrôle manuel |
@@ -261,6 +262,22 @@ La variation sur trois mois est présentée seulement lorsque les quatre mois
 calendaires consécutifs concernés sont complets. Elle reste une comparaison
 observée : elle n'est ni un objectif, ni une prédiction, ni une recommandation.
 
+## D33 — Premier indice par application
+
+**État : réalisé localement le 17 septembre 2026 — repère exploratoire avec
+formule visible.**
+
+L'indice par application ne prend en compte que deux signaux lorsqu'ils sont
+calculables : la marge opérationnelle du mois (0 % vaut 0 ; 50 % ou plus vaut
+100) et la variation du MRR entre quatre mois calendaires consécutifs (−20 % ou
+moins vaut 0 ; +20 % ou plus vaut 100). Les deux signaux ont le même poids.
+Lorsqu'un seul signal est connu, son résultat est conservé et la couverture est
+de 50 %, plutôt que de lui attribuer arbitrairement un mauvais résultat.
+
+Il s'agit d'un repère de lecture, pas d'une prévision, d'une recommandation ou
+d'une décision financière. Le churn, la rétention, l'acquisition et tout autre
+KPI exigent d'abord une définition et une source observée suffisamment fiables.
+
 ## D22 — Premier suivi des objectifs et projets
 
 **État : validé le 11 septembre 2026 — option A, objectifs et backlog
@@ -444,6 +461,7 @@ Les valeurs financières réelles seront conservées dans un support privé ou s
 | 2026-09-11 | D19 — Premier suivi du business | « A » | Activités, CA et charges mensuels, cash conservé et flux distribué par entité business ; aucune écriture foyer ou fiscalité automatique |
 | 2026-09-11 | D20 — Métriques SaaS initiales | « A » | MRR observé, ARR dérivé, clients actifs et temps de maintenance facultatifs ; CA encaissé et foyer restent isolés |
 | 2026-09-11 | D21 — Stabilité et concentration MRR | « A » | Historique de six mois, concentration du MRR renseigné et variation seulement avec quatre périodes complètes |
+| 2026-09-17 | D33 — Premier indice par application | Continuer les fonctionnalités | Indice exploratoire marge/tendance MRR, normalisé uniquement sur les signaux disponibles et avec couverture visible |
 | 2026-09-11 | D22 — Objectifs et projets | « A » | Objectifs manuels et backlog de projets liés facultativement, sans écriture ni allocation financière automatique |
 | 2026-09-11 | D23 — Capacité des projets | « A » | Capacité mensuelle et comparaison informative avec les charges des projets en cours |
 | 2026-09-11 | D24 — Limite des projets actifs | « A » | Limite souple de deux projets en cours, avec signal sans blocage |
