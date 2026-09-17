@@ -89,6 +89,21 @@ describe('persistance SQLite privée', () => {
     expect(() => connection.sqlite.prepare('delete from finance_monthly_closures where id = ?').run(first.id)).toThrow();
   });
 
+  it('rapproche un relevé du solde calculé sans modifier le journal', () => {
+    const accounts = accountsRepository(connection.db, 'owner-test');
+    const budget = budgetRepository(connection.db, 'owner-test');
+    const other = budgetRepository(connection.db, 'other-test');
+    const entity = accounts.createEntity({ name: 'Foyer rapprochement', type: 'personal' });
+    const account = accounts.createAccount({ entityId: entity.id, name: 'Compte rapprochement', type: 'checking', openingBalanceCents: 10_000, openingDate: '2026-09-01' });
+    const first = budget.setReconciliation({ accountId: account.id, period: '2026-09', statementDate: '2026-09-30', statementBalanceCents: 9_800 });
+    const updated = budget.setReconciliation({ accountId: account.id, period: '2026-09', statementDate: '2026-09-29', statementBalanceCents: 9_900 });
+    expect(updated.id).toBe(first.id);
+    expect(budget.listReconciliations('2026-09')).toEqual([expect.objectContaining({ accountId: account.id, statementDate: '2026-09-29', statementBalanceCents: 9_900 })]);
+    expect(other.listReconciliations('2026-09')).toEqual([]);
+    expect(() => budget.setReconciliation({ accountId: account.id, period: '2026-09', statementDate: '2026-10-01', statementBalanceCents: 9_900 })).toThrow('Date de relevé hors période.');
+    expect(budget.dashboard('2026-09').accounts.find((item) => item.id === account.id)?.balanceCents).toBe(10_000);
+  });
+
   it('préserve les données après redémarrage et réapplication des migrations', () => {
     const repository = accountsRepository(connection.db, 'owner-test');
     const entity = repository.createEntity({ name: 'Entité de test', type: 'personal' });

@@ -83,9 +83,10 @@ Une clôture prend un instantané des montants réellement saisis pour une péri
 revenus, dépenses, reste du mois, nombre de mouvements, soldes de comptes et
 budget constaté. Elle ne crée ni transaction ni écriture de rapprochement. Une
 correction ultérieure du journal reste autorisée ; une nouvelle clôture crée une
-révision suivante sans modifier ni supprimer la précédente. Le rapprochement à
-un relevé bancaire, la clôture annuelle et les comparaisons entre périodes sont
-des incréments ultérieurs.
+révision suivante sans modifier ni supprimer la précédente. Le 17 septembre,
+un rapprochement manuel est ajouté : le solde daté d'un relevé est comparé au
+solde calculé, sans corriger le journal. La clôture annuelle et les comparaisons
+entre périodes sont des incréments ultérieurs.
 
 ## D08 — Visuel public conservé
 

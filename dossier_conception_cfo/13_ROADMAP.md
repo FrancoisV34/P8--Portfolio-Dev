@@ -632,8 +632,10 @@ données réelles ou intégration externe.
   16 septembre 2026. Une clôture mensuelle enregistre une révision immuable des
   entrées, sorties, reste du mois, mouvements, soldes et budget constaté. Une
   correction ne bloque pas le journal : elle nécessite une nouvelle clôture et
-  conserve la version antérieure. Le rapprochement avec un relevé bancaire, la
-  clôture annuelle et la comparaison de périodes restent à développer.
+  conserve la version antérieure. Le rapprochement manuel avec un relevé est
+  également réalisé : un solde daté par compte est comparé au journal sans le
+  modifier. La clôture annuelle et la comparaison de périodes restent à
+  développer.
 - **Écran « meilleure action »** : présenter la priorité et sa justification
   depuis le moteur CFO ; son comportement précis sera décidé après que les
   règles et leurs données d'entrée auront été validées.

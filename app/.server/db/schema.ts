@@ -499,6 +499,25 @@ export const monthlyClosures = sqliteTable('finance_monthly_closures', {
   check('finance_monthly_closures_snapshot', sql`length(${table.snapshotJson}) between 2 and 100000 and json_valid(${table.snapshotJson})`),
 ]);
 
+// Solde relevé explicitement saisi pour rapprocher un compte du journal. Il ne
+// modifie jamais le solde calculé ni les transactions de la période.
+export const accountReconciliations = sqliteTable('finance_account_reconciliations', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'restrict' }),
+  period: text('period').notNull(),
+  statementDate: text('statement_date').notNull(),
+  statementBalanceCents: integer('statement_balance_cents').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+}, (table) => [
+  uniqueIndex('finance_account_reconciliations_owner_account_period_unique').on(table.ownerId, table.accountId, table.period),
+  index('finance_account_reconciliations_owner_period_idx').on(table.ownerId, table.period),
+  check('finance_account_reconciliations_period', sql`length(${table.period}) = 7 and ${table.period} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(${table.period}, 1, 4) as integer) between 1 and 9999 and cast(substr(${table.period}, 6, 2) as integer) between 1 and 12`),
+  check('finance_account_reconciliations_date', sql`length(${table.statementDate}) = 10 and date(${table.statementDate}, '+0 days') = ${table.statementDate} and substr(${table.statementDate}, 1, 7) = ${table.period}`),
+  check('finance_account_reconciliations_balance', sql`typeof(${table.statementBalanceCents}) = 'integer' and ${table.statementBalanceCents} between -9007199254740991 and 9007199254740991`),
+]);
+
 // Une évaluation CFO est un constat versionné : elle conserve son contexte et
 // son résultat sans modifier les comptes, transactions ou placements sources.
 export const cfoEvaluations = sqliteTable('finance_cfo_evaluations', {

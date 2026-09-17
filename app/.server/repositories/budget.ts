@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { monthOf, parseCalendarDate, parseMonth } from '../../lib/finance/dates.ts';
 import { euroCents, sumEuroCents } from '../../lib/finance/units.ts';
 import type { FinanceDatabase } from '../db/connection.ts';
-import { accounts, categories, economicEntities, monthlyBudgets, monthlyClosures, recurringCommitments, transactions } from '../db/schema.ts';
+import { accountReconciliations, accounts, categories, economicEntities, monthlyBudgets, monthlyClosures, recurringCommitments, transactions } from '../db/schema.ts';
 
 const name = z.string().trim().min(1).max(100);
 const note = z.string().trim().max(240);
@@ -21,6 +21,7 @@ const transferInput = z.object({
 }).strict();
 const budgetInput = z.object({ categoryId: z.uuid(), period: z.string(), plannedAmountCents: z.number().int().positive().max(Number.MAX_SAFE_INTEGER) }).strict();
 const closureInput = z.object({ period: z.string() }).strict();
+const reconciliationInput = z.object({ accountId: z.uuid(), period: z.string(), statementDate: z.string(), statementBalanceCents: z.number().int().min(-Number.MAX_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER) }).strict();
 const closureSnapshot = z.object({
   period: z.string(), incomeCents: z.number().int(), expenseCents: z.number().int(), surplusCents: z.number().int(), transactionCount: z.number().int().nonnegative(),
   accounts: z.array(z.object({ id: z.uuid(), name: z.string(), balanceCents: z.number().int() }).strict()).max(100),
@@ -192,6 +193,24 @@ export function budgetRepository(db: FinanceDatabase, ownerId: string) {
         if (revision > 1000) throw new Error('Trop de révisions de clôture.');
         return tx.insert(monthlyClosures).values({ id: randomUUID(), ownerId, period: snapshot.period, revision, snapshotJson, createdAt: now() }).returning().get();
       });
+    },
+    listReconciliations(period: string) {
+      const value = parseMonth(period);
+      return db.select().from(accountReconciliations).where(and(eq(accountReconciliations.ownerId, ownerId), eq(accountReconciliations.period, value))).orderBy(asc(accountReconciliations.statementDate), asc(accountReconciliations.accountId)).all();
+    },
+    setReconciliation(input: z.input<typeof reconciliationInput>) {
+      const values = reconciliationInput.parse(input);
+      const period = parseMonth(values.period);
+      const statementDate = parseCalendarDate(values.statementDate);
+      if (monthOf(statementDate) !== period) throw new Error('Date de relevé hors période.');
+      if (!ownedAccounts([values.accountId]).some((account) => account.id === values.accountId)) throw new Error('Compte introuvable.');
+      const existing = db.select({ id: accountReconciliations.id }).from(accountReconciliations).where(and(
+        eq(accountReconciliations.ownerId, ownerId), eq(accountReconciliations.accountId, values.accountId), eq(accountReconciliations.period, period),
+      )).get();
+      const statementBalanceCents = euroCents(values.statementBalanceCents);
+      if (existing) return db.update(accountReconciliations).set({ statementDate, statementBalanceCents, updatedAt: now() }).where(eq(accountReconciliations.id, existing.id)).returning().get();
+      const timestamp = now();
+      return db.insert(accountReconciliations).values({ id: randomUUID(), ownerId, accountId: values.accountId, period, statementDate, statementBalanceCents, createdAt: timestamp, updatedAt: timestamp }).returning().get();
     },
     dashboard(period: string) {
       const range = periodBounds(period);
