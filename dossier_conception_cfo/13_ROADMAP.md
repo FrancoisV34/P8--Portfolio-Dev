@@ -637,9 +637,10 @@ données réelles ou intégration externe.
 - **Écran « meilleure action »** : présenter la priorité et sa justification
   depuis le moteur CFO ; son comportement précis sera décidé après que les
   règles et leurs données d'entrée auront été validées.
-- **Import CSV bancaire** : aperçu, mapping, validation, dédoublonnage et
-  écriture atomique. Aucun import ne sera appliqué sans confirmation explicite
-  ni sans conserver une trace de son origine.
+- **Import CSV bancaire** : en attente du premier export bancaire de François
+  afin d'adapter le mapping au format réel. Le périmètre reste aperçu,
+  validation, dédoublonnage, confirmation explicite, écriture atomique et trace
+  d'origine ; aucun import ne sera appliqué automatiquement.
 - **Calendrier financier** : rassembler échéances de dettes, engagements,
   révisions réglementaires, objectifs et signaux business, sans présumer qu'un
   événement a été payé ou réalisé.

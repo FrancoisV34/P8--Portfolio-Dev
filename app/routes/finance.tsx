@@ -20,11 +20,12 @@ import { parseMonth } from '../lib/finance/dates.ts';
 import { cfoBuckets, type CfoInput } from '../lib/finance/cfo.ts';
 import { simulationBuckets, type SimulationInput, type SimulationProfileKind } from '../lib/finance/simulation.ts';
 import { projectDebtSchedule } from '../lib/finance/debt.ts';
+import { financialCalendar } from '../lib/finance/calendar.ts';
 import { projectMonthlyGoMining } from '../lib/gomining/monthly.ts';
 import { euroCents, eurosDecimal, formatEuros, parseEuros, sumEuroCents } from '../lib/finance/units.ts';
 import './finance.scss';
 
-const sections = ['overview', 'accounts', 'categories', 'transactions', 'budget', 'wealth', 'business', 'goals', 'cfo', 'simulations', 'regulations', 'statuses', 'gomining'] as const;
+const sections = ['overview', 'accounts', 'categories', 'transactions', 'budget', 'calendar', 'wealth', 'business', 'goals', 'cfo', 'simulations', 'regulations', 'statuses', 'gomining'] as const;
 type Section = typeof sections[number];
 type RegulatoryResolution = ReturnType<ReturnType<typeof regulatoryRepository>['resolve']>;
 type ActionData = { error: string } | { regulationResolution: RegulatoryResolution } | undefined;
@@ -186,6 +187,15 @@ export async function loader({ request, params }: { request: Request; params: Re
     const goalsDashboard = goals.dashboard();
     const gominingBudgetPlans = gominingBudgetPlansFor(period, gominingScenarios);
     const cfoRules = cfo.currentRules();
+    const regulationsDashboard = regulations.dashboard(endOfMonth(period));
+    const calendar = financialCalendar({
+      period,
+      commitments: planningDashboard.commitments.map(({ commitment }) => commitment),
+      goals: goalsDashboard.goals,
+      rules: regulationsDashboard.rules,
+      debts: wealthDashboard.debts.flatMap(({ debt, balance }) => balance ? [{ id: debt.id, name: debt.name, monthlyPaymentCents: balance.monthlyPaymentCents }] : []),
+      businessSignals: businessDashboard.activities.flatMap(({ activity, metric }) => metric === null ? [] : [{ id: activity.id, name: activity.name, revenueCents: metric.revenueCents, operatingExpenseCents: metric.operatingExpenseCents }]),
+    });
     return {
       name: session.user.name, section: sectionFor(params['*'] ?? ''), period,
       entities, accounts: accounts.listAccounts(), categories: budget.listCategories(),
@@ -194,7 +204,8 @@ export async function loader({ request, params }: { request: Request; params: Re
       cfo: { context: cfoInputFor(period, entities, dashboard, planningDashboard, wealthDashboard, businessDashboard, goalsDashboard, sumEuroCents(gominingBudgetPlans.map((plan) => euroCents(plan.contributionCents)))), rules: cfoRules, history: cfo.list() },
       simulations: { current: simulations.current(), runs: simulations.list() },
       statusComparisons: statusComparisons.list(),
-      regulations: regulations.dashboard(endOfMonth(period)),
+      regulations: regulationsDashboard,
+      calendar,
       regulatorySources: regulatorySources.dashboard(),
       gomining: gominingScenarios,
       gominingBudgetPlans,
@@ -326,14 +337,15 @@ export default function Finance() {
   const activeCategories = data.categories.filter((item) => item.isActive);
   const balances = new Map(data.dashboard.accounts.map((item) => [item.id, item.balanceCents]));
   return <main className="finance-page">
-    <header className="finance-header"><div><p className="finance-eyebrow">Espace personnel</p><h1>{({ overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories', transactions: 'Transactions', budget: 'Budget', wealth: 'Patrimoine', business: 'Business', goals: 'Objectifs et projets', cfo: 'Moteur CFO', simulations: 'Simulations', regulations: 'Règles vérifiées', statuses: 'Micro vs SASU', gomining: 'GoMining' })[data.section]}</h1><p>Bonjour {data.name}.</p></div><div className="finance-header__actions"><form method="post" action="/api/finance/backup"><button className="finance-button finance-button--quiet" type="submit">Télécharger la sauvegarde</button></form><Form method="post"><input type="hidden" name="intent" value="signOut" /><button className="finance-button finance-button--quiet">Se déconnecter</button></Form></div></header>
-    <nav className="finance-nav" aria-label="Navigation financière"><Link to={`/finance?period=${data.period}`} aria-current={data.section === 'overview' ? 'page' : undefined}>Synthèse</Link><Link to={path('accounts', data.period)} aria-current={data.section === 'accounts' ? 'page' : undefined}>Comptes</Link><Link to={path('categories', data.period)} aria-current={data.section === 'categories' ? 'page' : undefined}>Catégories</Link><Link to={path('transactions', data.period)} aria-current={data.section === 'transactions' ? 'page' : undefined}>Transactions</Link><Link to={path('budget', data.period)} aria-current={data.section === 'budget' ? 'page' : undefined}>Budget</Link><Link to={path('wealth', data.period)} aria-current={data.section === 'wealth' ? 'page' : undefined}>Patrimoine</Link><Link to={path('business', data.period)} aria-current={data.section === 'business' ? 'page' : undefined}>Business</Link><Link to={path('goals', data.period)} aria-current={data.section === 'goals' ? 'page' : undefined}>Objectifs</Link><Link to={path('cfo', data.period)} aria-current={data.section === 'cfo' ? 'page' : undefined}>CFO</Link><Link to={path('simulations', data.period)} aria-current={data.section === 'simulations' ? 'page' : undefined}>Simulations</Link><Link to={path('regulations', data.period)} aria-current={data.section === 'regulations' ? 'page' : undefined}>Règles</Link><Link to={path('statuses', data.period)} aria-current={data.section === 'statuses' ? 'page' : undefined}>Micro / SASU</Link><Link to={path('gomining', data.period)} aria-current={data.section === 'gomining' ? 'page' : undefined}>GoMining</Link></nav>
+    <header className="finance-header"><div><p className="finance-eyebrow">Espace personnel</p><h1>{({ overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories', transactions: 'Transactions', budget: 'Budget', calendar: 'Calendrier financier', wealth: 'Patrimoine', business: 'Business', goals: 'Objectifs et projets', cfo: 'Moteur CFO', simulations: 'Simulations', regulations: 'Règles vérifiées', statuses: 'Micro vs SASU', gomining: 'GoMining' })[data.section]}</h1><p>Bonjour {data.name}.</p></div><div className="finance-header__actions"><form method="post" action="/api/finance/backup"><button className="finance-button finance-button--quiet" type="submit">Télécharger la sauvegarde</button></form><Form method="post"><input type="hidden" name="intent" value="signOut" /><button className="finance-button finance-button--quiet">Se déconnecter</button></Form></div></header>
+    <nav className="finance-nav" aria-label="Navigation financière"><Link to={`/finance?period=${data.period}`} aria-current={data.section === 'overview' ? 'page' : undefined}>Synthèse</Link><Link to={path('accounts', data.period)} aria-current={data.section === 'accounts' ? 'page' : undefined}>Comptes</Link><Link to={path('categories', data.period)} aria-current={data.section === 'categories' ? 'page' : undefined}>Catégories</Link><Link to={path('transactions', data.period)} aria-current={data.section === 'transactions' ? 'page' : undefined}>Transactions</Link><Link to={path('budget', data.period)} aria-current={data.section === 'budget' ? 'page' : undefined}>Budget</Link><Link to={path('calendar', data.period)} aria-current={data.section === 'calendar' ? 'page' : undefined}>Calendrier</Link><Link to={path('wealth', data.period)} aria-current={data.section === 'wealth' ? 'page' : undefined}>Patrimoine</Link><Link to={path('business', data.period)} aria-current={data.section === 'business' ? 'page' : undefined}>Business</Link><Link to={path('goals', data.period)} aria-current={data.section === 'goals' ? 'page' : undefined}>Objectifs</Link><Link to={path('cfo', data.period)} aria-current={data.section === 'cfo' ? 'page' : undefined}>CFO</Link><Link to={path('simulations', data.period)} aria-current={data.section === 'simulations' ? 'page' : undefined}>Simulations</Link><Link to={path('regulations', data.period)} aria-current={data.section === 'regulations' ? 'page' : undefined}>Règles</Link><Link to={path('statuses', data.period)} aria-current={data.section === 'statuses' ? 'page' : undefined}>Micro / SASU</Link><Link to={path('gomining', data.period)} aria-current={data.section === 'gomining' ? 'page' : undefined}>GoMining</Link></nav>
     {actionError ? <p className="finance-alert" role="alert">{actionError}</p> : null}
     {data.section === 'overview' ? <Overview data={data} /> : null}
     {data.section === 'accounts' ? <Accounts data={data} balances={balances} /> : null}
     {data.section === 'categories' ? <Categories categories={data.categories} /> : null}
     {data.section === 'transactions' ? <Transactions data={data} accounts={activeAccounts} categories={activeCategories} /> : null}
     {data.section === 'budget' ? <Budget data={data} /> : null}
+    {data.section === 'calendar' ? <Calendar data={data} /> : null}
     {data.section === 'wealth' ? <Wealth data={data} /> : null}
     {data.section === 'business' ? <Business data={data} /> : null}
     {data.section === 'goals' ? <Goals data={data} /> : null}
@@ -355,6 +367,11 @@ function Overview({ data }: { data: Data }) {
 function MonthlyClosure({ data }: { data: Data }) {
   const latest = data.closures[0];
   return <section className="finance-card"><h2>Clôture mensuelle</h2>{latest ? <><p>Version {latest.closure.revision} enregistrée le {latest.closure.createdAt.slice(0, 16).replace('T', ' ')} UTC. Elle reste inchangée si le journal est corrigé ensuite.</p><List rows={[[`${latest.snapshot.transactionCount} mouvement${latest.snapshot.transactionCount > 1 ? 's' : ''}`, money(latest.snapshot.surplusCents)], ['Soldes figés', money(sumEuroCents(latest.snapshot.accounts.map(({ balanceCents }) => euroCents(balanceCents))))]]} />{data.closures.length > 1 ? <details><summary>{data.closures.length} versions de clôture</summary><List rows={data.closures.map(({ closure, snapshot }) => [`Version ${closure.revision}`, `${snapshot.transactionCount} mouvements · ${money(snapshot.surplusCents)}`])} /></details> : null}</> : <p>Aucune clôture pour ce mois. Elle enregistrera les montants réellement saisis et les soldes, sans bloquer les corrections futures.</p>}<Form method="post" className="finance-form"><input type="hidden" name="intent" value="closeMonth" /><input type="hidden" name="period" value={data.period} /><label className="finance-inline"><input type="checkbox" name="confirmClosure" value="close" required /> Je confirme l’enregistrement de cet instantané.</label><button className="finance-button">{latest ? 'Créer une nouvelle version' : 'Clôturer le mois'}</button></Form></section>;
+}
+function Calendar({ data }: { data: Data }) {
+  const calendar = data.calendar;
+  const kind = { commitment: 'Engagement', goal: 'Objectif', regulation: 'Règle à revoir', debt: 'Dette à dater', business: 'Observation business' };
+  return <section className="finance-content"><nav className="finance-month" aria-label="Période du calendrier"><Link to={path('calendar', near(data.period, -1))}>Mois précédent</Link><strong>{calendar.period}</strong><Link to={path('calendar', near(data.period, 1))}>Mois suivant</Link></nav><section className="finance-card"><h2>Échéances datées</h2><p className="finance-help">Uniquement les dates réellement enregistrées. Un engagement prévu ne devient jamais un paiement dans ce calendrier.</p>{calendar.events.length === 0 ? <p>Aucune échéance datée pour cette période.</p> : <ul className="finance-records">{calendar.events.map((event) => <li key={event.id}><div><strong>{event.date} · {event.title}</strong><p>{kind[event.kind]} · {event.detail}</p></div>{event.amountCents === null ? null : <Currency cents={event.amountCents} />}</li>)}</ul>}</section><section className="finance-card"><h2>À dater</h2><p className="finance-help">Ces éléments sont connus, mais leurs données ne donnent pas de jour fiable. Ils ne sont donc pas placés arbitrairement dans le mois.</p>{calendar.undated.length === 0 ? <p>Aucun élément à dater.</p> : <ul className="finance-records">{calendar.undated.map((event) => <li key={event.id}><div><strong>{event.title}</strong><p>{kind[event.kind]} · {event.detail}</p></div>{event.amountCents === null ? null : <Currency cents={event.amountCents} />}</li>)}</ul>}</section></section>;
 }
 function Metric({ label, cents, emphasis = false }: { label: string; cents: number; emphasis?: boolean }) { return <article className={`finance-metric ${emphasis ? 'finance-metric--emphasis' : ''}`}><p>{label}</p><strong><Currency cents={cents} /></strong></article>; }
 function List({ rows }: { rows: [string, string][] }) { return <ul className="finance-list">{rows.map(([left, right]) => <li key={`${left}-${right}`}><span>{left}</span><span>{right}</span></li>)}</ul>; }

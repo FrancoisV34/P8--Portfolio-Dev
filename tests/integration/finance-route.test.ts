@@ -82,6 +82,25 @@ describe('route finance privée', () => {
     await expect(loader({ request: request(), params: {} })).resolves.toMatchObject({ entities: [expect.objectContaining({ name: 'Entité synthétique' })] });
   });
 
+  it('compose le calendrier privé depuis les seules échéances explicitement saisies', async () => {
+    const category = new FormData();
+    category.set('intent', 'createCategory'); category.set('name', 'Calendrier synthétique'); category.set('kind', 'expense');
+    await expect(action({ request: request('POST', category) })).resolves.toMatchObject({ status: 302 });
+    const loaded = await loader({ request: request(), params: {} });
+    const expense = loaded.categories.find((item) => item.name === 'Calendrier synthétique');
+    if (!expense) throw new Error('Catégorie calendrier de test absente.');
+    const commitment = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createCommitment', name: 'Engagement calendrier', categoryId: expense.id, plannedAmount: '12,00', dueDay: '5', startPeriod: '2026-09', endPeriod: '' })) commitment.set(key, value);
+    await expect(action({ request: request('POST', commitment) })).resolves.toMatchObject({ status: 302 });
+    const goal = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createGoal', name: 'Objectif calendrier', targetAmount: '100,00', progressAmount: '0,00', targetDate: '2026-09-20', priority: '1' })) goal.set(key, value);
+    await expect(action({ request: request('POST', goal) })).resolves.toMatchObject({ status: 302 });
+    const rule = new FormData();
+    for (const [key, value] of Object.entries({ intent: 'createRegulatoryRule', name: 'Règle calendrier', value: 'Synthétique', source: 'Source synthétique', verifiedOn: '2026-09-01', validFrom: '2026-01-01', validTo: '2026-09-30', note: '' })) rule.set(key, value);
+    await expect(action({ request: request('POST', rule) })).resolves.toMatchObject({ status: 302 });
+    await expect(loader({ request: new Request(`${origin}/finance/calendar?period=2026-09`, { headers: { cookie } }), params: { '*': 'calendar' } })).resolves.toMatchObject({ section: 'calendar', calendar: { period: '2026-09', events: expect.arrayContaining([expect.objectContaining({ date: '2026-09-05', kind: 'commitment', title: 'Engagement calendrier', amountCents: 1_200 }), expect.objectContaining({ date: '2026-09-20', kind: 'goal', title: 'Objectif calendrier' }), expect.objectContaining({ date: '2026-09-30', kind: 'regulation', title: 'Règle calendrier' })]) } });
+  });
+
   it('enregistre un scénario GoMining côté serveur sans créer de transaction financière', async () => {
     const category = new FormData();
     category.set('intent', 'createCategory');
@@ -163,7 +182,7 @@ describe('route finance privée', () => {
     capacity.set('monthlyCapacityMinutes', '90');
     await expect(action({ request: request('POST', capacity) })).resolves.toMatchObject({ status: 302 });
     await expect(loader({ request: new Request(`${origin}/finance/goals?period=2026-09`, { headers: { cookie } }), params: { '*': 'goals' } })).resolves.toMatchObject({
-      section: 'goals', goals: { goals: [expect.objectContaining({ id: createdGoal.id, targetCents: 100_000, progressCents: 25_000 })], projects: [expect.objectContaining({ goalId: createdGoal.id, status: 'active', estimatedCostCents: 5_000, estimatedEffortMinutes: 120 })], capacity: expect.objectContaining({ monthlyCapacityMinutes: 90 }), activeEffortMinutes: 120, capacityStatus: 'watch' }, transactions: [],
+      section: 'goals', goals: { goals: expect.arrayContaining([expect.objectContaining({ id: createdGoal.id, targetCents: 100_000, progressCents: 25_000 })]), projects: [expect.objectContaining({ goalId: createdGoal.id, status: 'active', estimatedCostCents: 5_000, estimatedEffortMinutes: 120 })], capacity: expect.objectContaining({ monthlyCapacityMinutes: 90 }), activeEffortMinutes: 120, capacityStatus: 'watch' }, transactions: [],
     });
   });
 
