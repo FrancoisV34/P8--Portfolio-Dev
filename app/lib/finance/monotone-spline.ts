@@ -43,6 +43,12 @@ function monotoneTangents(xs: number[], ys: number[]) {
  */
 export function monotonePath(points: Point[]): string {
   if (points.length < 2) return '';
+  // ⚠️ Abscisses STRICTEMENT croissantes, sinon `dx` vaut zéro ou passe au
+  // négatif : les tangentes deviennent Infinity ou NaN, et le `d` produit est
+  // un chemin que le navigateur ignore EN SILENCE — pas d'erreur, pas de
+  // courbe, rien à déboguer. On refuse plutôt que de rendre l'invisible, et
+  // l'appelant retombe sur son équivalent textuel.
+  for (let i = 1; i < points.length; i += 1) if (points[i].x <= points[i - 1].x) return '';
 
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);

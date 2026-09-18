@@ -87,3 +87,23 @@ describe('interpolation monotone', () => {
     expect(canDrawTrend(3)).toBe(true);
   });
 });
+
+describe('contrat des abscisses', () => {
+  it('ne rend aucun chemin quand les abscisses ne croissent pas', () => {
+    // Le cas réel : les valorisations arrivent de la base en ordre DÉCROISSANT.
+    // Les tracer telles quelles donnerait un `d` rempli de NaN, que le
+    // navigateur ignore sans rien dire — une courbe absente sans message.
+    const decroissant = [{ x: 300, y: 10 }, { x: 200, y: 20 }, { x: 100, y: 30 }];
+    expect(monotonePath(decroissant)).toBe('');
+
+    // Deux relevés à la même date : `dx` vaut zéro, la pente part à l'infini.
+    const doublon = [{ x: 0, y: 10 }, { x: 0, y: 20 }, { x: 100, y: 30 }];
+    expect(monotonePath(doublon)).toBe('');
+  });
+
+  it('rend un chemin sans NaN sur une série croissante', () => {
+    const chemin = monotonePath([{ x: 0, y: 10 }, { x: 19, y: 20 }, { x: 229, y: 30 }]);
+    expect(chemin).not.toBe('');
+    expect(chemin).not.toMatch(/NaN|Infinity/);
+  });
+});

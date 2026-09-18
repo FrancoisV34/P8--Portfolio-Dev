@@ -320,6 +320,9 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
 }
+/* La colonne de contenu prend la place disponible : sans `min-width: 0`, un
+   graphique ou un tableau la fait déborder au lieu de la faire rétrécir. */
+.finance-records > li > :first-child { flex: 1 1 320px; min-width: 0; }
 .finance-records strong { display: block; margin-bottom: 3px; font-weight: 600; }
 .finance-records p { font-size: var(--text-dense-sm); }
 
@@ -625,9 +628,45 @@ button:focus-visible {
 .finance-chart__bars { display: flex; align-items: end; gap: 14px; min-height: 170px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-chart-plot-bg); }
 .finance-chart__bar { display: grid; flex: 1; min-width: 34px; height: 145px; align-items: end; gap: 6px; text-align: center; color: var(--color-foreground-muted); font-size: var(--text-dense-xs); }
 .finance-chart__stack { display: flex; flex-direction: column-reverse; width: 100%; min-height: 2px; gap: var(--chart-band-gap); }
-.finance-chart__stack i:nth-child(1) { background: var(--color-chart-series-3); }
-.finance-chart__stack i:nth-child(2) { background: var(--color-chart-series-2); }
-.finance-chart__stack i:nth-child(3) { background: var(--color-chart-series-1); }
+/* ⚠️ Classes explicites, PAS de `:nth-child`. Les pastilles de la légende sont
+   des `<i>` isolés dans leur `<span>` : un sélecteur positionnel les aurait
+   toutes colorées pareil, et la légende aurait menti sur les bandes.
+
+   La bande la plus LARGE prend la valeur la moins contrastée (`series-3`), la
+   plus fine la plus contrastée : sinon une grande masse claire écrase l'écran. */
+.finance-chart__serie-1 { background: var(--color-chart-series-1); }
+.finance-chart__serie-2 { background: var(--color-chart-series-2); }
+.finance-chart__serie-3 { background: var(--color-chart-series-3); }
+.finance-chart i { display: block; }
+.finance-chart__note { margin-top: 8px; color: var(--color-foreground-muted); font-size: var(--text-dense-sm); }
+.finance-details { margin-top: 16px; }
+.finance-details > summary { width: max-content; }
+
+/* ── Barre de progression — la seule de l'espace privé ───────────────────── */
+.finance-progress {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+.finance-progress__track {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+.finance-progress__fill { height: 100%; background: var(--color-accent); }
+/* ⚠️ Au-delà de la cible, la barre est pleine mais se distingue : une barre
+   pleine « 100 % » et une barre pleine « 140 % » ne doivent pas se ressembler. */
+.finance-progress--over .finance-progress__fill { background: var(--color-amount-positive); }
+.finance-progress__legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--color-foreground-muted);
+  font-size: var(--text-dense-sm);
+}
+.finance-progress__legend b { color: var(--color-foreground); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; }
 
 /* ═══ Repli ══════════════════════════════════════════════════════════════ */
 details > summary { color: var(--color-accent); font-size: var(--text-dense-sm); font-weight: 600; cursor: pointer; }

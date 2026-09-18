@@ -24,3 +24,28 @@ export function parseMonth(value: string): Month {
 export function monthOf(value: CalendarDate): Month {
   return parseMonth(parseCalendarDate(value).slice(0, 7));
 }
+
+/**
+ * Le numéro de jour d'une date civile — l'abscisse des courbes datées.
+ *
+ * ⚠️ Aucun `Date` : l'algorithme est purement arithmétique (jours depuis l'ère
+ * civile, Howard Hinnant). Passer par `new Date('2026-09-01')` parse en UTC et
+ * décale le jour à l'ouest de Greenwich ; c'est exactement ce que le reste de ce
+ * fichier refuse, et une courbe dont les abscisses glissent d'un jour selon le
+ * fuseau ne vaut rien.
+ *
+ * La valeur absolue n'a pas de sens ; seuls les ÉCARTS en ont, et ils sont
+ * exacts — années bissextiles comprises.
+ */
+export function dayNumber(value: string): number {
+  const date = parseCalendarDate(value);
+  const [rawYear, rawMonth, day] = date.split('-').map(Number);
+  // Mars devient le premier mois : le 29 février tombe alors en fin d'année,
+  // et le calcul n'a plus de cas particulier.
+  const year = rawYear - (rawMonth <= 2 ? 1 : 0);
+  const era = Math.floor(year / 400);
+  const yearOfEra = year - era * 400;
+  const dayOfYear = Math.floor((153 * (rawMonth + (rawMonth > 2 ? -3 : 9)) + 2) / 5) + day - 1;
+  const dayOfEra = yearOfEra * 365 + Math.floor(yearOfEra / 4) - Math.floor(yearOfEra / 100) + dayOfYear;
+  return era * 146_097 + dayOfEra - 719_468;
+}
