@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Form, Link, redirect, useActionData, useLoaderData } from 'react-router';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Form, Link, redirect, useActionData, useFetcher, useLoaderData } from 'react-router';
 import { getAuth } from '../.server/auth/auth.server.ts';
 import { authIsConfigured } from '../.server/auth/config.ts';
 import { requireOwner } from '../.server/auth/owner.server.ts';
@@ -17,6 +17,7 @@ import { statusComparisonRepository } from '../.server/repositories/status-compa
 import { wealthRepository } from '../.server/repositories/wealth.ts';
 import { requireSameOrigin } from '../.server/security/same-origin.server.ts';
 import { parseMonth } from '../lib/finance/dates.ts';
+import { moveSelection, nextSort, sortJournal, type JournalColumn, type JournalSort } from '../lib/finance/journal.ts';
 import { cfoBuckets, type CfoInput } from '../lib/finance/cfo.ts';
 import { simulationBuckets, type SimulationInput, type SimulationProfileKind } from '../lib/finance/simulation.ts';
 import { projectDebtSchedule } from '../lib/finance/debt.ts';
@@ -28,7 +29,7 @@ import './finance.scss';
 const sections = ['overview', 'accounts', 'categories', 'transactions', 'budget', 'calendar', 'wealth', 'business', 'goals', 'cfo', 'simulations', 'regulations', 'statuses', 'gomining'] as const;
 type Section = typeof sections[number];
 type RegulatoryResolution = ReturnType<ReturnType<typeof regulatoryRepository>['resolve']>;
-type ActionData = { error: string } | { regulationResolution: RegulatoryResolution } | undefined;
+type ActionData = { error: string } | { regulationResolution: RegulatoryResolution } | { saved: true } | undefined;
 
 const privateHeaders = () => ({ 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow, noarchive' });
 const unavailable = () => { throw new Response('Espace privé indisponible.', { status: 503, headers: privateHeaders() }); };
@@ -220,8 +221,14 @@ export async function action({ request }: { request: Request }) {
   if (!authIsConfigured()) return unavailable();
   const session = await requireOwner(request);
   requireSameOrigin(request);
+  // Un corps illisible se traite comme une saisie refusée, pas comme une panne.
+  const data = await request.formData().catch(() => null);
+  if (!data) return failure();
+  // La modale de saisie rapide enchaîne les mouvements sans quitter la page :
+  // une redirection la refermerait à chaque enregistrement. Elle demande donc
+  // une réponse de données ; tout le reste du formulaire continue de rediriger.
+  const quick = data.get('quick') === '1';
   try {
-    const data = await request.formData();
     const intent = field(data, 'intent', 40);
     if (intent === 'signOut') return getAuth().auth.api.signOut({ headers: request.headers, asResponse: true });
     const database = getAuth().connection.db;
@@ -313,6 +320,7 @@ export async function action({ request }: { request: Request }) {
       default: throw new Error('invalid');
     }
   } catch { return failure(); }
+  if (quick) return { saved: true } as const;
   return back(request);
 }
 
@@ -340,13 +348,21 @@ const preciseMoney = (milliCents: number) => `${(milliCents / 100_000).toFixed(5
  * le rouge du vert. `signe={false}` pour les contextes où un montant n'a pas
  * de polarité (un prévu, une cible).
  */
+const classeMontant = (cents: number) => cents > 0 ? 'amount-positive' : cents < 0 ? 'amount-negative' : 'amount-neutral';
 const Currency = ({ cents, signe = false }: { cents: number; signe?: boolean }) => {
   const texte = money(Math.abs(cents));
   if (!signe) return <span className="tnum">{texte}</span>;
-  const classe = cents > 0 ? 'amount-positive' : cents < 0 ? 'amount-negative' : 'amount-neutral';
   const marque = cents > 0 ? '+' : cents < 0 ? '\u2212' : '';
-  return <span className={`tnum ${classe}`}>{marque}{texte}</span>;
+  return <span className={`tnum ${classeMontant(cents)}`}>{marque}{texte}</span>;
 };
+/**
+ * « 4 sept. » — la date dense du journal.
+ *
+ * ⚠️ Midi, pas minuit. `new Date('2026-09-01')` est interprété en UTC : à l'ouest
+ * de Greenwich, le 1er du mois s'affiche comme le dernier jour du mois
+ * précédent, et la ligne change de mois à l'écran.
+ */
+const dateCourte = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 const Satoshi = () => <abbr title="Un satoshi est la plus petite unité du bitcoin : 1 BTC vaut 100 000 000 satoshis.">satoshis</abbr>;
 
 /**
@@ -408,6 +424,11 @@ export default function Finance() {
   const activeAccounts = data.accounts.filter((item) => item.isActive);
   const activeCategories = data.categories.filter((item) => item.isActive);
   const balances = new Map(data.dashboard.accounts.map((item) => [item.id, item.balanceCents]));
+  // Le raccourci ne s'arme que si une saisie est possible : sans compte ni
+  // catégorie active, `N` ouvrirait une modale dont aucun champ ne serait
+  // remplissable.
+  const pretPourSaisie = activeAccounts.length > 0 && activeCategories.length > 0;
+  const { ouverte, ouvrir, fermer } = useRaccourciSaisie(pretPourSaisie);
   return <div className="finance-shell">
     <Rail section={data.section} period={data.period} />
 
@@ -423,6 +444,12 @@ export default function Finance() {
           {/* Le navigateur de période vit dans l'en-tête collant, jamais dans
               le contenu : il est présent sur presque tous les écrans. */}
           <Period period={data.period} />
+          {/* Un raccourci que rien n'annonce n'est utilisé par personne — et
+              sur un écran tactile il n'existe pas du tout. Le bouton porte
+              donc le geste, la touche n'est que l'accélérateur. */}
+          {pretPourSaisie ? <button type="button" className="finance-button" onClick={(evenement) => ouvrir(evenement.currentTarget)}>
+            Saisir <kbd>N</kbd>
+          </button> : null}
           <form method="post" action="/api/finance/backup">
             <button className="finance-button finance-button--quiet" type="submit">Sauvegarde</button>
           </form>
@@ -450,6 +477,8 @@ export default function Finance() {
     {data.section === 'statuses' ? <StatusComparisons data={data} /> : null}
       {data.section === 'gomining' ? <GoMining data={data} /> : null}
     </main>
+
+    {ouverte ? <ModaleSaisie data={data} accounts={activeAccounts} categories={activeCategories} onFermer={fermer} /> : null}
   </div>;
 }
 
@@ -476,9 +505,6 @@ function Rail({ section, period }: { section: Section; period: string }) {
       >{libelle}</Link>)}
     </div>)}
 
-    <div className="finance-rail__foot">
-      <Link className="finance-button" to={path('transactions', period)}>Saisir</Link>
-    </div>
   </nav>;
 }
 
@@ -555,7 +581,409 @@ function CategorySelect({ categories, selected }: { categories: Data['categories
 function CommitmentSelect({ commitments, selected }: { commitments: Data['commitments']; selected?: string | null }) { return <label>Engagement payé (facultatif)<select name="recurringCommitmentId" defaultValue={selected ?? ''}><option value="">Aucun</option>{commitments.map(({ commitment, categoryName }) => <option key={commitment.id} value={commitment.id}>{commitment.name} — {categoryName}</option>)}</select></label>; }
 function Delete({ intent, id, text }: { intent: 'deleteTransaction' | 'deleteBudget' | 'deleteSafetyReserve' | 'deleteCommitment' | 'deleteGoMiningScenario'; id?: string; text: string }) { return <Form method="post" className="finance-delete"><input type="hidden" name="intent" value={intent} />{id ? <input type="hidden" name="id" value={id} /> : null}<label><input type="checkbox" name="confirmDelete" value="delete" required /> {text}</label><button>Supprimer</button></Form>; }
 
-function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid"><section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2>{data.transactions.length === 0 ? <p>Aucun mouvement pour cette période.</p> : <ul className="finance-records">{data.transactions.map(({ transaction, accountName, categoryName, commitmentName }) => <li key={transaction.id}><div><strong>{transaction.occurredOn} · {accountName}</strong><p>{transaction.kind === 'transfer' ? 'Transfert' : `${transaction.kind === 'income' ? 'Revenu' : 'Dépense'} · ${categoryName}`}{commitmentName ? ` · paiement : ${commitmentName}` : ''}{transaction.note ? ` · ${transaction.note}` : ''}</p><p><Currency cents={transaction.amountCents} /></p></div>{transaction.kind === 'transfer' ? <Delete intent="deleteTransaction" id={transaction.id} text="Ce transfert supprimera ses deux écritures." /> : <details><summary>Corriger</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateTransaction" /><input type="hidden" name="id" value={transaction.id} /><label>Nature<select name="kind" defaultValue={transaction.kind}><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" selected={transaction.accountId} /></label><CategorySelect categories={categories} selected={transaction.categoryId ?? undefined} /><CommitmentSelect commitments={data.commitments} selected={transaction.recurringCommitmentId} /><label>Montant (€)<input name="amount" defaultValue={decimalMoney(Math.abs(transaction.amountCents))} inputMode="decimal" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={transaction.occurredOn} required /></label><label>Note facultative<input name="note" defaultValue={transaction.note} maxLength={240} /></label><button className="finance-button">Enregistrer</button></Form><Delete intent="deleteTransaction" id={transaction.id} text="Cette suppression est définitive." /></details>}</li>)}</ul>}</section></section>; }
+function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid"><section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2><Journal data={data} accounts={accounts} categories={categories} /></section></section>; }
+
+/**
+ * Le journal — tableau dense au-dessus de 680 px, lignes dépliables en dessous.
+ *
+ * ⚠️ **Le tri est un `<button>` DANS le `<th>`**, jamais un `onClick` posé sur
+ * la cellule : un `onClick` sur un `<th>` n'existe pas au clavier, et une
+ * colonne triable qu'on ne peut pas trier sans souris n'est pas triable.
+ *
+ * ⚠️ **`tabIndex` glissant** (une seule ligne atteignable par Tab, les flèches
+ * font le reste). La passation écrivait `<tr tabindex="0">` sur chaque ligne :
+ * sur 250 mouvements, cela met 250 arrêts de tabulation entre l'en-tête et le
+ * pied de page. Tab entre dans le tableau, les flèches circulent, Tab en sort.
+ *
+ * ⚠️ **Aucune colonne « état ».** Le rapprochement bancaire existe par compte
+ * et par mois (`listReconciliations`), pas par mouvement : une pastille
+ * « rapproché » sur une ligne afficherait un état que la base ne connaît pas.
+ * Les badges d'état servent là où l'état est réel — calendrier, règles.
+ */
+function Journal({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) {
+  const [tri, setTri] = useState<JournalSort>({ column: 'date', direction: 'desc' });
+  const [selection, setSelection] = useState<number | null>(null);
+  const [corrigee, setCorrigee] = useState<string | null>(null);
+  const lignesRef = useRef<(HTMLTableRowElement | null)[]>([]);
+
+  const parId = new Map(data.transactions.map((record) => [record.transaction.id, record]));
+  const lignes = sortJournal(data.transactions.map(({ transaction, accountName, categoryName }) => ({
+    id: transaction.id,
+    date: transaction.occurredOn,
+    label: transaction.note || (transaction.kind === 'transfer' ? 'Transfert' : categoryName ?? 'Sans libellé'),
+    account: accountName,
+    category: transaction.kind === 'transfer' ? 'Transfert' : categoryName ?? '—',
+    amountCents: transaction.amountCents,
+  })), tri);
+  const total = sumEuroCents(lignes.map((ligne) => euroCents(ligne.amountCents)));
+
+  // La ligne qui porte l'unique arrêt de tabulation du tableau.
+  const courante = selection ?? 0;
+
+  const basculer = (colonne: JournalColumn) => {
+    setTri((actuel) => nextSort(actuel, colonne));
+    // Le tri réordonne les lignes : garder l'index de sélection désignerait un
+    // autre mouvement que celui qu'on regardait.
+    setSelection(null);
+    setCorrigee(null);
+  };
+
+  const surTouche = (evenement: React.KeyboardEvent<HTMLTableSectionElement>) => {
+    if (evenement.key === 'Enter' && selection !== null) {
+      const ligne = lignes[selection];
+      evenement.preventDefault();
+      setCorrigee((actuelle) => (actuelle === ligne.id ? null : ligne.id));
+      return;
+    }
+    const suivante = moveSelection(selection, evenement.key, lignes.length);
+    if (suivante === null || suivante === selection) return;
+    evenement.preventDefault();
+    setSelection(suivante);
+    lignesRef.current[suivante]?.focus();
+  };
+
+  if (lignes.length === 0) {
+    return <p className="finance-help">
+      Aucun mouvement sur cette période. Saisis un revenu ou une dépense ci-dessus,
+      ou appuie sur <kbd>N</kbd> depuis n’importe quel écran.
+    </p>;
+  }
+
+  return <>
+    <div className="finance-table-wrap" data-view="table">
+      <div className="finance-table-scroll">
+        <table className="finance-table">
+          <caption>{lignes.length} mouvement{lignes.length > 1 ? 's' : ''} · flèches pour circuler, Entrée pour corriger</caption>
+          <thead>
+            <tr>
+              <EnTete colonne="date" libelle="Date" tri={tri} onTri={basculer} />
+              <EnTete colonne="label" libelle="Libellé" tri={tri} onTri={basculer} />
+              <EnTete colonne="account" libelle="Compte" tri={tri} onTri={basculer} />
+              <EnTete colonne="category" libelle="Catégorie" tri={tri} onTri={basculer} />
+              <EnTete colonne="amount" libelle="Montant" tri={tri} onTri={basculer} numerique />
+              <th scope="col"><span className="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody onKeyDown={surTouche}>
+            {lignes.map((ligne, index) => {
+              const record = parId.get(ligne.id);
+              if (!record) return null;
+              return <Fragment key={ligne.id}>
+                <tr
+                  ref={(element) => { lignesRef.current[index] = element; }}
+                  tabIndex={index === courante ? 0 : -1}
+                  aria-selected={selection === index}
+                  onFocus={() => setSelection(index)}
+                >
+                  {/* `<time>` garde la date exacte dans le balisage : la colonne
+                      dense n'affiche que « 1 sept. », le mois complet vit dans
+                      l'en-tête. */}
+                  <td><time dateTime={ligne.date}>{dateCourte(ligne.date)}</time></td>
+                  {/* L'engagement payé était porté par l'ancienne liste ; il reste
+                      lisible ici plutôt que de coûter une 7ᵉ colonne. */}
+                  <td>{ligne.label}{record.commitmentName ? <span className="finance-table__aparte"> · {record.commitmentName}</span> : null}</td>
+                  <td>{ligne.account}</td>
+                  <td>{ligne.category}</td>
+                  <td className={`num ${classeMontant(ligne.amountCents)}`}><Currency cents={ligne.amountCents} signe /></td>
+                  <td className="num">
+                    <button
+                      type="button"
+                      className="finance-button finance-button--quiet finance-button--mini"
+                      aria-expanded={corrigee === ligne.id}
+                      onClick={() => setCorrigee((actuelle) => (actuelle === ligne.id ? null : ligne.id))}
+                    >Corriger</button>
+                  </td>
+                </tr>
+                {corrigee === ligne.id ? <tr className="finance-table__edition">
+                  <td colSpan={6}><Correction record={record} accounts={accounts} categories={categories} commitments={data.commitments} /></td>
+                </tr> : null}
+              </Fragment>;
+            })}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={4}>Solde des mouvements</td>
+              <td className={`num ${classeMontant(total)}`}><Currency cents={total} signe /></td>
+              <td />
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    {/* Sous 680 px : deux colonnes prioritaires (libellé, montant), le reste
+        dans un `<details>`. Le défilement horizontal casserait la colonne de
+        montants alignée à droite — donc la comparaison verticale, au moment
+        précis où elle sert le plus. */}
+    <ul className="finance-cards" data-view="cards">
+      {lignes.map((ligne) => {
+        const record = parId.get(ligne.id);
+        if (!record) return null;
+        return <li key={ligne.id}>
+          <details>
+            <summary>
+              <span className="finance-cards__label">
+                <strong>{ligne.label}</strong>
+                <span>{dateCourte(ligne.date)} · {ligne.account}</span>
+              </span>
+              <span className="finance-cards__amount"><Currency cents={ligne.amountCents} signe /></span>
+            </summary>
+            <dl>
+              <dt>Date</dt><dd>{ligne.date}</dd>
+              <dt>Compte</dt><dd>{ligne.account}</dd>
+              <dt>Catégorie</dt><dd>{ligne.category}</dd>
+              {record.commitmentName ? <><dt>Engagement</dt><dd>{record.commitmentName}</dd></> : null}
+            </dl>
+            {/* La correction reste repliée : ouvrir une ligne sert d'abord à LIRE
+                ce que les deux colonnes prioritaires ne montrent pas. Dérouler
+                sept champs de formulaire par-dessus enterre l'information. */}
+            <details className="finance-cards__corriger">
+              <summary>Corriger</summary>
+              <Correction record={record} accounts={accounts} categories={categories} commitments={data.commitments} />
+            </details>
+          </details>
+        </li>;
+      })}
+    </ul>
+  </>;
+}
+
+/** Un en-tête triable. `aria-sort` porte l'état pour qui n'en voit pas la flèche. */
+function EnTete({ colonne, libelle, tri, onTri, numerique = false }: {
+  colonne: JournalColumn; libelle: string; tri: JournalSort;
+  onTri: (colonne: JournalColumn) => void; numerique?: boolean;
+}) {
+  const actif = tri.column === colonne;
+  return <th scope="col" className={numerique ? 'num' : undefined}
+    aria-sort={actif ? (tri.direction === 'asc' ? 'ascending' : 'descending') : 'none'}>
+    <button type="button" onClick={() => onTri(colonne)}>
+      {libelle}<span aria-hidden="true">{actif ? (tri.direction === 'asc' ? '↑' : '↓') : '↕'}</span>
+    </button>
+  </th>;
+}
+
+/** Le formulaire de correction, partagé par la ligne de tableau et la carte mobile. */
+function Correction({ record, accounts, categories, commitments }: {
+  record: Data['transactions'][number]; accounts: Data['accounts'];
+  categories: Data['categories']; commitments: Data['commitments'];
+}) {
+  const { transaction } = record;
+  if (transaction.kind === 'transfer') {
+    return <Delete intent="deleteTransaction" id={transaction.id} text="Ce transfert supprimera ses deux écritures." />;
+  }
+  return <>
+    <Form method="post" className="finance-form">
+      <input type="hidden" name="intent" value="updateTransaction" />
+      <input type="hidden" name="id" value={transaction.id} />
+      <label>Nature<select name="kind" defaultValue={transaction.kind}><option value="expense">Dépense</option><option value="income">Revenu</option></select></label>
+      <label>Compte<AccountSelect accounts={accounts} name="accountId" selected={transaction.accountId} /></label>
+      <CategorySelect categories={categories} selected={transaction.categoryId ?? undefined} />
+      <CommitmentSelect commitments={commitments} selected={transaction.recurringCommitmentId} />
+      <label>Montant (€)<input name="amount" defaultValue={decimalMoney(Math.abs(transaction.amountCents))} inputMode="decimal" required /></label>
+      <label>Date<input name="occurredOn" type="date" defaultValue={transaction.occurredOn} required /></label>
+      <label>Note facultative<input name="note" defaultValue={transaction.note} maxLength={240} /></label>
+      <button className="finance-button">Enregistrer</button>
+    </Form>
+    <Delete intent="deleteTransaction" id={transaction.id} text="Cette suppression est définitive." />
+  </>;
+}
+
+/**
+ * Le raccourci `N` — la saisie est le geste numéro un, elle mérite une touche.
+ *
+ * ⚠️ Il ne s'arme que si une saisie est **possible** (un compte actif et une
+ * catégorie active) : une touche qui ne fait rien apprend à ne plus l'utiliser.
+ * Et il ne se déclenche jamais depuis un champ, sinon taper « novembre » dans
+ * une note ouvrirait la modale au premier « n ».
+ */
+function estUneSaisie(cible: EventTarget | null) {
+  if (!(cible instanceof HTMLElement)) return false;
+  if (cible.isContentEditable) return true;
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(cible.tagName);
+}
+
+function useRaccourciSaisie(actif: boolean) {
+  const [ouverte, setOuverte] = useState(false);
+  const declencheur = useRef<HTMLElement | null>(null);
+
+  const ouvrir = useCallback((depuis: HTMLElement | null) => {
+    declencheur.current = depuis;
+    setOuverte(true);
+  }, []);
+
+  // ⚠️ Le focus revient à l'élément qui a ouvert la modale. Sans ça, il repart
+  // au début du document : après une saisie, on se retrouve en haut du rail.
+  const fermer = useCallback(() => {
+    setOuverte(false);
+    declencheur.current?.focus();
+    declencheur.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (!actif) return undefined;
+    const surTouche = (evenement: KeyboardEvent) => {
+      if (evenement.key !== 'n' && evenement.key !== 'N') return;
+      if (evenement.metaKey || evenement.ctrlKey || evenement.altKey) return;
+      if (estUneSaisie(evenement.target)) return;
+      evenement.preventDefault();
+      ouvrir(document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    };
+    document.addEventListener('keydown', surTouche);
+    return () => document.removeEventListener('keydown', surTouche);
+  }, [actif, ouvrir]);
+
+  return { ouverte, ouvrir, fermer };
+}
+
+const SELECTEUR_FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
+
+/**
+ * La modale de saisie rapide.
+ *
+ * Trois partis pris, tous au service de l'enchaînement :
+ *
+ * - **Le focus part sur Montant**, pas sur le premier champ. Compte, catégorie
+ *   et date ont des valeurs par défaut utiles ; le montant est la seule donnée
+ *   qu'on ne peut pas deviner.
+ * - **`⌘↵` enregistre** sans quitter le clavier.
+ * - **« Enchaîner les saisies »** garde la modale ouverte, vide le montant et
+ *   la note, et rend le focus au montant. Compte, catégorie et date restent :
+ *   c'est ce qui permet six mouvements d'affilée sans toucher la souris.
+ *
+ * ⚠️ Le clic sur le fond ne ferme PAS. Fermer un formulaire rempli sur un clic
+ * à côté fait perdre la saisie sans confirmation ; `Échap` et le bouton
+ * « Fermer » sont deux gestes délibérés, ce qui suffit.
+ */
+function ModaleSaisie({ data, accounts, categories, onFermer }: {
+  data: Data; accounts: Data['accounts']; categories: Data['categories']; onFermer: () => void;
+}) {
+  const fetcher = useFetcher<ActionData>();
+  const panneau = useRef<HTMLDivElement>(null);
+  const formulaire = useRef<HTMLFormElement>(null);
+  const montant = useRef<HTMLInputElement>(null);
+  const traite = useRef<unknown>(null);
+  const [erreurMontant, setErreurMontant] = useState<string | null>(null);
+  const [enchainer, setEnchainer] = useState(true);
+  const [enregistrees, setEnregistrees] = useState(0);
+
+  useEffect(() => { montant.current?.focus(); }, []);
+
+  useEffect(() => {
+    if (fetcher.state !== 'idle' || !fetcher.data) return;
+    // Une même réponse ne doit être traitée qu'une fois : sans ce garde-fou, un
+    // rendu déclenché par autre chose reviderait le montant au milieu d'une
+    // frappe.
+    if (traite.current === fetcher.data) return;
+    traite.current = fetcher.data;
+    if (!('saved' in fetcher.data)) return;
+    if (!enchainer) { onFermer(); return; }
+    setEnregistrees((nombre) => nombre + 1);
+    setErreurMontant(null);
+    if (formulaire.current) {
+      const note = formulaire.current.elements.namedItem('note');
+      if (note instanceof HTMLInputElement) note.value = '';
+    }
+    if (montant.current) { montant.current.value = ''; montant.current.focus(); }
+  }, [fetcher.state, fetcher.data, enchainer, onFermer]);
+
+  const surTouche = (evenement: React.KeyboardEvent<HTMLDivElement>) => {
+    if (evenement.key === 'Escape') { evenement.preventDefault(); onFermer(); return; }
+    if (evenement.key === 'Enter' && (evenement.metaKey || evenement.ctrlKey)) {
+      evenement.preventDefault();
+      formulaire.current?.requestSubmit();
+      return;
+    }
+    if (evenement.key !== 'Tab') return;
+    // Piège de focus : sans lui, Tab sort de la modale et laisse tabuler la page
+    // qui est derrière, pendant que le fond continue de la masquer.
+    const focusables = panneau.current?.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE);
+    if (!focusables || focusables.length === 0) return;
+    const premier = focusables[0];
+    const dernier = focusables[focusables.length - 1];
+    if (evenement.shiftKey && document.activeElement === premier) { evenement.preventDefault(); dernier.focus(); }
+    else if (!evenement.shiftKey && document.activeElement === dernier) { evenement.preventDefault(); premier.focus(); }
+  };
+
+  /**
+   * Validation du montant AVANT l'envoi.
+   *
+   * ⚠️ Elle appelle `parseEuros`, c'est-à-dire exactement la fonction que le
+   * serveur applique : le message affiché ne peut donc pas contredire ce que le
+   * serveur acceptera. Le filet est écrit depuis ce que `parseEuros` LÈVE — un
+   * `TypeError` sur un format refusé, un `RangeError` au-delà de deux décimales
+   * ou hors entier sûr — et rien d'autre n'est avalé.
+   */
+  const surEnvoi = (evenement: React.FormEvent<HTMLFormElement>) => {
+    const saisi = montant.current?.value ?? '';
+    let message: string | null = null;
+    try {
+      if (parseEuros(saisi) <= 0) message = 'Saisir un montant supérieur à zéro.';
+    } catch (erreur) {
+      if (!(erreur instanceof TypeError || erreur instanceof RangeError)) throw erreur;
+      message = erreur.message;
+    }
+    setErreurMontant(message);
+    if (message) { evenement.preventDefault(); montant.current?.focus(); }
+  };
+
+  const erreurServeur = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
+
+  return <div className="finance-modal" onKeyDown={surTouche}>
+    <div className="finance-modal__panel" ref={panneau} role="dialog" aria-modal="true" aria-labelledby="saisie-titre">
+      <div className="finance-modal__tete">
+        <h2 id="saisie-titre">Saisie rapide</h2>
+        <button type="button" className="finance-button finance-button--quiet finance-button--mini" onClick={onFermer}>
+          Fermer <kbd>Échap</kbd>
+        </button>
+      </div>
+
+      {/* L'erreur du serveur est générique : elle reste au niveau du
+          formulaire. L'attribuer au champ Montant via `aria-describedby`
+          annoncerait un défaut de ce champ qui n'est peut-être pas le sien. */}
+      {erreurServeur ? <p className="finance-alert" role="alert"><span><strong>Erreur. </strong>{erreurServeur}</span></p> : null}
+
+      <fetcher.Form method="post" className="finance-form" ref={formulaire} onSubmit={surEnvoi}>
+        <input type="hidden" name="intent" value="createTransaction" />
+        <input type="hidden" name="quick" value="1" />
+        <label>Montant (€)
+          <input
+            ref={montant}
+            name="amount"
+            inputMode="decimal"
+            placeholder="0,00"
+            required
+            aria-invalid={erreurMontant ? true : undefined}
+            aria-describedby={erreurMontant ? 'saisie-montant-erreur' : undefined}
+          />
+        </label>
+        {/* Sous le champ, pas dans un toast : le message doit survivre au temps
+            qu'il faut pour le lire, et rester à côté de ce qu'il concerne. */}
+        {erreurMontant ? <p className="finance-field-error" id="saisie-montant-erreur" role="alert">{erreurMontant}</p> : null}
+
+        <label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label>
+        <label>Compte<AccountSelect accounts={accounts} name="accountId" /></label>
+        <CategorySelect categories={categories} />
+        <CommitmentSelect commitments={data.commitments} />
+        <label>Date<input name="occurredOn" type="date" defaultValue={`${data.period}-01`} required /></label>
+        <label>Note facultative<input name="note" maxLength={240} /></label>
+
+        <label className="finance-inline">
+          <input type="checkbox" checked={enchainer} onChange={(evenement) => setEnchainer(evenement.target.checked)} />
+          Enchaîner les saisies
+        </label>
+
+        <div className="finance-modal__pied">
+          <button className="finance-button" disabled={fetcher.state !== 'idle'}>
+            {fetcher.state === 'idle' ? 'Enregistrer' : 'Enregistrement…'} <kbd>⌘↵</kbd>
+          </button>
+          {enregistrees > 0 ? <p className="finance-modal__compte" role="status">
+            {enregistrees} mouvement{enregistrees > 1 ? 's' : ''} enregistré{enregistrees > 1 ? 's' : ''}.
+          </p> : null}
+        </div>
+      </fetcher.Form>
+    </div>
+  </div>;
+}
 
 function Budget({ data }: { data: Data }) {
   const expenses = data.categories.filter((category) => category.isActive && category.kind === 'expense');
