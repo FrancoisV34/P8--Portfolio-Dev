@@ -15,6 +15,7 @@ Objectif : intégrer dans une application existante un module de pilotage financ
 ## Roadmap interactive — 9 septembre 2026
 - [Roadmap détaillée](13_ROADMAP.md) : 20 lots, dépendances, jalons et critères de fin.
 - [Journal des arbitrages](17_DECISIONS_REALISATION.md) : choix de réalisation à prendre un par un ; D01 est validé, **partie privée et budget d'abord**, puis GoMining et patrimoine.
+- [État d'implémentation mesuré](21_ETAT_IMPLEMENTATION.md) — relevé du 18 septembre 2026 : `L00`–`L16` codés, `L17` (blog) vide, `L19` reporté ; le système visuel est appliqué partout mais **huit sections sur quatorze n'ont pas encore leur tableau dense**.
 - Branche de travail : `refacto`, migration directe validée. [Suivi du premier lot](18_MIGRATION_SOCLE.md). La connexion locale du compte unique est opérationnelle ; le prochain choix produit concerne le périmètre du premier budget (D05).
 
 ## Hypothèses de départ
@@ -46,6 +47,7 @@ Objectif : intégrer dans une application existante un module de pilotage financ
 - [16_ARBITRAGES_STACK_PROJET.md](16_ARBITRAGES_STACK_PROJET.md) — décisions validées, compatibilité SQLite et piste Fly.io
 - [17_DECISIONS_REALISATION.md](17_DECISIONS_REALISATION.md) — journal des choix interactifs de réalisation
 - [20_AUTHENTIFICATION_COMPTE_UNIQUE.md](20_AUTHENTIFICATION_COMPTE_UNIQUE.md) — accès propriétaire local, activation et tests
+- [21_ETAT_IMPLEMENTATION.md](21_ETAT_IMPLEMENTATION.md) — **ce qui est réellement codé**, mesuré et daté ; à lire avant d'estimer un reste à faire
 - [../SECURITY.md](../SECURITY.md) — règles de sécurité et checklist OWASP applicables à chaque lot
 - schema.sql
 - types.ts
