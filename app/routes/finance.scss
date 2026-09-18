@@ -1,14 +1,730 @@
-.finance-page { min-height: 100vh; max-width: 1160px; margin: 0 auto; padding: 40px 24px 72px; color: #191b23; background: #f5f6f8; }
-.finance-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding-bottom: 32px; }.finance-header h1 { margin: 4px 0 8px; font-size: clamp(2rem, 5vw, 3.25rem); letter-spacing: -.055em; }.finance-header p { color: #5d6473; }.finance-header__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }.finance-eyebrow { color: #5664db !important; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-.finance-nav { display: flex; gap: 8px; overflow-x: auto; padding: 6px; margin: 0 -6px 28px; border: 1px solid #dde1e8; border-radius: 14px; background: #fff; }.finance-nav a { flex: 0 0 auto; padding: 9px 12px; border-radius: 9px; color: #42495a; font-size: .9rem; font-weight: 700; text-decoration: none; }.finance-nav a[aria-current="page"] { color: #fff; background: #303b97; }
-.finance-content { display: grid; gap: 20px; }.finance-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }.finance-card, .finance-empty { padding: 24px; border: 1px solid #dde1e8; border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgba(23, 33, 71, .06); }.finance-card h2, .finance-empty h2 { margin-bottom: 12px; font-size: 1.2rem; letter-spacing: -.025em; }.finance-card p, .finance-empty p { color: #5d6473; line-height: 1.55; }.finance-card--wide { grid-column: 1 / -1; }
-.finance-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }.finance-metric { padding: 22px; border: 1px solid #dde1e8; border-radius: 16px; background: #fff; }.finance-metric p { margin-bottom: 8px; color: #5d6473; font-size: .88rem; }.finance-metric strong { font-size: clamp(1.3rem, 3vw, 2rem); letter-spacing: -.04em; }.finance-metric--emphasis { color: #fff; background: #303b97; border-color: #303b97; }.finance-metric--emphasis p { color: #dce0ff; }
-.finance-month { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; }.finance-month a, .finance-text-link { color: #303b97; font-weight: 700; }.finance-list, .finance-records { list-style: none; }.finance-list li { display: flex; justify-content: space-between; gap: 16px; padding: 13px 0; border-top: 1px solid #eef0f4; }.finance-records { display: grid; gap: 12px; }.finance-records > li { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 16px; border: 1px solid #e6e8ee; border-radius: 12px; }.finance-records strong { display: block; margin-bottom: 4px; }.finance-records p { font-size: .9rem; }
-.finance-form { display: grid; gap: 12px; }.finance-form label { display: grid; gap: 6px; color: #363d4b; font-size: .9rem; font-weight: 700; }.finance-form input, .finance-form select { width: 100%; min-height: 42px; padding: 9px 10px; color: #191b23; border: 1px solid #cbd1dc; border-radius: 9px; background: #fff; font: inherit; font-weight: 400; }.finance-button { display: inline-flex; justify-content: center; align-items: center; min-height: 42px; padding: 10px 14px; border: 0; border-radius: 9px; color: #fff; background: #303b97; font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; }.finance-button--quiet { color: #303b97; background: #e5e8ff; }.finance-help { margin-bottom: 14px; font-size: .9rem; }.finance-alert { margin-bottom: 20px; padding: 13px 15px; border: 1px solid #b94444; border-radius: 10px; color: #7f1d1d; background: #fff3f3; }.finance-empty { max-width: 650px; }.finance-empty p { margin-bottom: 20px; }
-.finance-checklist { display: grid; gap: 8px; padding: 12px; border: 1px solid #cbd1dc; border-radius: 9px; }.finance-checklist legend { padding: 0 4px; color: #363d4b; font-size: .9rem; font-weight: 700; }.finance-checklist label { display: flex; align-items: center; gap: 8px; font-weight: 400; }.finance-checklist input { width: auto; min-height: auto; }
-.finance-form .finance-inline { display: flex; align-items: center; gap: 8px; font-weight: 400; }.finance-form .finance-inline input { width: auto; min-height: auto; }
-.finance-table-wrap { overflow-x: auto; margin-top: 16px; }.finance-table { width: 100%; border-collapse: collapse; font-size: .86rem; text-align: left; }.finance-table caption { padding-bottom: 8px; text-align: left; color: #363d4b; font-weight: 800; }.finance-table th, .finance-table td { padding: 10px; border-top: 1px solid #e6e8ee; white-space: nowrap; }.finance-table th { color: #5d6473; font-weight: 800; }
-.gomining-chart { margin-top: 20px; }.gomining-chart figcaption { margin-bottom: 8px; color: #363d4b; font-size: .9rem; font-weight: 800; }.gomining-chart__legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; color: #5d6473; font-size: .8rem; }.gomining-chart__legend span { display: inline-flex; align-items: center; gap: 5px; }.gomining-chart i { display: block; }.gomining-chart__legend i { width: 10px; height: 10px; border-radius: 2px; }.gomining-chart__bars { display: flex; align-items: end; gap: 16px; min-height: 170px; padding: 12px; border: 1px solid #e6e8ee; border-radius: 10px; background: #fafbfc; }.gomining-chart__bar { display: grid; flex: 1; min-width: 34px; height: 145px; align-items: end; gap: 6px; text-align: center; color: #5d6473; font-size: .75rem; }.gomining-chart__stack { display: flex; flex-direction: column-reverse; width: 100%; min-height: 2px; border-radius: 4px 4px 0 0; overflow: hidden; }.gomining-chart__base { background: #70798a; }.gomining-chart__contribution { background: #5664db; }.gomining-chart__reinvestment { background: #1f9d70; }
-.gomining-details { margin-top: 16px; }.gomining-details > summary { width: max-content; }
-details > summary { color: #303b97; font-size: .9rem; font-weight: 800; cursor: pointer; } details > .finance-form, details > .finance-delete { margin-top: 14px; }.finance-delete { display: grid; gap: 8px; margin-top: 12px; }.finance-delete label { color: #5d6473; font-size: .82rem; }.finance-delete button { width: max-content; padding: 7px 9px; border: 1px solid #a43939; border-radius: 7px; color: #8b2727; background: #fff; font: inherit; font-size: .82rem; font-weight: 800; cursor: pointer; }
-@media (max-width: 680px) { .finance-page { padding: 24px 16px 48px; }.finance-header { padding-bottom: 24px; }.finance-header__actions { justify-content: flex-start; }.finance-grid, .finance-metrics { grid-template-columns: 1fr; }.finance-records > li { display: grid; gap: 12px; }.finance-card { padding: 18px; } }
+@use '../Style/tokens';
+@use '../Style/tokens-prive';
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Espace privé (CFO) — implémentation du handoff Claude Design (18/09/2026).
+
+   ⚠️ TROIS RÈGLES QUI TIENNENT TOUT LE FICHIER. Les enfreindre défait le
+   système, et ça ne se voit pas tout de suite :
+
+   1. **Le graphite est la SEULE couleur d'interface.** Liens, boutons, onglet
+      actif, anneaux de focus. La version précédente utilisait `#303b97` et
+      `#5664db`, ce qui contredisait la décision verrouillée « pas de bleu ».
+   2. **Le vert et le rouge ne servent QU'aux montants et aux écarts.** Jamais
+      un bouton, jamais un onglet, jamais un fond de carte. Unique dérogation :
+      l'icône 16 px et le filet 2 px d'une alerte, plus la bordure d'un champ
+      en erreur — toujours doublés d'un mot.
+   3. **Aucune valeur en dur.** Hauteurs de ligne, paddings et hauteurs de
+      contrôle viennent tous de `--density-*` ; si une valeur manque, on ajoute
+      un jeton sémantique dans `_tokens-prive.scss`.
+
+   L'état actif passe par la FORME, pas par la teinte : `--color-accent` et
+   `--color-foreground` n'ont que 0,16 de lumière d'écart, un texte graphite
+   serait indiscernable. Un seul motif partout — pastille pleine, texte inversé.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ═══ Châssis ════════════════════════════════════════════════════════════ */
+.finance-shell {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  min-height: 100vh;
+  color: var(--color-foreground);
+  background: var(--color-background);
+  font-family: var(--font-sans);
+  font-size: var(--density-font);
+  line-height: var(--lh-dense);
+}
+
+.finance-page { min-width: 0; padding-bottom: 64px; }
+
+/* ═══ Rail (≥ 900 px) ════════════════════════════════════════════════════ */
+.finance-rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  height: 100vh;
+  padding: 16px 12px;
+  overflow-y: auto;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.finance-rail__brand { display: flex; align-items: center; gap: 9px; padding: 0 6px 2px; }
+.finance-rail__mono {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  font-size: 11px;
+  font-weight: 700;
+}
+.finance-rail__who { display: grid; line-height: 1.25; }
+.finance-rail__who strong { font-size: var(--text-dense-base); font-weight: 600; }
+.finance-rail__who span { font-size: var(--text-dense-xs); color: var(--color-foreground-muted); }
+
+.finance-rail__family { display: grid; gap: 2px; }
+.finance-rail__label {
+  padding: 0 10px 4px;
+  color: var(--color-foreground-subtle);
+  font-size: var(--text-dense-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.finance-rail a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--color-foreground);
+  font-size: var(--text-dense-base);
+  text-decoration: none;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+.finance-rail a:hover { background: var(--color-surface-sunken); }
+/* Le SEUL motif d'état actif du produit. */
+.finance-rail a[aria-current='page'] {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  font-weight: 600;
+}
+/* Les badges comptent ce qui attend une action : c'est du contenu, pas du
+   décor. Une section sans rien à faire n'a pas de badge. */
+.finance-rail b {
+  font-family: var(--font-mono);
+  font-size: var(--text-dense-xs);
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.finance-rail__foot { display: grid; gap: 8px; margin-top: auto; }
+
+/* ═══ Barre d'onglets (< 900 px) ═════════════════════════════════════════ */
+.finance-tabs {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  padding: 6px 20px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+  scrollbar-width: none;
+}
+.finance-tabs::-webkit-scrollbar { display: none; }
+.finance-tabs a {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--color-foreground);
+  font-size: var(--text-dense-base);
+  white-space: nowrap;
+  text-decoration: none;
+  scroll-snap-align: start;
+}
+.finance-tabs a[aria-current='page'] {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  font-weight: 600;
+}
+/* Le SEUL dégradé du système : il signale le débordement horizontal. */
+.finance-tabs__fade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 100%;
+  background: linear-gradient(to right, transparent, var(--color-surface));
+  pointer-events: none;
+}
+
+/* ═══ En-tête d'écran ════════════════════════════════════════════════════ */
+.finance-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+.finance-eyebrow {
+  color: var(--color-foreground-muted);
+  font-size: var(--text-dense-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.finance-header h1 {
+  margin: 2px 0 0;
+  font-size: var(--text-dense-xl);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: var(--lh-dense-tight);
+}
+.finance-header p { color: var(--color-foreground-muted); font-size: var(--text-dense-sm); }
+.finance-header__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
+/* ═══ Navigateur de période ══════════════════════════════════════════════ */
+.finance-month {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+.finance-month a,
+.finance-month button {
+  display: grid;
+  place-items: center;
+  height: var(--density-control-h);
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--color-foreground);
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.finance-month > a { width: 30px; }
+.finance-month strong {
+  min-width: 96px;
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+/* « Ce mois » est un bouton EXPLICITE, pas un état implicite : depuis
+   novembre, un seul geste doit suffire pour rentrer. */
+.finance-month__today {
+  padding: 0 10px;
+  margin-left: 2px;
+  border-left: 1px solid var(--color-border) !important;
+  color: var(--color-accent);
+  font-size: var(--text-dense-sm);
+  font-weight: 600;
+}
+
+/* ═══ Contenu ════════════════════════════════════════════════════════════ */
+.finance-content { display: grid; gap: 14px; padding: 16px 20px 0; }
+.finance-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); align-items: start; }
+
+.finance-card,
+.finance-empty {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-xs);
+}
+.finance-card h2,
+.finance-empty h2 {
+  margin-bottom: 10px;
+  font-size: var(--text-dense-md);
+  font-weight: 600;
+}
+.finance-card p,
+.finance-empty p { color: var(--color-foreground-muted); font-size: var(--text-dense-sm); }
+.finance-card--wide { grid-column: 1 / -1; }
+
+/* ═══ Tuiles de métrique ═════════════════════════════════════════════════ */
+.finance-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--metric-track-min)), 1fr));
+  gap: 12px;
+}
+.finance-metric {
+  display: grid;
+  gap: 5px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-xs);
+}
+.finance-metric p {
+  color: var(--color-foreground-muted);
+  font-size: var(--text-dense-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.finance-metric strong {
+  font-family: var(--font-mono);
+  font-size: var(--text-num-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+/* L'emphase se mérite : UNE seule par écran. C'est la seule tuile dont le
+   montant porte la couleur de signe. */
+.finance-metric--emphasis {
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
+}
+.finance-metric--emphasis strong { font-size: var(--text-num-xl); }
+
+/* ═══ Montants ═══════════════════════════════════════════════════════════ */
+.amount-positive { color: var(--color-amount-positive); }
+.amount-negative { color: var(--color-amount-negative); }
+.amount-neutral { color: var(--color-amount-neutral); }
+/* Hors tuile en emphase, un montant reste en couleur de texte : la couleur de
+   signe se mérite elle aussi, sinon un tableau devient un sapin de Noël. */
+.finance-table .amount-positive,
+.finance-table .amount-negative,
+.finance-list .amount-positive,
+.finance-list .amount-negative { color: inherit; }
+.finance-table td.num.amount-positive { color: var(--color-amount-positive); }
+.finance-table td.num.amount-negative { color: var(--color-amount-negative); }
+
+/* ═══ Listes clé / valeur ════════════════════════════════════════════════ */
+.finance-list, .finance-records { list-style: none; }
+.finance-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: var(--density-row-h);
+  padding: var(--density-cell-y) 0;
+  border-top: 1px solid var(--color-table-rule);
+}
+.finance-list li:first-child { border-top: 0; }
+.finance-list li > :last-child {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.finance-records { display: grid; gap: var(--density-gap); }
+.finance-records > li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.finance-records strong { display: block; margin-bottom: 3px; font-weight: 600; }
+.finance-records p { font-size: var(--text-dense-sm); }
+
+/* ═══ Tableau dense ══════════════════════════════════════════════════════ */
+.finance-table-wrap {
+  margin-top: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-elevated);
+  overflow: hidden;
+  box-shadow: var(--shadow-xs);
+}
+.finance-table-scroll { max-height: min(64vh, 560px); overflow: auto; }
+.finance-table { width: 100%; border-collapse: collapse; font-size: var(--density-font); }
+.finance-table caption {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-foreground-muted);
+  font-size: var(--text-dense-sm);
+  text-align: left;
+}
+.finance-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  /* ⚠️ Fond OPAQUE obligatoire : sans lui, les lignes défilent visiblement
+     sous l'en-tête. C'est le défaut classique d'un thead collant. */
+  background: var(--color-table-header-bg);
+  color: var(--color-foreground-muted);
+  font-size: var(--text-dense-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: left;
+  padding: var(--density-cell-y) var(--density-cell-x);
+  border-bottom: 1px solid var(--color-border);
+}
+/* Le tri est un <button> DANS le <th> : un onClick sur le <th> n'existe pas
+   au clavier. */
+.finance-table thead button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+.finance-table tbody tr { height: var(--density-row-h); border-bottom: 1px solid var(--color-table-rule); }
+.finance-table tbody tr:nth-child(even) { background: var(--color-table-row-alt-bg); }
+.finance-table tbody tr:hover { background: var(--color-table-row-hover-bg); transition: background var(--duration-instant) linear; }
+.finance-table tbody tr[aria-selected='true'] { background: var(--color-table-row-selected-bg); }
+.finance-table tbody tr[aria-selected='true'] td:nth-child(2) { font-weight: 600; }
+.finance-table td { padding: var(--density-cell-y) var(--density-cell-x); }
+.finance-table td.num,
+.finance-table th.num { text-align: right; }
+.finance-table td.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  white-space: nowrap;
+}
+/* La ligne de total reste visible en descendant : c'est le chiffre qu'on
+   cherche. */
+.finance-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  padding: var(--density-cell-y) var(--density-cell-x);
+  border-top: 1px solid var(--color-border-strong);
+  background: var(--color-table-total-bg);
+  font-weight: 600;
+}
+
+/* ═══ Badges d'état — distingués par FORME autant que par valeur ═════════ */
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-dense-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+.state--upcoming { background: var(--color-state-upcoming-bg); color: var(--color-state-upcoming-fg); }
+.state--upcoming::before { border: 1.5px solid currentColor; }
+.state--late { background: var(--color-state-late-bg); color: var(--color-state-late-fg); }
+.state--late::before { background: var(--color-state-late-mark); }
+.state--reconciled { background: var(--color-state-reconciled-bg); color: var(--color-state-reconciled-fg); }
+.state--reconciled::before { background: currentColor; }
+.state--archived { color: var(--color-state-archived-fg); border: 1px dashed currentColor; }
+.state--archived::before { display: none; }
+
+/* ═══ Filtres et segments — même motif d'actif que le rail ═══════════════ */
+.finance-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.finance-filters button,
+.finance-segment button {
+  min-height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: var(--text-dense-sm);
+  cursor: pointer;
+}
+.finance-filters button[aria-pressed='true'],
+.finance-segment button[aria-pressed='true'] {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+  font-weight: 600;
+}
+.finance-segment { display: inline-flex; gap: 4px; }
+.finance-segment button { border-radius: var(--radius-control); }
+
+/* ═══ Formulaires ════════════════════════════════════════════════════════ */
+.finance-form { display: grid; gap: 10px; }
+.finance-form label { display: grid; gap: 5px; font-size: var(--text-dense-sm); font-weight: 600; }
+.finance-form input,
+.finance-form select,
+.finance-form textarea {
+  width: 100%;
+  min-height: var(--density-control-h);
+  padding: 6px 9px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-elevated);
+  color: var(--color-foreground);
+  font: inherit;
+  font-weight: 400;
+}
+.finance-form input:focus-visible,
+.finance-form select:focus-visible,
+.finance-form textarea:focus-visible,
+.finance-button:focus-visible,
+.finance-rail a:focus-visible,
+.finance-tabs a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+/* Dérogation nommée : la bordure d'un champ en erreur. Le message reste
+   écrit, sous le champ — jamais dans un toast qui disparaît avant d'être lu. */
+.finance-form input[aria-invalid='true'],
+.finance-form select[aria-invalid='true'] { border-color: var(--color-mark-danger); }
+.finance-field-error {
+  color: var(--color-mark-danger);
+  font-size: var(--text-dense-sm);
+  font-weight: 400;
+}
+
+/* Champ monétaire : saisie et suffixe dans une bordure unique. */
+.finance-money { display: flex; border: 1px solid var(--color-border-strong); border-radius: var(--radius-control); overflow: hidden; }
+.finance-money input {
+  border: 0;
+  border-radius: 0;
+  height: 40px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 500;
+}
+.finance-money span {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  border-left: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-foreground-muted);
+}
+
+.finance-checklist {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.finance-checklist legend { padding: 0 4px; font-size: var(--text-dense-sm); font-weight: 600; }
+.finance-checklist label,
+.finance-form .finance-inline { display: flex; align-items: center; gap: 8px; font-weight: 400; }
+.finance-checklist input,
+.finance-form .finance-inline input { width: auto; min-height: auto; accent-color: var(--color-accent); }
+
+/* ═══ Boutons ════════════════════════════════════════════════════════════ */
+.finance-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--density-control-h);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+  font: inherit;
+  font-size: var(--text-dense-base);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.finance-button--quiet {
+  background: none;
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-foreground);
+}
+.finance-button kbd {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: oklch(1 0 0 / 0.18);
+  font-family: var(--font-mono);
+  font-size: var(--text-dense-xs);
+}
+.finance-button--quiet kbd { background: var(--color-surface-sunken); }
+.finance-text-link { color: var(--color-accent); font-weight: 600; font-size: var(--text-dense-sm); }
+.finance-help { margin-bottom: 12px; font-size: var(--text-dense-sm); color: var(--color-foreground-muted); }
+
+/* ═══ Alerte — dérogation étroite : icône et filet seulement ═════════════ */
+.finance-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 20px 0;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-left: 2px solid var(--color-mark-danger);
+  border-radius: var(--radius-control);
+  background: var(--color-surface-elevated);
+  font-size: var(--text-dense-base);
+}
+.finance-alert::before {
+  content: '!';
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-mark-danger);
+  color: var(--color-mark-danger);
+  font-size: 10px;
+  font-weight: 700;
+}
+/* La couleur CONFIRME, elle n'informe pas : le mot reste écrit. */
+.finance-alert strong { font-weight: 700; }
+
+.finance-empty { max-width: 640px; }
+.finance-empty p { margin-bottom: 16px; }
+
+/* ═══ Squelette de chargement — la géométrie des lignes réelles ══════════
+   Pas un rond qui tourne au centre : la page ne doit pas sauter quand les
+   données arrivent. */
+.finance-skeleton { display: grid; gap: 1px; }
+.finance-skeleton i {
+  display: block;
+  height: var(--density-row-h);
+  background: var(--color-surface-sunken);
+}
+
+/* ═══ Graphique ══════════════════════════════════════════════════════════ */
+.finance-chart { margin-top: 12px; }
+.finance-chart figcaption {
+  margin-bottom: 8px;
+  color: var(--color-foreground-muted);
+  font-size: var(--text-dense-sm);
+}
+.finance-chart svg { display: block; width: 100%; height: auto; }
+/* Sans cette propriété, le trait épaissit avec la largeur : le SVG est
+   responsive par viewBox. */
+.finance-chart svg path,
+.finance-chart svg line { vector-effect: non-scaling-stroke; }
+.finance-chart__grid { stroke: var(--color-chart-grid); stroke-width: 1; }
+.finance-chart__line { fill: none; stroke: var(--color-chart-series-1); stroke-width: var(--chart-stroke); stroke-linecap: round; }
+.finance-chart__dot { fill: var(--color-chart-plot-bg); stroke: var(--color-chart-series-1); stroke-width: var(--chart-stroke); }
+.finance-chart__label {
+  fill: var(--color-foreground-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-dense-xs);
+}
+.finance-chart__label--last { fill: var(--color-foreground); font-weight: 600; }
+.finance-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--color-foreground-muted);
+  font-size: var(--text-dense-sm);
+}
+.finance-chart__legend i { width: 10px; height: 10px; border-radius: 2px; }
+.finance-chart__legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Empilement : la bande la PLUS LARGE prend la valeur la moins contrastée,
+   sinon une grande masse claire écrase l'écran. */
+.finance-chart__bars { display: flex; align-items: end; gap: 14px; min-height: 170px; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--radius-control); background: var(--color-chart-plot-bg); }
+.finance-chart__bar { display: grid; flex: 1; min-width: 34px; height: 145px; align-items: end; gap: 6px; text-align: center; color: var(--color-foreground-muted); font-size: var(--text-dense-xs); }
+.finance-chart__stack { display: flex; flex-direction: column-reverse; width: 100%; min-height: 2px; gap: var(--chart-band-gap); }
+.finance-chart__stack i:nth-child(1) { background: var(--color-chart-series-3); }
+.finance-chart__stack i:nth-child(2) { background: var(--color-chart-series-2); }
+.finance-chart__stack i:nth-child(3) { background: var(--color-chart-series-1); }
+
+/* ═══ Repli ══════════════════════════════════════════════════════════════ */
+details > summary { color: var(--color-accent); font-size: var(--text-dense-sm); font-weight: 600; cursor: pointer; }
+details > .finance-form, details > .finance-delete { margin-top: 12px; }
+.finance-delete { display: grid; gap: 8px; margin-top: 10px; }
+.finance-delete label { color: var(--color-foreground-muted); font-size: var(--text-dense-sm); }
+.finance-delete button {
+  width: max-content;
+  min-height: var(--density-control-h);
+  padding: 0 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-foreground);
+  font: inherit;
+  font-size: var(--text-dense-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ═══ Vue mobile du tableau — deux colonnes prioritaires ════════════════
+   Le défilement horizontal casserait la colonne de montants alignée à droite,
+   c'est-à-dire ce qui rend un tableau financier lisible. */
+.finance-cards { display: grid; gap: 1px; background: var(--color-table-rule); border-radius: var(--radius-card); overflow: hidden; }
+.finance-cards > li { background: var(--color-surface-elevated); }
+.finance-cards summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 8px 14px;
+  list-style: none;
+  cursor: pointer;
+}
+.finance-cards summary::-webkit-details-marker { display: none; }
+.finance-cards__label { min-width: 0; flex: 1; }
+.finance-cards__label strong { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.finance-cards__label span { color: var(--color-foreground-muted); font-size: var(--text-dense-xs); }
+.finance-cards__amount { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+.finance-cards dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 0 14px 12px; font-size: var(--text-dense-sm); }
+.finance-cards dt { color: var(--color-foreground-muted); }
+
+/* ═══ Modale de saisie ═══════════════════════════════════════════════════ */
+.finance-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: start center;
+  padding: 8vh 16px 16px;
+  background: var(--color-scrim);
+}
+.finance-modal__panel {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: var(--radius-panel);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-lg);
+  animation: finance-modal-in var(--duration-base) var(--ease-out);
+}
+@keyframes finance-modal-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ═══ Les TROIS seules bascules de gabarit ══════════════════════════════ */
+[data-chrome='tabs'] { display: none; }
+[data-view='cards'] { display: none; }
+
+@media (max-width: 900px) {
+  .finance-shell { grid-template-columns: minmax(0, 1fr); }
+  [data-chrome='rail'] { display: none; }
+  [data-chrome='tabs'] { display: block; }
+}
+
+@media (max-width: 680px) {
+  [data-view='table'] { display: none; }
+  [data-view='cards'] { display: block; }
+  .finance-content { padding: 12px 14px 0; }
+  .finance-header { padding: 10px 14px; }
+  .finance-alert { margin: 10px 14px 0; }
+}
+
+/* ═══ Mouvement réduit ═══════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.finance-metric__note { color: var(--color-foreground-muted); font-size: var(--text-dense-sm); }
+
+/* Sous trois points : le chiffre et l'écart, pas une courbe. */
+.finance-chart__solo { font-family: var(--font-mono); font-size: var(--text-num-lg); font-weight: 600; }
+.finance-chart__delta { color: var(--color-foreground-muted); font-size: var(--text-dense-sm); }

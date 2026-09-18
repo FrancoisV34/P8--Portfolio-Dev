@@ -1,0 +1,248 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Espace privé (CFO) — jetons.
+
+   Deux couches, dans cet ordre :
+     1. la couche SÉMANTIQUE, qui manquait au dépôt ;
+     2. les jetons du privé, repris tels quels du handoff Claude Design.
+
+   ⚠️ POURQUOI LA COUCHE 1 EXISTE ICI.
+   `03-design-tokens.md` prescrit « primitives → semantic » et écrit : « On
+   n'utilise JAMAIS `bg-gray-950` dans un composant — toujours `bg-background` ».
+   Or le dépôt n'a que les primitives : `_tokens.scss` définit `--bg-light`,
+   `--accent-on-dark`… et aucun `--color-*`. La couche sémantique décrite dans
+   la doc n'a jamais été écrite. Le handoff, lui, la suppose partout
+   (`var(--color-accent)`, `var(--color-foreground)`…). On la complète donc ici,
+   sans toucher au public : le portfolio continue de consommer ses primitives.
+
+   ⚠️ ET POURQUOI SES VALEURS NE SONT PAS CELLES DE `_tokens.scss`.
+   Le handoff a CALIBRÉ ses contrastes sur les valeurs de la doc
+   (fond `0.99`, surface `0.97`, élevé `1.00`) — « le vert public ne passe qu'à
+   2,9:1 » est mesuré sur ce fond-là. Les primitives du code divergent
+   légèrement (`--bg-light: 0.97`, `--surface-light: 0.93`). Les reprendre
+   décalerait la base de calcul de tout un système explicitement calibré, et
+   ferait passer les montants sous 4,5:1 sans que personne s'en aperçoive.
+   On garde donc la base du handoff, et l'écart entre les deux échelles est un
+   arbitrage à trancher — pas à absorber en silence.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Couche sémantique (clair) ─────────────────────────────────────── */
+  --color-background: oklch(0.99 0 0);
+  --color-surface: oklch(0.97 0 0);
+  --color-surface-elevated: oklch(1 0 0);
+  --color-surface-sunken: oklch(0.955 0 0);
+  --color-border: oklch(0.92 0 0);
+  --color-border-strong: oklch(0.85 0 0);
+  --color-foreground: oklch(0.14 0 0);
+  --color-foreground-muted: oklch(0.45 0 0);
+  --color-foreground-subtle: oklch(0.58 0 0);
+  --color-accent: oklch(0.30 0.02 260);
+  --color-accent-foreground: oklch(1 0 0);
+
+  /* Mouvement : repris des primitives publiques, sans les redéfinir. */
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-base: var(--dur-base, 250ms);
+  /* ── Police des montants (seconde et dernière famille) ─────────────── */
+  --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, monospace;
+
+  /* ── Échelle typographique dense ───────────────────────────────────────
+     L'échelle publique (--text-body 16/1.6 … --text-display-xl) reste
+     réservée au portfolio. Le privé ne consomme que celle-ci.            */
+  --text-dense-xs: 11px;   /* étiquettes majuscules, méta de pastille    */
+  --text-dense-sm: 12px;   /* méta, aides, légendes                     */
+  --text-dense-base: 13px; /* corps, cellules, champs                   */
+  --text-dense-md: 15px;   /* titre de bloc                             */
+  --text-dense-lg: 18px;   /* titre de section                          */
+  --text-dense-xl: 22px;   /* titre d'écran                             */
+  --text-num-md: 15px;     /* montant en ligne                          */
+  /* Les deux montants de tuile sont fluides : à 32 px fixes, un montant
+     signé à cinq chiffres (« +3 150,61 € ») débordait d'une tuile de
+     grille auto-fit. Le plafond reste la valeur voulue.                 */
+  --text-num-lg: clamp(21px, 2.4vw, 26px);
+  --text-num-xl: clamp(24px, 3vw, 32px);
+  /* Largeur minimale d'une piste de grille de tuiles de métrique.
+     En dessous, un montant à cinq chiffres ne tient pas au plafond.     */
+  --metric-track-min: 240px;
+  --lh-dense: 1.35;
+  --lh-dense-tight: 1.2;
+
+  /* ── Rayons du privé (10 → 24) ─────────────────────────────────────── */
+  --radius-control: 10px;  /* champs, boutons, pastilles de segment     */
+  --radius-card: 14px;     /* cartes, tableaux                          */
+  --radius-panel: 18px;    /* modale, panneau                           */
+  --radius-pill: 9999px;   /* badges d'état                             */
+
+  /* ── Densités ──────────────────────────────────────────────────────────
+     Compacte par défaut. --density-* est la seule source de hauteur de
+     ligne et de contrôle : aucune valeur en dur dans un composant.      */
+  --density-row-h: 32px;
+  --density-cell-y: 6px;
+  --density-cell-x: 10px;
+  --density-control-h: 30px;
+  --density-gap: 8px;
+  --density-font: var(--text-dense-base);
+
+  /* ── Montants ──────────────────────────────────────────────────────────
+     Calibrés pour le TEXTE : 4,5:1 minimum sur --color-background.
+     Le vert public (oklch 0.62 0.17 150) n'y suffit pas ; ces deux
+     jetons sont des variantes « grade texte » du même axe de teinte.    */
+  --color-amount-positive: oklch(0.45 0.12 150);
+  --color-amount-negative: oklch(0.47 0.18 27);
+  --color-amount-neutral: var(--color-foreground);
+  --color-amount-muted: var(--color-foreground-muted);
+
+  /* ── États ─────────────────────────────────────────────────────────────
+     Neutres et graphite uniquement. Chaque état porte son mot ; la
+     pastille varie par forme (anneau / plein / tiret), pas par teinte.  */
+  --color-state-upcoming-bg: oklch(0.97 0 0);
+  --color-state-upcoming-fg: oklch(0.45 0 0);
+  --color-state-late-bg: oklch(0.97 0 0);
+  --color-state-late-fg: oklch(0.14 0 0);
+  --color-state-late-mark: oklch(0.62 0.15 70);   /* pastille seule      */
+  --color-state-reconciled-bg: oklch(0.30 0.02 260 / 0.08);
+  --color-state-reconciled-fg: oklch(0.30 0.02 260);
+  --color-state-archived-fg: oklch(0.58 0 0);
+
+  /* ── Surfaces de tableau ───────────────────────────────────────────── */
+  --color-table-header-bg: oklch(0.97 0 0);
+  --color-table-row-bg: transparent;
+  --color-table-row-alt-bg: oklch(0.975 0 0);
+  --color-table-row-hover-bg: oklch(0.955 0 0);
+  --color-table-row-selected-bg: oklch(0.30 0.02 260 / 0.07);
+  --color-table-total-bg: oklch(0.945 0 0);
+  --color-table-rule: oklch(0.92 0 0);
+
+  /* ── Graphique ─────────────────────────────────────────────────────────
+     Trois valeurs sur l'axe graphite. Dans un empilement, la bande la
+     plus large prend series-3 et la plus fine series-1.                 */
+  --color-chart-series-1: oklch(0.30 0.02 260);
+  --color-chart-series-2: oklch(0.52 0.02 260);
+  --color-chart-series-3: oklch(0.74 0.02 260);
+  --color-chart-grid: oklch(0.93 0 0);
+  --color-chart-cursor: oklch(0.65 0 0);
+  --color-chart-plot-bg: oklch(1 0 0);
+  --chart-stroke: 2px;
+  --chart-dot-r: 4px;
+  --chart-dot-r-marked: 5px;
+  --chart-band-gap: 2px;
+
+  /* ── Marques d'alerte ──────────────────────────────────────────────────
+     Unique dérogation à « graphite = seule couleur d'interface » :
+     icône et filet d'une alerte. Jamais un fond, jamais un bouton,
+     jamais un onglet — et toujours doublé d'un mot.                     */
+  --color-mark-danger: oklch(0.52 0.19 27);
+  --color-mark-warning: oklch(0.58 0.14 70);
+  --color-mark-info: var(--color-accent);
+
+  --color-scrim: oklch(0.14 0 0 / 0.32);
+
+  /* ── Élévation ─────────────────────────────────────────────────────────
+     ⚠️ Le README du handoff documente ces trois jetons, mais son
+     `tokens-prive.css` ne les définit pas. Les valeurs de `--shadow-xs` et
+     `--shadow-lg` en viennent telles quelles ; `--shadow-md` (infobulle) n'y
+     était pas chiffrée — posée ici entre les deux, à revoir si l'infobulle
+     paraît trop lourde. Aucun glassmorphism, aucun backdrop-filter. */
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-md: 0 6px 16px oklch(0 0 0 / 0.10);
+  --shadow-lg: 0 20px 50px oklch(0 0 0 / 0.16);
+}
+
+/* ── Sombre : composé, pas inversé ─────────────────────────────────────
+   Les surfaces montent par paliers (0 → 0.09 → 0.14 → 0.18) au lieu de
+   miroiter la descente du clair ; les montants gagnent en lumière et
+   perdent en chroma pour rester lisibles sur noir.                      */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Couche sémantique (sombre) — COMPOSÉE, jamais inversée : les surfaces
+       montent par paliers 0 → 0.09 → 0.14 → 0.18. Une inversion mécanique du
+       clair (0.99 → 0.97 → 1.00) rendrait la carte élevée NOIRE, donc
+       invisible sur fond noir. */
+    --color-background: oklch(0 0 0);
+    --color-surface: oklch(0.14 0 0);
+    --color-surface-elevated: oklch(0.18 0 0);
+    --color-surface-sunken: oklch(0.09 0 0);
+    --color-border: oklch(0.25 0 0);
+    --color-border-strong: oklch(0.34 0 0);
+    --color-foreground: oklch(0.97 0 0);
+    --color-foreground-muted: oklch(0.70 0 0);
+    --color-foreground-subtle: oklch(0.55 0 0);
+    --color-accent: oklch(0.85 0.02 260);
+    --color-accent-foreground: oklch(0.14 0 0);
+
+    --color-amount-positive: oklch(0.82 0.15 152);
+    --color-amount-negative: oklch(0.76 0.16 27);
+
+    --color-state-upcoming-bg: oklch(0.16 0 0);
+    --color-state-upcoming-fg: oklch(0.70 0 0);
+    --color-state-late-bg: oklch(0.16 0 0);
+    --color-state-late-fg: oklch(0.97 0 0);
+    --color-state-late-mark: oklch(0.80 0.14 75);
+    --color-state-reconciled-bg: oklch(0.85 0.02 260 / 0.14);
+    --color-state-reconciled-fg: oklch(0.88 0.02 260);
+    --color-state-archived-fg: oklch(0.55 0 0);
+
+    --color-table-header-bg: oklch(0.12 0 0);
+    --color-table-row-alt-bg: oklch(0.10 0 0);
+    --color-table-row-hover-bg: oklch(0.17 0 0);
+    --color-table-row-selected-bg: oklch(0.85 0.02 260 / 0.12);
+    --color-table-total-bg: oklch(0.17 0 0);
+    --color-table-rule: oklch(0.22 0 0);
+
+    --color-chart-series-1: oklch(0.88 0.02 260);
+    --color-chart-series-2: oklch(0.64 0.02 260);
+    --color-chart-series-3: oklch(0.42 0.02 260);
+    --color-chart-grid: oklch(0.22 0 0);
+    --color-chart-cursor: oklch(0.50 0 0);
+    --color-chart-plot-bg: oklch(0.14 0 0);
+
+    --color-mark-danger: oklch(0.74 0.17 27);
+    --color-mark-warning: oklch(0.80 0.14 75);
+
+    --color-scrim: oklch(0 0 0 / 0.60);
+
+    /* Sur fond noir, une ombre noire est invisible : on la renforce pour
+       qu'un panneau flottant se décolle encore de sa surface. */
+    --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.40);
+    --shadow-md: 0 6px 16px oklch(0 0 0 / 0.55);
+    --shadow-lg: 0 20px 50px oklch(0 0 0 / 0.70);
+  }
+}
+
+/* Thème explicite — mêmes blocs, sélectionnés par attribut.
+   Dupliquer les deux corps ci-dessus sous [data-theme="light"] et
+   [data-theme="dark"] (voir les maquettes) si le choix manuel est exposé. */
+
+/* ── Densité confortable ───────────────────────────────────────────────── */
+[data-density="comfortable"] {
+  --density-row-h: 40px;
+  --density-cell-y: 10px;
+  --density-cell-x: 14px;
+  --density-control-h: 36px;
+  --density-gap: 12px;
+  --density-font: 14px;
+}
+
+/* ── Cibles tactiles ───────────────────────────────────────────────────────
+   La densité est une préférence de souris. Sur pointeur grossier, les
+   deux densités remontent à 44 px : c'est la règle d'accessibilité qui
+   gagne, pas la préférence.                                              */
+@media (pointer: coarse) {
+  :root,
+  [data-density="compact"],
+  [data-density="comfortable"] {
+    --density-row-h: 44px;
+    --density-control-h: 44px;
+    --density-cell-y: 12px;
+  }
+}
+
+/* ── Chiffres tabulaires ───────────────────────────────────────────────────
+   Obligatoire partout où des montants s'alignent. À appliquer par cette
+   utilitaire plutôt qu'à la main, pour ne pas l'oublier.                 */
+.tnum,
+[data-num] {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}

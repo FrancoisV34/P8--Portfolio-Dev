@@ -327,8 +327,79 @@ function near(period: string, delta: -1 | 1) {
 const money = (cents: number) => formatEuros(euroCents(cents));
 const decimalMoney = (cents: number) => eurosDecimal(euroCents(cents));
 const preciseMoney = (milliCents: number) => `${(milliCents / 100_000).toFixed(5).replace('.', ',')} €`;
-const Currency = ({ cents }: { cents: number }) => <span>{money(cents)}</span>;
+/**
+ * Un montant à l'écran.
+ *
+ * ⚠️ Le signe est posé ICI, pas dans `formatEuros` : la fonction d'unité reste
+ * exacte et réutilisable (export, calculs), la présentation ajoute le signe.
+ * Le moins est un vrai **U+2212**, pas un trait d'union : dans une colonne en
+ * chiffres tabulaires, le trait d'union est plus court et désaligne la colonne.
+ *
+ * ⚠️ Et la couleur ne vient JAMAIS seule — le signe la double toujours. C'est
+ * ce qui garde l'écran lisible en niveaux de gris et pour qui ne distingue pas
+ * le rouge du vert. `signe={false}` pour les contextes où un montant n'a pas
+ * de polarité (un prévu, une cible).
+ */
+const Currency = ({ cents, signe = false }: { cents: number; signe?: boolean }) => {
+  const texte = money(Math.abs(cents));
+  if (!signe) return <span className="tnum">{texte}</span>;
+  const classe = cents > 0 ? 'amount-positive' : cents < 0 ? 'amount-negative' : 'amount-neutral';
+  const marque = cents > 0 ? '+' : cents < 0 ? '\u2212' : '';
+  return <span className={`tnum ${classe}`}>{marque}{texte}</span>;
+};
 const Satoshi = () => <abbr title="Un satoshi est la plus petite unité du bitcoin : 1 BTC vaut 100 000 000 satoshis.">satoshis</abbr>;
+
+/**
+ * Les 14 sections, groupées en cinq familles.
+ *
+ * ⚠️ Pourquoi un rail plutôt que quatorze onglets : sur 1280 px, une barre
+ * défilable cache la moitié du produit et coûte un geste de défilement à chaque
+ * navigation. Le regroupement dit en plus ce qui va avec quoi. Sous 900 px, la
+ * barre revient — c'est le seul endroit où elle est le moindre mal.
+ */
+const FAMILLES: { nom: string; sections: { cle: Section; libelle: string }[] }[] = [
+  { nom: 'Pilotage', sections: [
+    { cle: 'overview', libelle: 'Synthèse' },
+    { cle: 'cfo', libelle: 'CFO' },
+    { cle: 'goals', libelle: 'Objectifs' },
+  ] },
+  { nom: 'Flux', sections: [
+    { cle: 'transactions', libelle: 'Transactions' },
+    { cle: 'budget', libelle: 'Budget' },
+    { cle: 'calendar', libelle: 'Calendrier' },
+  ] },
+  { nom: 'Patrimoine', sections: [
+    { cle: 'wealth', libelle: 'Patrimoine' },
+    { cle: 'accounts', libelle: 'Comptes' },
+    { cle: 'gomining', libelle: 'GoMining' },
+  ] },
+  { nom: 'Business', sections: [
+    { cle: 'business', libelle: 'Business' },
+    { cle: 'statuses', libelle: 'Micro / SASU' },
+  ] },
+  { nom: 'Référentiel', sections: [
+    { cle: 'categories', libelle: 'Catégories' },
+    { cle: 'regulations', libelle: 'Règles' },
+    { cle: 'simulations', libelle: 'Simulations' },
+  ] },
+];
+
+const TITRES: Record<Section, string> = {
+  overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories',
+  transactions: 'Transactions', budget: 'Budget', calendar: 'Calendrier financier',
+  wealth: 'Patrimoine', business: 'Business', goals: 'Objectifs et projets',
+  cfo: 'Moteur CFO', simulations: 'Simulations', regulations: 'Règles vérifiées',
+  statuses: 'Micro vs SASU', gomining: 'GoMining',
+};
+
+/** La famille qui contient une section — sert de sur-titre à l'en-tête. */
+function familleDe(section: Section) {
+  return FAMILLES.find((f) => f.sections.some((s) => s.cle === section))?.nom ?? '';
+}
+
+function lienDe(cle: Section, period: string) {
+  return cle === 'overview' ? `/finance?period=${period}` : path(cle, period);
+}
 
 export default function Finance() {
   const data = useLoaderData<typeof loader>();
@@ -337,10 +408,33 @@ export default function Finance() {
   const activeAccounts = data.accounts.filter((item) => item.isActive);
   const activeCategories = data.categories.filter((item) => item.isActive);
   const balances = new Map(data.dashboard.accounts.map((item) => [item.id, item.balanceCents]));
-  return <main className="finance-page">
-    <header className="finance-header"><div><p className="finance-eyebrow">Espace personnel</p><h1>{({ overview: 'Vue d’ensemble', accounts: 'Comptes', categories: 'Catégories', transactions: 'Transactions', budget: 'Budget', calendar: 'Calendrier financier', wealth: 'Patrimoine', business: 'Business', goals: 'Objectifs et projets', cfo: 'Moteur CFO', simulations: 'Simulations', regulations: 'Règles vérifiées', statuses: 'Micro vs SASU', gomining: 'GoMining' })[data.section]}</h1><p>Bonjour {data.name}.</p></div><div className="finance-header__actions"><form method="post" action="/api/finance/backup"><button className="finance-button finance-button--quiet" type="submit">Télécharger la sauvegarde</button></form><Form method="post"><input type="hidden" name="intent" value="signOut" /><button className="finance-button finance-button--quiet">Se déconnecter</button></Form></div></header>
-    <nav className="finance-nav" aria-label="Navigation financière"><Link to={`/finance?period=${data.period}`} aria-current={data.section === 'overview' ? 'page' : undefined}>Synthèse</Link><Link to={path('accounts', data.period)} aria-current={data.section === 'accounts' ? 'page' : undefined}>Comptes</Link><Link to={path('categories', data.period)} aria-current={data.section === 'categories' ? 'page' : undefined}>Catégories</Link><Link to={path('transactions', data.period)} aria-current={data.section === 'transactions' ? 'page' : undefined}>Transactions</Link><Link to={path('budget', data.period)} aria-current={data.section === 'budget' ? 'page' : undefined}>Budget</Link><Link to={path('calendar', data.period)} aria-current={data.section === 'calendar' ? 'page' : undefined}>Calendrier</Link><Link to={path('wealth', data.period)} aria-current={data.section === 'wealth' ? 'page' : undefined}>Patrimoine</Link><Link to={path('business', data.period)} aria-current={data.section === 'business' ? 'page' : undefined}>Business</Link><Link to={path('goals', data.period)} aria-current={data.section === 'goals' ? 'page' : undefined}>Objectifs</Link><Link to={path('cfo', data.period)} aria-current={data.section === 'cfo' ? 'page' : undefined}>CFO</Link><Link to={path('simulations', data.period)} aria-current={data.section === 'simulations' ? 'page' : undefined}>Simulations</Link><Link to={path('regulations', data.period)} aria-current={data.section === 'regulations' ? 'page' : undefined}>Règles</Link><Link to={path('statuses', data.period)} aria-current={data.section === 'statuses' ? 'page' : undefined}>Micro / SASU</Link><Link to={path('gomining', data.period)} aria-current={data.section === 'gomining' ? 'page' : undefined}>GoMining</Link></nav>
-    {actionError ? <p className="finance-alert" role="alert">{actionError}</p> : null}
+  return <div className="finance-shell">
+    <Rail section={data.section} period={data.period} />
+
+    <main className="finance-page">
+      <Onglets section={data.section} period={data.period} />
+
+      <header className="finance-header">
+        <div>
+          <p className="finance-eyebrow">{familleDe(data.section)}</p>
+          <h1>{TITRES[data.section]}</h1>
+        </div>
+        <div className="finance-header__actions">
+          {/* Le navigateur de période vit dans l'en-tête collant, jamais dans
+              le contenu : il est présent sur presque tous les écrans. */}
+          <Period period={data.period} />
+          <form method="post" action="/api/finance/backup">
+            <button className="finance-button finance-button--quiet" type="submit">Sauvegarde</button>
+          </form>
+          <Form method="post">
+            <input type="hidden" name="intent" value="signOut" />
+            <button className="finance-button finance-button--quiet">Se déconnecter</button>
+          </Form>
+        </div>
+      </header>
+
+      {actionError ? <p className="finance-alert" role="alert"><span><strong>Erreur. </strong>{actionError}</span></p> : null}
+
     {data.section === 'overview' ? <Overview data={data} /> : null}
     {data.section === 'accounts' ? <Accounts data={data} balances={balances} /> : null}
     {data.section === 'categories' ? <Categories categories={data.categories} /> : null}
@@ -354,16 +448,73 @@ export default function Finance() {
     {data.section === 'simulations' ? <Simulations data={data} /> : null}
     {data.section === 'regulations' ? <Regulations data={data} /> : null}
     {data.section === 'statuses' ? <StatusComparisons data={data} /> : null}
-    {data.section === 'gomining' ? <GoMining data={data} /> : null}
-  </main>;
+      {data.section === 'gomining' ? <GoMining data={data} /> : null}
+    </main>
+  </div>;
+}
+
+/**
+ * Rail latéral, groupé en cinq familles. Masqué sous 900 px au profit de la
+ * barre d'onglets — l'une des trois seules bascules de gabarit du design.
+ */
+function Rail({ section, period }: { section: Section; period: string }) {
+  return <nav className="finance-rail" data-chrome="rail" aria-label="Navigation financière">
+    <div className="finance-rail__brand">
+      <span className="finance-rail__mono" aria-hidden="true">FV</span>
+      <span className="finance-rail__who">
+        <strong>Espace privé</strong>
+        <span>François Vittecoq</span>
+      </span>
+    </div>
+
+    {FAMILLES.map((famille) => <div className="finance-rail__family" key={famille.nom}>
+      <p className="finance-rail__label">{famille.nom}</p>
+      {famille.sections.map(({ cle, libelle }) => <Link
+        key={cle}
+        to={lienDe(cle, period)}
+        aria-current={section === cle ? 'page' : undefined}
+      >{libelle}</Link>)}
+    </div>)}
+
+    <div className="finance-rail__foot">
+      <Link className="finance-button" to={path('transactions', period)}>Saisir</Link>
+    </div>
+  </nav>;
+}
+
+/** Sous 900 px : les quatorze sections à plat, défilables. */
+function Onglets({ section, period }: { section: Section; period: string }) {
+  return <div data-chrome="tabs">
+    <nav className="finance-tabs" aria-label="Navigation financière">
+      {FAMILLES.flatMap((famille) => famille.sections).map(({ cle, libelle }) => <Link
+        key={cle}
+        to={lienDe(cle, period)}
+        aria-current={section === cle ? 'page' : undefined}
+      >{libelle}</Link>)}
+      <span className="finance-tabs__fade" aria-hidden="true" />
+    </nav>
+  </div>;
 }
 
 type Data = Awaited<ReturnType<typeof loader>>;
-function Period({ period }: { period: string }) { return <nav className="finance-month" aria-label="Période budgétaire"><Link to={`/finance?period=${near(period, -1)}`}>Mois précédent</Link><strong>{period}</strong><Link to={`/finance?period=${near(period, 1)}`}>Mois suivant</Link></nav>; }
+function Period({ period }: { period: string }) {
+  const courant = new Date().toISOString().slice(0, 7);
+  const libelle = new Date(`${period}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+  return <nav className="finance-month" aria-label="Période budgétaire">
+    <Link to={`/finance?period=${near(period, -1)}`} aria-label="Mois précédent">‹</Link>
+    <strong>{libelle}</strong>
+    <Link to={`/finance?period=${near(period, 1)}`} aria-label="Mois suivant">›</Link>
+    {/* Bouton EXPLICITE, pas un état implicite : depuis novembre, un seul
+        geste doit suffire pour revenir au mois courant. */}
+    {period !== courant
+      ? <Link className="finance-month__today" to={`/finance?period=${courant}`}>Ce mois</Link>
+      : null}
+  </nav>;
+}
 function Overview({ data }: { data: Data }) {
   if (data.accounts.length === 0) return <section className="finance-empty"><h2>Commencer par les comptes</h2><p>Ajoute une entité puis les soldes d’ouverture datés. Ils ne sont pas des revenus ni des dépenses.</p><Link className="finance-button" to={path('accounts', data.period)}>Configurer les comptes</Link></section>;
   const reserve = data.planning.reserve;
-  return <section className="finance-content"><Period period={data.period} /><section className="finance-metrics"><Metric label="Revenus" cents={data.dashboard.incomeCents} /><Metric label="Dépenses" cents={data.dashboard.expenseCents} /><Metric label="Reste du mois" cents={data.dashboard.surplusCents} emphasis /></section><section className="finance-card"><h2>Soldes à la fin de la période</h2><List rows={data.dashboard.accounts.map((account) => [account.name, money(account.balanceCents)])} /></section><section className="finance-card"><h2>Suivi du budget</h2>{data.dashboard.budgets.length ? <List rows={data.dashboard.budgets.map(({ category, budget, actualCents }) => [category.name, `${money(actualCents)}${budget ? ` / ${money(budget.plannedAmountCents)}` : ''}`])} /> : <p>Ajoute des catégories de dépense puis un budget mensuel.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Ouvrir le budget</Link></section><MonthlyClosure data={data} /><Reconciliation data={data} /><section className="finance-card"><h2>Réserve de sécurité</h2>{reserve ? <><p>{money(reserve.currentAmountCents)} disponibles sur {reserve.accounts.length} compte{reserve.accounts.length > 1 ? 's' : ''}, pour une cible de {money(reserve.targetAmountCents)}.</p><p>{reserve.currentAmountCents >= reserve.targetAmountCents ? 'La cible est atteinte pour cette période.' : `Reste à constituer : ${money(reserve.targetAmountCents - reserve.currentAmountCents)}.`}</p></> : <p>Aucune réserve n’est encore configurée.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Configurer le suivi</Link></section><section className="finance-card"><h2>Engagements du mois</h2>{data.planning.commitments.length ? <List rows={data.planning.commitments.map(({ commitment, actualCents }) => [commitment.name, `${money(actualCents)} payé / ${money(commitment.plannedAmountCents)} prévu`])} /> : <p>Aucun engagement récurrent prévu pour ce mois.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Gérer les engagements</Link></section><section className="finance-card"><h2>Historique</h2><p>Le suivi commence avec {data.period}. Les tendances seront affichées seulement quand des mois réels seront disponibles.</p></section></section>;
+  return <section className="finance-content"><section className="finance-metrics"><Metric label="Revenus" cents={data.dashboard.incomeCents} /><Metric label="Dépenses" cents={data.dashboard.expenseCents} /><Metric label="Reste du mois" cents={data.dashboard.surplusCents} emphasis /></section><section className="finance-card"><h2>Soldes à la fin de la période</h2><List rows={data.dashboard.accounts.map((account) => [account.name, money(account.balanceCents)])} /></section><section className="finance-card"><h2>Suivi du budget</h2>{data.dashboard.budgets.length ? <List rows={data.dashboard.budgets.map(({ category, budget, actualCents }) => [category.name, `${money(actualCents)}${budget ? ` / ${money(budget.plannedAmountCents)}` : ''}`])} /> : <p>Ajoute des catégories de dépense puis un budget mensuel.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Ouvrir le budget</Link></section><MonthlyClosure data={data} /><Reconciliation data={data} /><section className="finance-card"><h2>Réserve de sécurité</h2>{reserve ? <><p>{money(reserve.currentAmountCents)} disponibles sur {reserve.accounts.length} compte{reserve.accounts.length > 1 ? 's' : ''}, pour une cible de {money(reserve.targetAmountCents)}.</p><p>{reserve.currentAmountCents >= reserve.targetAmountCents ? 'La cible est atteinte pour cette période.' : `Reste à constituer : ${money(reserve.targetAmountCents - reserve.currentAmountCents)}.`}</p></> : <p>Aucune réserve n’est encore configurée.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Configurer le suivi</Link></section><section className="finance-card"><h2>Engagements du mois</h2>{data.planning.commitments.length ? <List rows={data.planning.commitments.map(({ commitment, actualCents }) => [commitment.name, `${money(actualCents)} payé / ${money(commitment.plannedAmountCents)} prévu`])} /> : <p>Aucun engagement récurrent prévu pour ce mois.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Gérer les engagements</Link></section><section className="finance-card"><h2>Historique</h2><p>Le suivi commence avec {data.period}. Les tendances seront affichées seulement quand des mois réels seront disponibles.</p></section></section>;
 }
 function MonthlyClosure({ data }: { data: Data }) {
   const latest = data.closures[0];
@@ -378,7 +529,21 @@ function Calendar({ data }: { data: Data }) {
   const kind = { commitment: 'Engagement', goal: 'Objectif', regulation: 'Règle à revoir', debt: 'Dette à dater', business: 'Observation business' };
   return <section className="finance-content"><nav className="finance-month" aria-label="Période du calendrier"><Link to={path('calendar', near(data.period, -1))}>Mois précédent</Link><strong>{calendar.period}</strong><Link to={path('calendar', near(data.period, 1))}>Mois suivant</Link></nav><section className="finance-card"><h2>Échéances datées</h2><p className="finance-help">Uniquement les dates réellement enregistrées. Un engagement prévu ne devient jamais un paiement dans ce calendrier.</p>{calendar.events.length === 0 ? <p>Aucune échéance datée pour cette période.</p> : <ul className="finance-records">{calendar.events.map((event) => <li key={event.id}><div><strong>{event.date} · {event.title}</strong><p>{kind[event.kind]} · {event.detail}</p></div>{event.amountCents === null ? null : <Currency cents={event.amountCents} />}</li>)}</ul>}</section><section className="finance-card"><h2>À dater</h2><p className="finance-help">Ces éléments sont connus, mais leurs données ne donnent pas de jour fiable. Ils ne sont donc pas placés arbitrairement dans le mois.</p>{calendar.undated.length === 0 ? <p>Aucun élément à dater.</p> : <ul className="finance-records">{calendar.undated.map((event) => <li key={event.id}><div><strong>{event.title}</strong><p>{kind[event.kind]} · {event.detail}</p></div>{event.amountCents === null ? null : <Currency cents={event.amountCents} />}</li>)}</ul>}</section></section>;
 }
-function Metric({ label, cents, emphasis = false }: { label: string; cents: number; emphasis?: boolean }) { return <article className={`finance-metric ${emphasis ? 'finance-metric--emphasis' : ''}`}><p>{label}</p><strong><Currency cents={cents} /></strong></article>; }
+/**
+ * Tuile de métrique. Deux variantes, pas trois.
+ *
+ * ⚠️ **L'emphase se mérite : une seule par écran.** C'est la seule tuile dont
+ * le montant porte la couleur de signe — partout ailleurs, le chiffre reste en
+ * couleur de texte. Colorer tous les montants d'un écran revient à n'en
+ * signaler aucun.
+ */
+function Metric({ label, cents, emphasis = false, note }: { label: string; cents: number; emphasis?: boolean; note?: string }) {
+  return <article className={`finance-metric ${emphasis ? 'finance-metric--emphasis' : ''}`}>
+    <p>{label}</p>
+    <strong><Currency cents={cents} signe={emphasis} /></strong>
+    {note ? <span className="finance-metric__note">{note}</span> : null}
+  </article>;
+}
 function List({ rows }: { rows: [string, string][] }) { return <ul className="finance-list">{rows.map(([left, right]) => <li key={`${left}-${right}`}><span>{left}</span><span>{right}</span></li>)}</ul>; }
 
 function Accounts({ data, balances }: { data: Data; balances: Map<string, number> }) { const date = `${data.period}-01`; return <section className="finance-content finance-grid"><section className="finance-card"><h2>Entité économique</h2><p className="finance-help">Crée ton foyer personnel avant d’ajouter un compte.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createEntity" /><label>Nom<input name="name" required maxLength={100} /></label><label>Type<select name="type" defaultValue="personal"><option value="personal">Personnel</option><option value="business">Business</option></select></label><button className="finance-button">Ajouter l’entité</button></Form>{data.entities.length ? <List rows={data.entities.map((entity) => [entity.name, entity.type === 'personal' ? 'Personnel' : 'Business'])} /> : null}</section><section className="finance-card"><h2>Compte et solde d’ouverture</h2>{data.entities.length === 0 ? <p>Ajoute d’abord une entité économique.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createAccount" /><label>Entité<select name="entityId">{data.entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label><label>Nom<input name="name" required maxLength={100} /></label><label>Type<select name="type" defaultValue="checking"><option value="checking">Compte courant</option><option value="savings">Épargne</option><option value="cash">Espèces</option></select></label><label>Solde d’ouverture (€)<input name="openingBalance" inputMode="decimal" placeholder="0,00" required /></label><label>Date d’ouverture<input name="openingDate" type="date" defaultValue={date} required /></label><button className="finance-button">Ajouter le compte</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Comptes enregistrés</h2>{data.accounts.length === 0 ? <p>Aucun compte saisi.</p> : <ul className="finance-records">{data.accounts.map((account) => <li key={account.id}><div><strong>{account.name}</strong><p>{account.type} · ouverture le {account.openingDate} · {account.isActive ? 'actif' : 'archivé'}</p><p>Solde courant : <Currency cents={balances.get(account.id) ?? account.openingBalanceCents} /></p></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateAccount" /><input type="hidden" name="id" value={account.id} /><input type="hidden" name="type" value={account.type} /><label>Nom<input name="name" defaultValue={account.name} required maxLength={100} /></label><label>Solde d’ouverture (€)<input name="openingBalance" defaultValue={decimalMoney(account.openingBalanceCents)} inputMode="decimal" required /></label><label>Date d’ouverture<input name="openingDate" type="date" defaultValue={account.openingDate} required /></label><label>État<select name="isActive" defaultValue={String(account.isActive)}><option value="true">Actif</option><option value="false">Archivé</option></select></label><button className="finance-button">Enregistrer</button></Form></details></li>)}</ul>}</section></section>; }

@@ -23,7 +23,8 @@ design-system/
 ├── 04-motion-principles.md       ← règles d'animation GSAP/Lenis + recettes scroll
 ├── 05-migration-plan.md          ← plan CRA → React Router framework + TS + CFO privé
 ├── 06-content-inventory.md       ← inventaire du contenu actuel à préserver
-├── claude-design-brief.md        ← brief à envoyer à Claude Design
+├── claude-design-brief.md        ← brief Claude Design — PUBLIC uniquement
+├── claude-design-brief-prive.md ← brief Claude Design — ESPACE PRIVÉ (CFO)
 └── tokens/
     ├── colors.json               ← palette sémantique (light/dark)
     ├── typography.json           ← échelle typo SF-style
@@ -45,7 +46,9 @@ D'après la doc Anthropic (avril 2026), Claude Design accepte :
 1. Uploader ce dossier `design-system/` entier (markdown + JSON tokens).
 2. Ajouter uniquement les composants publics pertinents du futur dossier `app/`, sans données financières ni secrets.
 3. Joindre 3–5 screenshots apple.com comme référence visuelle ("make it look like this").
-4. Partager le `claude-design-brief.md` comme prompt initial du projet.
+4. Partager le `claude-design-brief.md` (public) ou `claude-design-brief-prive.md`
+   (espace financier) comme prompt initial du projet — **jamais les deux ensemble** :
+   ils décrivent deux langages visuels distincts sur une identité commune.
 
 ## Prochaines étapes
 
