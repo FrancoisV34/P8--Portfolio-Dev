@@ -62,6 +62,32 @@ Si un lot introduit un LLM, un assistant ou un agent qui peut lire des données,
 - [ ] Définir les délais, réessais, limites et traitement des pannes externes avant d’activer une intégration.
 - [ ] Avant production : HTTPS, secrets de production, stockage persistant, sauvegarde restaurée et accès privé testés.
 
+## Contrôles en place — revue du 19 septembre 2026
+
+Revue complète du dépôt, de son historique Git et de la configuration de
+déploiement. Aucun secret, identifiant ni fichier de base n'est suivi par Git,
+ni ne l'a jamais été : seuls des mots de passe de test figurent dans les
+fixtures. `npm audit` ne signale aucune vulnérabilité.
+
+| Contrôle | Où | Vérifié par |
+|---|---|---|
+| Session propriétaire recalculée à chaque lecture et mutation | `app/.server/auth/owner.server.ts` | `tests/integration/auth.test.ts`, `tests/integration/finance-route.test.ts` |
+| Même origine exigée sur les mutations **et sur la connexion** | `app/.server/security/same-origin.server.ts` | `tests/unit/same-origin.test.ts`, `tests/integration/auth.test.ts` |
+| Limitation des essais de mot de passe | `app/.server/security/login-throttle.server.ts` | `tests/unit/login-throttle.test.ts`, `tests/integration/auth.test.ts` |
+| En-têtes de sécurité sur chaque réponse | `app/.server/security/headers.server.ts`, `scripts/production/server.mjs` | `tests/unit/security-headers.test.ts`, `tests/auth-e2e/security-headers.spec.ts` |
+| Adresse de connexion non publique, réponse identique ailleurs | `app/.server/security/private-path.server.ts` | `tests/unit/private-path.test.ts`, `tests/auth-e2e/login.spec.ts` |
+| Cookie de session `HttpOnly`, `SameSite=Strict`, `Secure` en HTTPS | `app/.server/auth/auth.server.ts` | `tests/auth-e2e/login.spec.ts` |
+| Base et sauvegardes hors des fichiers servis | `app/.server/db/config.ts` | `tests/integration/database.test.ts`, `tests/dev/private-files.spec.ts` |
+
+Deux points méritent d'être connus plutôt que masqués :
+
+- Better Auth n'applique sa limitation de débit et son contrôle d'origine que
+  dans son routeur HTTP (`auth.handler`). Un appel direct à `auth.api.*` les
+  contourne : c'est pourquoi le formulaire privé pose lui-même les deux.
+- `style-src` conserve `unsafe-inline`. React applique les styles calculés en
+  attribut et la feuille Google Fonts est externe ; supprimer cette tolérance
+  demanderait de retirer tout `style={{…}}` et d'héberger les fontes.
+
 ## Vérifications régulières
 
 - À chaque changement : `npm run check`, puis la vérification ciblée de la fonctionnalité.

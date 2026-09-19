@@ -29,7 +29,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   const missing = isRouteErrorResponse(error) && error.status === 404;
   return (
     <main className="status-page">
-      <title>{missing ? 'Page introuvable' : 'Page indisponible'} — François Vittecoq</title>
+      <title>{`${missing ? 'Page introuvable' : 'Page indisponible'} — François Vittecoq`}</title>
       <meta name="robots" content="noindex, nofollow" />
       <h1>{missing ? 'Page introuvable' : 'Cette page est indisponible'}</h1>
       <p>{missing ? 'Cette adresse ne correspond à aucune page.' : 'Réessayez dans quelques instants.'}</p>

@@ -5,8 +5,6 @@ export default [
     index('routes/home.tsx'),
     route('cv', 'routes/cv.tsx'),
   ]),
-  route('co', 'routes/login.tsx'),
-  route('login', 'routes/legacy-login.ts'),
   route('api/auth/*', 'routes/api-auth.ts'),
   route('api/finance/backup', 'routes/finance-backup.ts'),
   route('finance/*', 'routes/finance.tsx'),
@@ -14,4 +12,8 @@ export default [
   route('robots.txt', 'routes/robots.ts'),
   route('sitemap.xml', 'routes/sitemap.ts'),
   route('healthz', 'routes/health.ts'),
+  // Dernier recours : la connexion privée ne figure pas dans la table des
+  // routes. Elle se reconnaît à l'exécution (PRIVATE_LOGIN_PATH) et toute
+  // autre adresse inconnue reçoit la même page « introuvable ».
+  route('*', 'routes/login.tsx'),
 ] satisfies RouteConfig;

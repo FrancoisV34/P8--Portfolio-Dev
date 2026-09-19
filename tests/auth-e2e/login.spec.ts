@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test';
 
 test('le compte propriétaire peut se connecter et se déconnecter', async ({ page, request }) => {
-  await page.goto('/finance');
-  await expect(page).toHaveURL('/co');
-  await expect(page.getByRole('heading', { name: 'Finance privée' })).toBeVisible();
-
+  // Sans session, l'espace privé et les anciennes adresses de connexion
+  // répondent « introuvable » : aucune redirection ne publie /co.
+  const privateArea = await page.goto('/finance');
+  expect(privateArea?.status()).toBe(404);
   const oldLogin = await page.goto('/login');
-  expect(oldLogin?.status()).toBe(200);
-  await expect(page).toHaveURL('/co');
+  expect(oldLogin?.status()).toBe(404);
+  await expect(page.getByRole('heading', { name: 'Page introuvable' })).toBeVisible();
 
   await page.goto('/co?email=owner%40example.test&password=ne-doit-pas-rester-dans-l-url');
   await expect(page).toHaveURL('/co');
@@ -33,8 +33,9 @@ test('le compte propriétaire peut se connecter et se déconnecter', async ({ pa
   await expect(page.getByRole('heading', { name: 'Journal — 2026-09' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
-  await expect(page).toHaveURL('/co');
-  await expect(page.getByRole('heading', { name: 'Finance privée' })).toBeVisible();
+  await expect(page).toHaveURL('/');
+  const closed = await page.goto('/finance');
+  expect(closed?.status()).toBe(404);
   const session = await page.request.get('/api/auth/get-session');
   expect(session.status()).toBe(200);
   expect(await session.json()).toBeNull();

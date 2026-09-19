@@ -85,6 +85,38 @@ describe('compte financier unique', () => {
     await expect(loginAction({ request: new Request('https://portfolio.example/co', { method: 'POST', body: form, headers: { origin: 'https://portfolio.example' } }) })).resolves.toEqual({ message: 'Identifiants incorrects ou accès non autorisé.' });
   });
 
+  it('refuse une connexion soumise depuis un autre site', async () => {
+    const form = new FormData();
+    form.set('email', ownerEmail);
+    form.set('password', 'mot-de-passe-test-123');
+    await expect(loginAction({ request: new Request('https://portfolio.example/co', { method: 'POST', body: form, headers: { origin: 'https://outside.example' } }) })).rejects.toMatchObject({ status: 403 });
+  });
+
+  it('répond « introuvable » sur une autre adresse que la connexion configurée', async () => {
+    const { loader: loginLoader } = await import('../../app/routes/login');
+    await expect(loginLoader({ request: new Request('https://portfolio.example/login') })).rejects.toMatchObject({ status: 404 });
+    const form = new FormData();
+    form.set('email', ownerEmail);
+    form.set('password', 'mot-de-passe-test-123');
+    await expect(loginAction({ request: new Request('https://portfolio.example/connexion', { method: 'POST', body: form, headers: { origin: 'https://portfolio.example' } }) })).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('bloque les essais répétés de mot de passe, que Better Auth ne limite pas hors de son routeur', async () => {
+    const attempt = () => {
+      const form = new FormData();
+      form.set('email', 'bruteforce@example.test');
+      form.set('password', 'mauvais-mot-de-passe-000');
+      return loginAction({ request: new Request('https://portfolio.example/co', { method: 'POST', body: form, headers: { origin: 'https://portfolio.example' } }) });
+    };
+    for (let tentative = 0; tentative < 5; tentative += 1) {
+      await expect(attempt()).resolves.toEqual({ message: 'Identifiants incorrects ou accès non autorisé.' });
+    }
+    const blocked = await attempt() as { init: { status: number; headers: Record<string, string> }; data: { message: string } };
+    expect(blocked.init.status).toBe(429);
+    expect(blocked.init.headers['Retry-After']).toMatch(/^\d+$/);
+    expect(blocked.data.message).toBe('Trop de tentatives. Réessaie dans quelques minutes.');
+  });
+
   it('restreint le handler HTTP à connexion, session et déconnexion', async () => {
     const denied = await handler({ request: request('/update-user') });
     expect(denied.status).toBe(404);

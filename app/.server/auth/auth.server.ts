@@ -27,7 +27,17 @@ export function createAuth() {
     // Isole les sessions de l'espace financier des cookies Better Auth émis
     // par d'anciennes versions locales. Le changement de préfixe impose une
     // nouvelle connexion, sans réutiliser une session éventuellement ambiguë.
-    advanced: { cookiePrefix: 'fv-finance-v1' },
+    advanced: {
+      cookiePrefix: 'fv-finance-v1',
+      // `strict` : le cookie de session n'accompagne aucune requête venue
+      // d'un autre site, même en navigation. `secure` reste déduit de
+      // l'origine (HTTPS en production, HTTP en local).
+      defaultCookieAttributes: { sameSite: 'strict', httpOnly: true },
+      // Fly réécrit `fly-client-ip` sur chaque requête entrante : c'est la
+      // seule adresse client fiable ici. Sans elle, la limitation de débit
+      // de Better Auth retombe sur un compteur unique partagé.
+      ipAddress: { ipAddressHeaders: ['fly-client-ip'] },
+    },
     rateLimit: {
       enabled: true,
       window: 60,

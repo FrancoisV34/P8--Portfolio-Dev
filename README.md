@@ -30,7 +30,11 @@ npm run build
 HOST=127.0.0.1 PORT=3000 SITE_URL=http://localhost:3000 npm start
 ```
 
-Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`. `/co` est la seule entrée du compte privé. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire.
+Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`.
+
+L’entrée du compte privé n’est pas une adresse publique : `PRIVATE_LOGIN_PATH` la choisit à l’exécution (`/co` par défaut). Toute autre adresse — `/login`, `/co` quand un autre chemin est configuré, `/finance` sans session — renvoie la même page « introuvable », au même octet près. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire, et la déconnexion ramène sur le portfolio plutôt que sur la page de connexion.
+
+Le serveur de production ajoute les en-têtes de sécurité sur chaque réponse : politique de contenu liée à un nonce par requête, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, isolement d’origine et HSTS en HTTPS. Ils sont définis dans `app/.server/security/headers.server.ts` et vérifiés par `tests/unit/security-headers.test.ts` et `tests/auth-e2e/security-headers.spec.ts`.
 
 ## Vérifier une modification
 
@@ -54,7 +58,7 @@ npm run auth:bootstrap
 npm run dev
 ```
 
-`auth:bootstrap` demande le mot de passe dans le terminal sans l’afficher et crée le seul compte autorisé. Il refuse de créer un second compte. Pour choisir un nouveau mot de passe, utiliser `npm run auth:reset-password` : les sessions existantes sont alors révoquées. La connexion se fait ensuite sur `/co`.
+`auth:bootstrap` demande le mot de passe dans le terminal sans l’afficher et crée le seul compte autorisé. Il refuse de créer un second compte. Pour choisir un nouveau mot de passe, utiliser `npm run auth:reset-password` : les sessions existantes sont alors révoquées. La connexion se fait ensuite sur l’adresse de `PRIVATE_LOGIN_PATH` (`/co` par défaut). Cinq échecs pour une même adresse e-mail suspendent les tentatives pendant cinq minutes.
 
 En cas de connexion acceptée mais d’accès privé refusé, `npm run auth:status` indique uniquement si le compte correspondant au propriétaire configuré est présent ; il n’affiche ni e-mail, ni cookie, ni secret.
 
@@ -105,8 +109,13 @@ partagé ou un fichier `.env` envoyé à Fly. Elles sont configurées avec les
 secrets Fly, en remplaçant les exemples localement :
 
 ```sh
-fly secrets set BETTER_AUTH_SECRET='…' FINANCE_OWNER_EMAIL='…' FINANCE_OWNER_NAME='…'
+fly secrets set BETTER_AUTH_SECRET='…' FINANCE_OWNER_EMAIL='…' FINANCE_OWNER_NAME='…' \
+  PRIVATE_LOGIN_PATH="/$(openssl rand -hex 6)"
 ```
+
+`PRIVATE_LOGIN_PATH` fait partie des secrets : inscrit dans `fly.toml`, il
+serait publié avec le dépôt. `fly secrets list` en affiche le condensé, pas la
+valeur ; la noter dans le gestionnaire de mots de passe avant de déployer.
 
 Le compte unique a été initialisé sur Fly avec `npm run auth:bootstrap`. Pour
 réinitialiser son mot de passe, suivre la même procédure interactive : le mot

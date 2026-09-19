@@ -61,7 +61,11 @@ test('les documents publics et la 404 ont les bons statuts', async ({ request, p
   const xml = await sitemap.text();
   expect(xml).toContain(`<loc>${baseURL}/cv</loc>`);
   expect(xml).not.toMatch(/finance|gomining|budget/i);
-  expect(await (await request.get('/robots.txt')).text()).toContain('Disallow: /finance');
+  // robots.txt ne nomme aucune adresse privée : un « Disallow » publierait
+  // ce qu'il prétend protéger.
+  const robots = await (await request.get('/robots.txt')).text();
+  expect(robots).toContain('User-agent: *');
+  expect(robots).not.toMatch(/finance|\/co\b|login/i);
   for (const path of ['/inconnue', '/index.html', '/404.html']) {
     const response = await page.goto(path);
     expect(response?.status()).toBe(404);

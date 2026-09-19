@@ -23,8 +23,14 @@ export function publicMeta(origin: string, path: '/' | '/cv', title: string, des
     { name: 'twitter:title', content: title },
     { name: 'twitter:description', content: description },
     { name: 'twitter:image', content: image },
-    ...(path === '/' ? schemas.map((schema) => ({
-      'script:ld+json': JSON.parse(JSON.stringify(schema).replaceAll(oldOrigin, origin).replaceAll('/moi.webp', '/moi.jpeg')) as Record<string, unknown>,
-    })) : []),
   ];
+}
+
+/**
+ * Les données structurées sont rendues par la page elle-même, et non par le
+ * descripteur `script:ld+json` de React Router : celui-ci n'ajoute pas de
+ * nonce, et la politique de contenu bloquerait alors le balisage SEO.
+ */
+export function structuredData(origin: string) {
+  return schemas.map((schema) => JSON.stringify(schema).replaceAll(oldOrigin, origin).replaceAll('/moi.webp', '/moi.jpeg'));
 }

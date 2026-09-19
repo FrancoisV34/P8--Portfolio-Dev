@@ -43,13 +43,14 @@ function request(method = 'GET', form?: FormData, requestOrigin = origin) {
 }
 
 describe('route finance privée', () => {
-  it('redirige une lecture directe sans session vers /co, sans URL de retour ni contenu privé', async () => {
+  it('répond « introuvable » à une lecture sans session, sans révéler l’adresse de connexion', async () => {
     let response: unknown;
     try { await loader({ request: new Request(`${origin}/finance`), params: {} }); } catch (error) { response = error; }
     expect(response).toBeInstanceOf(Response);
-    expect(response).toMatchObject({ status: 302 });
-    expect((response as Response).headers.get('location')).toBe('/co');
+    expect(response).toMatchObject({ status: 404 });
+    expect((response as Response).headers.get('location')).toBeNull();
     expect((response as Response).headers.get('cache-control')).toContain('no-store');
+    expect(await (response as Response).text()).not.toContain('co');
   });
 
   it('refuse toujours une mutation sans session côté serveur', async () => {

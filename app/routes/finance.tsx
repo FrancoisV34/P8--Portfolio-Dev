@@ -159,7 +159,11 @@ export async function loader({ request, params }: { request: Request; params: Re
   try {
     session = await requireOwner(request);
   } catch (error) {
-    if (error instanceof Response && error.status === 401) throw redirect('/co', { headers: privateHeaders() });
+    // Rediriger vers la page de connexion publierait son adresse à tout
+    // visiteur de /finance : sans session, cette route n'existe pas.
+    if (error instanceof Response && error.status === 401) {
+      throw new Response('Introuvable.', { status: 404, headers: privateHeaders() });
+    }
     if (error instanceof Response) throw error;
     return unavailable();
   }
@@ -231,7 +235,14 @@ export async function action({ request }: { request: Request }) {
   const quick = data.get('quick') === '1';
   try {
     const intent = field(data, 'intent', 40);
-    if (intent === 'signOut') return getAuth().auth.api.signOut({ headers: request.headers, asResponse: true });
+    if (intent === 'signOut') {
+      // La session est révoquée puis le navigateur repart sur le portfolio :
+      // renvoyer vers la page de connexion publierait son adresse.
+      const signedOut = await getAuth().auth.api.signOut({ headers: request.headers, asResponse: true });
+      const headers = new Headers({ Location: '/' });
+      for (const cookie of signedOut.headers.getSetCookie?.() ?? []) headers.append('Set-Cookie', cookie);
+      return redirect('/', { headers });
+    }
     const database = getAuth().connection.db;
     const accounts = accountsRepository(database, session.user.id);
     const budget = budgetRepository(database, session.user.id);
@@ -1207,4 +1218,4 @@ function GoMiningHistory({ scenarioId, versions }: { scenarioId: string; version
 
 function GoMiningEditor({ scenario, phases, categories }: { scenario: Data['gomining'][number]['scenario']; phases: Data['gomining'][number]['phases']; categories: Data['categories'] }) { const phase = (startMonth: number) => phases.find((item) => item.startMonth === startMonth)?.amountCents ?? 0; const expenses = categories.filter((category) => category.isActive && category.kind === 'expense'); return <details><summary>Modifier le scénario</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateGoMiningScenario" /><input type="hidden" name="id" value={scenario.id} /><label>Nom<input name="name" defaultValue={scenario.name} required maxLength={100} /></label><label>Début<input name="startPeriod" type="month" defaultValue={scenario.startPeriod} required /></label><label>Horizon (mois)<input name="horizonMonths" type="number" min="1" max="600" defaultValue={scenario.horizonMonths} required /></label><label>Puissance initiale (milli-TH)<input name="initialHashrateMilliTh" type="number" min="1" defaultValue={scenario.initialHashrateMilliTh} required /></label><label>BTC déjà accumulés (<Satoshi />)<input name="initialAccumulatedSats" type="number" min="0" defaultValue={scenario.initialAccumulatedSats} required /></label><label>Efficacité (milli-W/TH)<input name="efficiencyMilliWattsPerTh" type="number" min="1" defaultValue={scenario.efficiencyMilliWattsPerTh} required /></label><label>Récompense nette mensuelle (<Satoshi /> / TH)<input name="monthlyNetRewardSatsPerTh" type="number" min="0" defaultValue={scenario.monthlyNetRewardSatsPerTh} required /></label><label>Prix de 0,001 TH (€)<input name="pricePerMilliTh" inputMode="decimal" defaultValue={(scenario.priceMilliCentsPerMilliTh / 100_000).toFixed(5)} required /></label><label>Cours BTC (€ / BTC)<input name="btcPrice" inputMode="decimal" defaultValue={decimalMoney(scenario.btcPriceCents)} required /></label><label>Catégorie budget (facultatif)<select name="budgetCategoryId" defaultValue={scenario.budgetCategoryId ?? ''}><option value="">Aucune</option>{expenses.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Apport mois 1–12 (€)<input name="phaseOne" inputMode="decimal" defaultValue={decimalMoney(phase(1))} required /></label><label>Apport mois 13–36 (€)<input name="phaseTwo" inputMode="decimal" defaultValue={decimalMoney(phase(13))} required /></label><label>Apport à partir du mois 37 (€)<input name="phaseThree" inputMode="decimal" defaultValue={decimalMoney(phase(37))} required /></label><label className="finance-inline"><input name="reinvestAccumulated" type="checkbox" defaultChecked={scenario.accumulatedBtcPolicy === 'reinvest-at-threshold'} /> Réinvestir le stock BTC accumulé au seuil</label><button className="finance-button">Enregistrer les hypothèses</button></Form><p className="finance-help">Le scénario et ses versions sont conservés pour préserver l’historique.</p></details>; }
 
-export function ErrorBoundary() { return <main className="status-page"><h1>Espace privé indisponible</h1><p>L’accès nécessite une connexion personnelle.</p><a href="/co">Ouvrir la connexion</a></main>; }
+export function ErrorBoundary() { return <main className="status-page"><h1>Espace privé indisponible</h1><p>L’accès nécessite une connexion personnelle.</p><a href="/">Revenir au portfolio</a></main>; }
