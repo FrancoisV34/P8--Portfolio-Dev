@@ -518,6 +518,60 @@ export const accountReconciliations = sqliteTable('finance_account_reconciliatio
   check('finance_account_reconciliations_balance', sql`typeof(${table.statementBalanceCents}) = 'integer' and ${table.statementBalanceCents} between -9007199254740991 and 9007199254740991`),
 ]);
 
+// Un relevé lu (CSV ou PDF) destiné à un compte. L'empreinte du fichier empêche
+// de réimporter deux fois le même relevé ; le fichier lui-même n'est pas conservé.
+export const importBatches = sqliteTable('finance_import_batches', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  accountId: text('account_id').notNull().references(() => accounts.id, { onDelete: 'restrict' }),
+  sourceKind: text('source_kind', { enum: ['csv', 'pdf'] }).notNull(),
+  sourceName: text('source_name').notNull(),
+  sourceSha256: text('source_sha256').notNull(),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  uniqueIndex('finance_import_batches_owner_account_source_unique').on(table.ownerId, table.accountId, table.sourceSha256),
+  index('finance_import_batches_owner_idx').on(table.ownerId),
+  check('finance_import_batches_kind', sql`${table.sourceKind} in ('csv', 'pdf')`),
+  check('finance_import_batches_name', sql`length(trim(${table.sourceName})) between 1 and 120`),
+  check('finance_import_batches_sha256', sql`length(${table.sourceSha256}) = 64 and ${table.sourceSha256} not glob '*[^0-9a-f]*'`),
+]);
+
+// Une ligne lue dans un relevé, en attente de décision. Rien n'entre dans le
+// journal sans validation explicite : l'acceptation crée la transaction et
+// clôt la ligne dans la même transaction SQL. Le texte lu (`raw*`) reste
+// intact pour que la correction d'une mauvaise lecture reste vérifiable.
+export const importLines = sqliteTable('finance_import_lines', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  batchId: text('batch_id').notNull().references(() => importBatches.id, { onDelete: 'restrict' }),
+  position: integer('position').notNull(),
+  rawDate: text('raw_date').notNull(),
+  rawLabel: text('raw_label').notNull(),
+  rawAmount: text('raw_amount').notNull(),
+  occurredOn: text('occurred_on').notNull(),
+  label: text('label').notNull(),
+  amountCents: integer('amount_cents').notNull(),
+  fingerprint: text('fingerprint').notNull(),
+  status: text('status', { enum: ['pending', 'accepted', 'rejected'] }).notNull().default('pending'),
+  // Supprimer la transaction du journal laisse la ligne acceptée : son
+  // empreinte continue de signaler un doublon si le relevé revient.
+  transactionId: text('transaction_id').references(() => transactions.id, { onDelete: 'set null' }),
+  decidedAt: text('decided_at'),
+  createdAt: text('created_at').notNull(),
+}, (table) => [
+  uniqueIndex('finance_import_lines_batch_position_unique').on(table.batchId, table.position),
+  index('finance_import_lines_owner_status_idx').on(table.ownerId, table.status),
+  index('finance_import_lines_owner_fingerprint_idx').on(table.ownerId, table.fingerprint),
+  check('finance_import_lines_position', sql`${table.position} between 0 and 4999`),
+  check('finance_import_lines_raw', sql`length(${table.rawDate}) <= 40 and length(${table.rawLabel}) <= 240 and length(${table.rawAmount}) <= 40`),
+  check('finance_import_lines_label', sql`length(trim(${table.label})) <= 240`),
+  check('finance_import_lines_amount', sql`typeof(${table.amountCents}) = 'integer' and ${table.amountCents} != 0 and ${table.amountCents} between -9007199254740991 and 9007199254740991`),
+  check('finance_import_lines_fingerprint', sql`length(${table.fingerprint}) = 64 and ${table.fingerprint} not glob '*[^0-9a-f]*'`),
+  check('finance_import_lines_status', sql`${table.status} in ('pending', 'accepted', 'rejected')`),
+  check('finance_import_lines_decision', sql`(${table.status} = 'pending' and ${table.decidedAt} is null and ${table.transactionId} is null) or (${table.status} = 'rejected' and ${table.decidedAt} is not null and ${table.transactionId} is null) or (${table.status} = 'accepted' and ${table.decidedAt} is not null)`),
+  check('finance_import_lines_occurred_on', sql`length(${table.occurredOn}) = 10 and ${table.occurredOn} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and date(${table.occurredOn}, '+0 days') = ${table.occurredOn}`),
+]);
+
 // Une évaluation CFO est un constat versionné : elle conserve son contexte et
 // son résultat sans modifier les comptes, transactions ou placements sources.
 export const cfoEvaluations = sqliteTable('finance_cfo_evaluations', {

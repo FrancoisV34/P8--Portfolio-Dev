@@ -77,6 +77,7 @@ fixtures. `npm audit` ne signale aucune vulnérabilité.
 | En-têtes de sécurité sur chaque réponse | `app/.server/security/headers.server.ts`, `scripts/production/server.mjs` | `tests/unit/security-headers.test.ts`, `tests/auth-e2e/security-headers.spec.ts` |
 | Adresse de connexion non publique, réponse identique ailleurs | `app/.server/security/private-path.server.ts` | `tests/unit/private-path.test.ts`, `tests/auth-e2e/login.spec.ts` |
 | Cookie de session `HttpOnly`, `SameSite=Strict`, `Secure` en HTTPS | `app/.server/auth/auth.server.ts` | `tests/auth-e2e/login.spec.ts` |
+| Relevés importés : rien n'entre au journal sans validation explicite, ligne par ligne et atomique | `app/.server/repositories/imports.ts` | `tests/integration/imports.test.ts`, `tests/integration/finance-route.test.ts` |
 | Base et sauvegardes hors des fichiers servis | `app/.server/db/config.ts` | `tests/integration/database.test.ts`, `tests/dev/private-files.spec.ts` |
 
 Deux points méritent d'être connus plutôt que masqués :

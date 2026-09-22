@@ -9,6 +9,7 @@ import { budgetRepository } from '../.server/repositories/budget.ts';
 import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
+import { importsRepository } from '../.server/repositories/imports.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
 import { regulatoryRepository } from '../.server/repositories/regulatory.ts';
 import { regulatorySourceRepository } from '../.server/repositories/regulatory-sources.ts';
@@ -183,6 +184,7 @@ export async function loader({ request, params }: { request: Request; params: Re
     const cfo = cfoRepository(database, session.user.id);
     const simulations = simulationRepository(database, session.user.id);
     const statusComparisons = statusComparisonRepository(database, session.user.id);
+    const imports = importsRepository(database, session.user.id);
     const gominingScenarios = mining.listScenarios().map(({ scenario, phases, versions, historyIncomplete }) => ({ scenario, phases, versions, historyIncomplete, projection: projectMonthlyGoMining({ ...scenario, thresholdHashrateMilliTh: 10_000, contributionPhases: phases }) }));
     const transactions = budget.listTransactions(period);
     const dashboard = budget.dashboard(period);
@@ -210,6 +212,7 @@ export async function loader({ request, params }: { request: Request; params: Re
       cfo: { context: cfoInputFor(period, entities, dashboard, planningDashboard, wealthDashboard, businessDashboard, goalsDashboard, sumEuroCents(gominingBudgetPlans.map((plan) => euroCents(plan.contributionCents)))), rules: cfoRules, history: cfo.list() },
       simulations: { current: simulations.current(), runs: simulations.list() },
       statusComparisons: statusComparisons.list(),
+      imports: { pending: imports.listPending(), count: imports.countPending() },
       regulations: regulationsDashboard,
       calendar,
       regulatorySources: regulatorySources.dashboard(),
@@ -256,6 +259,7 @@ export async function action({ request }: { request: Request }) {
     const cfo = cfoRepository(database, session.user.id);
     const simulations = simulationRepository(database, session.user.id);
     const statusComparisons = statusComparisonRepository(database, session.user.id);
+    const imports = importsRepository(database, session.user.id);
     switch (intent) {
       case 'createEntity': accounts.createEntity({ name: field(data, 'name', 100), type: field(data, 'type', 20) as 'personal' | 'business' }); break;
       case 'createAccount': accounts.createAccount({ entityId: field(data, 'entityId', 64), name: field(data, 'name', 100), type: field(data, 'type', 20) as 'checking' | 'savings' | 'cash', openingBalanceCents: amount(data, 'openingBalance', true), openingDate: field(data, 'openingDate', 10) }); break;
@@ -270,6 +274,14 @@ export async function action({ request }: { request: Request }) {
       case 'deleteBudget': if (field(data, 'confirmDelete', 10) !== 'delete') throw new Error('invalid'); budget.deleteBudget(field(data, 'id', 64)); break;
       case 'closeMonth': if (field(data, 'confirmClosure', 10) !== 'close') throw new Error('invalid'); budget.closeMonth({ period: field(data, 'period', 7) }); break;
       case 'setReconciliation': budget.setReconciliation({ accountId: field(data, 'accountId', 64), period: field(data, 'period', 7), statementDate: field(data, 'statementDate', 10), statementBalanceCents: amount(data, 'statementBalance', true) }); break;
+      case 'acceptImportLine': {
+        const kind = field(data, 'kind', 20);
+        const decision = { id: field(data, 'id', 64), amountCents: amount(data, 'amount'), occurredOn: field(data, 'occurredOn', 10), note: field(data, 'note', 240) };
+        if (kind === 'transfer') imports.acceptLine({ ...decision, kind, counterpartAccountId: field(data, 'counterpartAccountId', 64), direction: field(data, 'direction', 4) as 'out' | 'in' });
+        else imports.acceptLine({ ...decision, kind: kind as 'income' | 'expense', categoryId: field(data, 'categoryId', 64), recurringCommitmentId: optionalField(data, 'recurringCommitmentId', 64) });
+        break;
+      }
+      case 'rejectImportLine': imports.rejectLine(field(data, 'id', 64)); break;
       case 'setSafetyReserve': planning.setSafetyReserve({ targetAmountCents: amount(data, 'targetAmount'), accountIds: fields(data, 'accountIds', 64) }); break;
       case 'deleteSafetyReserve': if (field(data, 'confirmDelete', 10) !== 'delete') throw new Error('invalid'); planning.deleteSafetyReserve(); break;
       case 'createCommitment': planning.createCommitment({ name: field(data, 'name', 100), categoryId: field(data, 'categoryId', 64), plannedAmountCents: amount(data, 'plannedAmount'), dueDay: Number(field(data, 'dueDay', 2)), startPeriod: field(data, 'startPeriod', 7), endPeriod: optionalField(data, 'endPeriod', 7) }); break;
@@ -643,7 +655,54 @@ function CategorySelect({ categories, selected }: { categories: Data['categories
 function CommitmentSelect({ commitments, selected }: { commitments: Data['commitments']; selected?: string | null }) { return <label>Engagement payé (facultatif)<select name="recurringCommitmentId" defaultValue={selected ?? ''}><option value="">Aucun</option>{commitments.map(({ commitment, categoryName }) => <option key={commitment.id} value={commitment.id}>{commitment.name} — {categoryName}</option>)}</select></label>; }
 function Delete({ intent, id, text }: { intent: 'deleteTransaction' | 'deleteBudget' | 'deleteSafetyReserve' | 'deleteCommitment' | 'deleteGoMiningScenario'; id?: string; text: string }) { return <Form method="post" className="finance-delete"><input type="hidden" name="intent" value={intent} />{id ? <input type="hidden" name="id" value={id} /> : null}<label><input type="checkbox" name="confirmDelete" value="delete" required /> {text}</label><button>Supprimer</button></Form>; }
 
-function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid"><section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2><Journal data={data} accounts={accounts} categories={categories} /></section></section>; }
+function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid">{data.imports.count > 0 ? <ImportsAValider data={data} accounts={accounts} categories={categories} /> : null}<section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2><Journal data={data} accounts={accounts} categories={categories} /></section></section>; }
+
+/**
+ * Les lignes lues dans un relevé, à valider une par une.
+ *
+ * ⚠️ **Le texte lu reste affiché au-dessus du formulaire.** Les champs sont
+ * pré-remplis par le lecteur mais corrigeables : sans la lecture d'origine sous
+ * les yeux, une erreur de lecture corrigée de mémoire passerait inaperçue.
+ *
+ * ⚠️ **Deux boutons, deux intents, un seul formulaire.** « Ignorer » porte
+ * `formNoValidate` : rejeter une ligne mal lue ne doit pas exiger qu'on la
+ * corrige d'abord.
+ */
+function ImportsAValider({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) {
+  const { pending, count } = data.imports;
+  return <section className="finance-card finance-card--wide">
+    <h2>{count} écriture{count > 1 ? 's' : ''} à valider</h2>
+    <p className="finance-help">Chaque ligne lue dans un relevé attend ta décision. Corrige ce qui a été mal lu, puis valide : la ligne entre alors au journal. Rien n’y entre automatiquement.</p>
+    {pending.length < count ? <p className="finance-help">Les {pending.length} premières sont affichées ; les suivantes apparaîtront au fil des validations.</p> : null}
+    <ul className="finance-records">{pending.map(({ line, batch, accountName, duplicate }) => {
+      const kind = line.amountCents > 0 ? 'income' : 'expense';
+      const autresComptes = accounts.filter((account) => account.id !== batch.accountId);
+      return <li key={line.id}>
+        <div>
+          <strong>{line.label || 'Sans libellé'}</strong>
+          <p>{accountName} · {batch.sourceName} · lu : « {line.rawDate} » « {line.rawLabel} » « {line.rawAmount} »</p>
+          {duplicate ? <p className="finance-alert" role="status">{duplicate === 'imported'
+            ? 'Doublon possible : la même opération figure déjà dans un autre relevé importé.'
+            : 'Doublon possible : un mouvement du même montant existe déjà ce jour-là sur ce compte.'}</p> : null}
+        </div>
+        <Form method="post" className="finance-form">
+          <input type="hidden" name="id" value={line.id} />
+          <label>Nature<select name="kind" defaultValue={kind}><option value="expense">Dépense</option><option value="income">Revenu</option>{autresComptes.length > 0 ? <option value="transfer">Transfert</option> : null}</select></label>
+          <CategorySelect categories={categories} selected={categories.find((category) => category.kind === kind)?.id} />
+          {autresComptes.length > 0 ? <>
+            <label>Autre compte (transfert)<select name="counterpartAccountId" defaultValue=""><option value="">—</option>{autresComptes.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
+            <label>Sens (transfert)<select name="direction" defaultValue={line.amountCents < 0 ? 'out' : 'in'}><option value="out">Sortant de {accountName}</option><option value="in">Entrant sur {accountName}</option></select></label>
+          </> : null}
+          <label>Montant (€)<input name="amount" inputMode="decimal" defaultValue={decimalMoney(Math.abs(line.amountCents))} required /></label>
+          <label>Date<input name="occurredOn" type="date" defaultValue={line.occurredOn} required /></label>
+          <label>Note<input name="note" maxLength={240} defaultValue={line.label} /></label>
+          <button className="finance-button" name="intent" value="acceptImportLine">Valider</button>
+          <button className="finance-button finance-button--quiet" name="intent" value="rejectImportLine" formNoValidate>Ignorer</button>
+        </Form>
+      </li>;
+    })}</ul>
+  </section>;
+}
 
 /**
  * Le journal — tableau dense au-dessus de 680 px, lignes dépliables en dessous.

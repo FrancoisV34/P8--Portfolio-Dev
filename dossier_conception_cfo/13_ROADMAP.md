@@ -643,6 +643,11 @@ données réelles ou intégration externe.
   afin d'adapter le mapping au format réel. Le périmètre reste aperçu,
   validation, dédoublonnage, confirmation explicite, écriture atomique et trace
   d'origine ; aucun import ne sera appliqué automatiquement.
+  *22 septembre 2026 :* le périmètre s'étend au relevé PDF natif (texte lu sur
+  le serveur, sans OCR ni service externe). La file de validation commune est
+  livrée : lignes lues conservées, correction puis validation ou rejet une par
+  une, écriture atomique, doublons signalés sans être écartés. Restent les
+  lecteurs CSV (Caisse d'Épargne, D32) et PDF, et l'envoi du fichier.
 - **Calendrier financier** : rassembler échéances de dettes, engagements,
   révisions réglementaires, objectifs et signaux business, sans présumer qu'un
   événement a été payé ou réalisé.

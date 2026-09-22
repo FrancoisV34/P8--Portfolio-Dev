@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { openDatabase } from '../../app/.server/db/connection';
 import { migrateDatabase } from '../../app/.server/db/migrate';
 import { cfoRepository } from '../../app/.server/repositories/cfo';
+import { importsRepository } from '../../app/.server/repositories/imports';
 
 const directory = mkdtempSync(join(tmpdir(), 'portfolio-finance-route-test-'));
 const database = join(directory, 'finance.sqlite');
@@ -250,5 +251,49 @@ describe('route finance privée', () => {
     resolve.set('asOf', '2026-04-01');
     await expect(action({ request: request('POST', resolve) })).resolves.toMatchObject({ regulationResolution: { status: 'missing', rules: [] } });
     await expect(loader({ request: new Request(`${origin}/finance/regulations?period=2026-04`, { headers: { cookie } }), params: { '*': 'regulations' } })).resolves.toMatchObject({ regulations: { asOf: '2026-04-30', coverage: expect.arrayContaining([expect.objectContaining({ name: 'Règle route synthétique', status: 'missing' })]) } });
+  });
+
+  it('valide ou ignore une ligne de relevé par POST, jamais sans décision explicite', async () => {
+    const connection = openDatabase({ path: database, environment: 'test' });
+    const owner = connection.sqlite.prepare('select id from user where email = ?').get('owner-route@example.test') as { id: string };
+    const entity = connection.sqlite.prepare('select id from finance_economic_entities where owner_id = ? limit 1').get(owner.id) as { id: string };
+    const { accountsRepository } = await import('../../app/.server/repositories/accounts');
+    const { budgetRepository } = await import('../../app/.server/repositories/budget');
+    const account = accountsRepository(connection.db, owner.id).createAccount({ entityId: entity.id, name: 'Compte relevé', type: 'checking', openingBalanceCents: 0, openingDate: '2026-01-01' });
+    const category = budgetRepository(connection.db, owner.id).createCategory({ name: 'Import route', kind: 'expense' });
+    const imports = importsRepository(connection.db, owner.id);
+    imports.createBatch({ accountId: account.id, sourceKind: 'csv', sourceName: 'synthetique.csv', sourceSha256: 'e'.repeat(64), lines: [
+      { rawDate: '03/09/2026', rawLabel: 'CB TEST', rawAmount: '-12,34', occurredOn: '2026-09-03', label: 'CB TEST', amountCents: -1_234 },
+      { rawDate: '04/09/2026', rawLabel: 'CB TEST 2', rawAmount: '-1,00', occurredOn: '2026-09-04', label: 'CB TEST 2', amountCents: -100 },
+    ] });
+    const [first, second] = imports.listPending();
+    connection.close();
+
+    const loaded = await loader({ request: request(), params: { '*': 'transactions' } }) as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
+    expect(loaded.imports.count).toBe(2);
+
+    const tampered = new FormData();
+    tampered.set('intent', 'acceptImportLine');
+    tampered.set('id', crypto.randomUUID());
+    tampered.set('kind', 'expense');
+    tampered.set('categoryId', category.id);
+    tampered.set('amount', '12,34');
+    tampered.set('occurredOn', '2026-09-03');
+    tampered.set('note', '');
+    await expect(action({ request: request('POST', tampered) })).resolves.toMatchObject({ error: expect.any(String) });
+
+    const accept = new FormData();
+    for (const [key, value] of tampered) accept.set(key, value);
+    accept.set('id', first.line.id);
+    accept.set('amount', '12,43');
+    await expect(action({ request: request('POST', accept) })).resolves.toMatchObject({ status: 302 });
+    const reject = new FormData();
+    reject.set('intent', 'rejectImportLine');
+    reject.set('id', second.line.id);
+    await expect(action({ request: request('POST', reject) })).resolves.toMatchObject({ status: 302 });
+
+    const after = await loader({ request: request(), params: { '*': 'transactions' } }) as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
+    expect(after.imports.count).toBe(0);
+    expect(after.transactions.filter(({ transaction }) => transaction.accountId === account.id).map(({ transaction }) => transaction.amountCents)).toEqual([-1_243]);
   });
 });
