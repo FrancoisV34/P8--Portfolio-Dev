@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Form, Link, redirect, useActionData, useFetcher, useLoaderData } from 'react-router';
 import { getAuth } from '../.server/auth/auth.server.ts';
 import { authIsConfigured } from '../.server/auth/config.ts';
@@ -25,6 +25,7 @@ import { projectDebtSchedule } from '../lib/finance/debt.ts';
 import { financialCalendar } from '../lib/finance/calendar.ts';
 import { projectMonthlyGoMining } from '../lib/gomining/monthly.ts';
 import { euroCents, eurosDecimal, formatEuros, parseEuros, sumEuroCents } from '../lib/finance/units.ts';
+import { TableauDense } from '../Components/finance/TableauDense.tsx';
 import { Trend } from '../Components/finance/Trend.tsx';
 import './finance.scss';
 
@@ -566,7 +567,75 @@ function Period({ period }: { period: string }) {
 function Overview({ data }: { data: Data }) {
   if (data.accounts.length === 0) return <section className="finance-empty"><h2>Commencer par les comptes</h2><p>Ajoute une entité puis les soldes d’ouverture datés. Ils ne sont pas des revenus ni des dépenses.</p><Link className="finance-button" to={path('accounts', data.period)}>Configurer les comptes</Link></section>;
   const reserve = data.planning.reserve;
-  return <section className="finance-content"><section className="finance-metrics"><Metric label="Revenus" cents={data.dashboard.incomeCents} /><Metric label="Dépenses" cents={data.dashboard.expenseCents} /><Metric label="Reste du mois" cents={data.dashboard.surplusCents} emphasis /></section><section className="finance-card"><h2>Soldes à la fin de la période</h2><List rows={data.dashboard.accounts.map((account) => [account.name, money(account.balanceCents)])} /></section><section className="finance-card"><h2>Suivi du budget</h2>{data.dashboard.budgets.length ? <List rows={data.dashboard.budgets.map(({ category, budget, actualCents }) => [category.name, `${money(actualCents)}${budget ? ` / ${money(budget.plannedAmountCents)}` : ''}`])} /> : <p>Ajoute des catégories de dépense puis un budget mensuel.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Ouvrir le budget</Link></section><MonthlyClosure data={data} /><Reconciliation data={data} /><section className="finance-card"><h2>Réserve de sécurité</h2>{reserve ? <><p>{money(reserve.currentAmountCents)} disponibles sur {reserve.accounts.length} compte{reserve.accounts.length > 1 ? 's' : ''}, pour une cible de {money(reserve.targetAmountCents)}.</p><p>{reserve.currentAmountCents >= reserve.targetAmountCents ? 'La cible est atteinte pour cette période.' : `Reste à constituer : ${money(reserve.targetAmountCents - reserve.currentAmountCents)}.`}</p></> : <p>Aucune réserve n’est encore configurée.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Configurer le suivi</Link></section><section className="finance-card"><h2>Engagements du mois</h2>{data.planning.commitments.length ? <List rows={data.planning.commitments.map(({ commitment, actualCents }) => [commitment.name, `${money(actualCents)} payé / ${money(commitment.plannedAmountCents)} prévu`])} /> : <p>Aucun engagement récurrent prévu pour ce mois.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Gérer les engagements</Link></section><section className="finance-card"><h2>Historique</h2><p>Le suivi commence avec {data.period}. Les tendances seront affichées seulement quand des mois réels seront disponibles.</p></section></section>;
+  return <section className="finance-content">
+    <section className="finance-metrics"><Metric label="Revenus" cents={data.dashboard.incomeCents} /><Metric label="Dépenses" cents={data.dashboard.expenseCents} /><Metric label="Reste du mois" cents={data.dashboard.surplusCents} emphasis /></section>
+    <section className="finance-card"><h2>Soldes à la fin de la période</h2><SoldesComptes accounts={data.dashboard.accounts} /></section>
+    <section className="finance-card"><h2>Suivi du budget</h2>{data.dashboard.budgets.length ? <PrevuRealise budgets={data.dashboard.budgets} /> : <p>Ajoute des catégories de dépense puis un budget mensuel.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Ouvrir le budget</Link></section>
+    <MonthlyClosure data={data} />
+    <Reconciliation data={data} />
+    <section className="finance-card"><h2>Réserve de sécurité</h2>{reserve ? <><p>{money(reserve.currentAmountCents)} disponibles sur {reserve.accounts.length} compte{reserve.accounts.length > 1 ? 's' : ''}, pour une cible de {money(reserve.targetAmountCents)}.</p><p>{reserve.currentAmountCents >= reserve.targetAmountCents ? 'La cible est atteinte pour cette période.' : `Reste à constituer : ${money(reserve.targetAmountCents - reserve.currentAmountCents)}.`}</p></> : <p>Aucune réserve n’est encore configurée.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Configurer le suivi</Link></section>
+    <section className="finance-card"><h2>Engagements du mois</h2>{data.planning.commitments.length ? <EngagementsDuMois commitments={data.planning.commitments} /> : <p>Aucun engagement récurrent prévu pour ce mois.</p>}<Link className="finance-text-link" to={path('budget', data.period)}>Gérer les engagements</Link></section>
+    <section className="finance-card"><h2>Historique</h2><p>Le suivi commence avec {data.period}. Les tendances seront affichées seulement quand des mois réels seront disponibles.</p></section>
+  </section>;
+}
+/** Les soldes de fin de période, compte par compte, et leur somme. */
+function SoldesComptes({ accounts }: { accounts: Data['dashboard']['accounts'] }) {
+  const total = sumEuroCents(accounts.map((account) => euroCents(account.balanceCents)));
+  return <TableauDense
+    legende={`${accounts.length} compte${accounts.length > 1 ? 's' : ''}`}
+    lignes={accounts}
+    cle={(account) => account.id}
+    colonnes={[
+      { cle: 'nom', libelle: 'Compte', valeur: (account) => account.name, tri: (account) => account.name },
+      { cle: 'solde', libelle: 'Solde', numerique: true, valeur: (account) => <Currency cents={account.balanceCents} />, tri: (account) => account.balanceCents },
+    ]}
+    carte={{ titre: (account) => account.name, montant: (account) => <Currency cents={account.balanceCents} /> }}
+    total={{ libelle: 'Total', cellules: { solde: <Currency cents={total} /> }, carte: <Currency cents={total} /> }}
+  />;
+}
+/**
+ * Prévu contre réalisé, par catégorie de dépense.
+ *
+ * ⚠️ **Le reste n'existe que si un prévu existe.** Une catégorie sans budget
+ * n'a pas « 0 € de reste » : elle n'a pas de cible. Afficher un reste négatif
+ * égal au réalisé la ferait passer pour un dépassement.
+ */
+function PrevuRealise({ budgets, detail }: { budgets: Data['dashboard']['budgets']; detail?: (ligne: Data['dashboard']['budgets'][number]) => ReactNode }) {
+  const reste = ({ budget, actualCents }: Data['dashboard']['budgets'][number]) => budget ? euroCents(budget.plannedAmountCents - actualCents) : null;
+  const prevu = sumEuroCents(budgets.flatMap(({ budget }) => budget ? [euroCents(budget.plannedAmountCents)] : []));
+  const realise = sumEuroCents(budgets.map(({ actualCents }) => euroCents(actualCents)));
+  return <TableauDense
+    legende="Un reste négatif signale un dépassement du prévu."
+    lignes={budgets}
+    cle={({ category }) => category.id}
+    colonnes={[
+      { cle: 'categorie', libelle: 'Catégorie', valeur: ({ category }) => category.name, tri: ({ category }) => category.name },
+      { cle: 'prevu', libelle: 'Prévu', numerique: true, valeur: ({ budget }) => budget ? <Currency cents={budget.plannedAmountCents} /> : '—', tri: ({ budget }) => budget?.plannedAmountCents ?? null },
+      { cle: 'realise', libelle: 'Réalisé', numerique: true, valeur: ({ actualCents }) => <Currency cents={actualCents} />, tri: ({ actualCents }) => actualCents },
+      { cle: 'reste', libelle: 'Reste', numerique: true, valeur: (ligne) => { const cents = reste(ligne); return cents === null ? '—' : <Currency cents={cents} signe />; }, tri: reste, classe: (ligne) => { const cents = reste(ligne); return cents === null ? '' : classeMontant(cents); } },
+    ]}
+    carte={{ titre: ({ category }) => category.name, sousTitre: ({ budget }) => budget ? `prévu ${money(budget.plannedAmountCents)}` : 'sans prévu', montant: ({ actualCents }) => <Currency cents={actualCents} /> }}
+    total={{ libelle: 'Total', cellules: { prevu: <Currency cents={prevu} />, realise: <Currency cents={realise} />, reste: <Currency cents={euroCents(prevu - realise)} signe /> }, carte: <Currency cents={realise} /> }}
+    detail={detail}
+  />;
+}
+/** Les engagements récurrents du mois : payé contre prévu, sans présumer d'un paiement. */
+function EngagementsDuMois({ commitments, detail }: { commitments: Data['planning']['commitments']; detail?: (ligne: Data['planning']['commitments'][number]) => ReactNode }) {
+  const ecart = ({ commitment, actualCents }: Data['planning']['commitments'][number]) => euroCents(actualCents - commitment.plannedAmountCents);
+  return <TableauDense
+    legende="Un engagement est un prévu : seul un paiement relié depuis le journal compte comme payé."
+    lignes={commitments}
+    cle={({ commitment }) => commitment.id}
+    colonnes={[
+      { cle: 'nom', libelle: 'Engagement', valeur: ({ commitment, categoryName }) => <>{commitment.name}<span className="finance-table__aparte"> · {categoryName}</span></>, tri: ({ commitment }) => commitment.name },
+      { cle: 'jour', libelle: 'Jour', numerique: true, valeur: ({ commitment }) => commitment.dueDay, tri: ({ commitment }) => commitment.dueDay },
+      { cle: 'paye', libelle: 'Payé', numerique: true, valeur: ({ actualCents }) => <Currency cents={actualCents} />, tri: ({ actualCents }) => actualCents },
+      { cle: 'prevu', libelle: 'Prévu', numerique: true, valeur: ({ commitment }) => <Currency cents={commitment.plannedAmountCents} />, tri: ({ commitment }) => commitment.plannedAmountCents },
+      { cle: 'ecart', libelle: 'Écart', numerique: true, valeur: (ligne) => ligne.actualCents === 0 ? 'non payé' : <Currency cents={ecart(ligne)} signe />, tri: (ligne) => ligne.actualCents === 0 ? null : ecart(ligne) },
+    ]}
+    carte={{ titre: ({ commitment }) => commitment.name, sousTitre: ({ commitment, actualCents }) => `le ${commitment.dueDay} · ${actualCents === 0 ? 'non payé' : `${money(actualCents)} payé`}`, montant: ({ commitment }) => <Currency cents={commitment.plannedAmountCents} /> }}
+    detail={detail}
+  />;
 }
 function MonthlyClosure({ data }: { data: Data }) {
   const latest = data.closures[0];
@@ -574,12 +643,56 @@ function MonthlyClosure({ data }: { data: Data }) {
 }
 function Reconciliation({ data }: { data: Data }) {
   const byAccount = new Map(data.reconciliations.map((item) => [item.accountId, item]));
-  return <section className="finance-card finance-card--wide"><h2>Rapprochement des comptes</h2><p className="finance-help">Saisis le solde figurant sur le relevé. L’écart compare ce relevé au journal, sans modifier ni le solde calculé ni les transactions.</p><ul className="finance-records">{data.dashboard.accounts.map((account) => { const reconciliation = byAccount.get(account.id); const difference = reconciliation === undefined ? null : euroCents(reconciliation.statementBalanceCents - account.balanceCents); return <li key={account.id}><div><strong>{account.name}</strong><p>Journal : {money(account.balanceCents)}{reconciliation ? ` · relevé du ${reconciliation.statementDate} : ${money(reconciliation.statementBalanceCents)} · écart : ${money(difference!)}` : ' · aucun relevé saisi pour ce mois.'}</p></div><details><summary>{reconciliation ? 'Corriger le relevé' : 'Rapprocher'}</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="setReconciliation" /><input type="hidden" name="accountId" value={account.id} /><input type="hidden" name="period" value={data.period} /><label>Date du relevé<input name="statementDate" type="date" defaultValue={reconciliation?.statementDate ?? `${data.period}-01`} required /></label><label>Solde figurant sur le relevé (€)<input name="statementBalance" defaultValue={reconciliation ? decimalMoney(reconciliation.statementBalanceCents) : ''} inputMode="decimal" required /></label><button className="finance-button">Enregistrer le rapprochement</button></Form></details></li>; })}</ul></section>;
+  const ecart = (account: Data['dashboard']['accounts'][number]) => { const reconciliation = byAccount.get(account.id); return reconciliation ? euroCents(reconciliation.statementBalanceCents - account.balanceCents) : null; };
+  return <section className="finance-card finance-card--wide"><h2>Rapprochement des comptes</h2>
+    <p className="finance-help">Saisis le solde figurant sur le relevé. L’écart compare ce relevé au journal, sans modifier ni le solde calculé ni les transactions.</p>
+    <TableauDense
+      legende="Un écart non nul signale un mouvement manquant ou mal saisi dans le journal."
+      lignes={data.dashboard.accounts}
+      cle={(account) => account.id}
+      colonnes={[
+        { cle: 'compte', libelle: 'Compte', valeur: (account) => account.name, tri: (account) => account.name },
+        { cle: 'date', libelle: 'Relevé du', valeur: (account) => { const date = byAccount.get(account.id)?.statementDate; return date ? <time dateTime={date}>{dateCourte(date)}</time> : 'aucun relevé'; }, tri: (account) => byAccount.get(account.id)?.statementDate ?? null },
+        { cle: 'journal', libelle: 'Journal', numerique: true, valeur: (account) => <Currency cents={account.balanceCents} />, tri: (account) => account.balanceCents },
+        { cle: 'releve', libelle: 'Relevé', numerique: true, valeur: (account) => { const reconciliation = byAccount.get(account.id); return reconciliation ? <Currency cents={reconciliation.statementBalanceCents} /> : '—'; }, tri: (account) => byAccount.get(account.id)?.statementBalanceCents ?? null },
+        { cle: 'ecart', libelle: 'Écart', numerique: true, valeur: (account) => { const cents = ecart(account); return cents === null ? '—' : <Currency cents={cents} signe />; }, tri: ecart, classe: (account) => { const cents = ecart(account); return cents === null ? '' : classeMontant(cents); } },
+      ]}
+      carte={{ titre: (account) => account.name, sousTitre: (account) => { const cents = ecart(account); return cents === null ? 'aucun relevé ce mois' : cents === 0 ? 'rapproché' : `écart ${money(cents)}`; }, montant: (account) => <Currency cents={account.balanceCents} /> }}
+      libelleDetail="Rapprocher"
+      detail={(account) => { const reconciliation = byAccount.get(account.id); return <Form method="post" className="finance-form"><input type="hidden" name="intent" value="setReconciliation" /><input type="hidden" name="accountId" value={account.id} /><input type="hidden" name="period" value={data.period} /><label>Date du relevé<input name="statementDate" type="date" defaultValue={reconciliation?.statementDate ?? `${data.period}-01`} required /></label><label>Solde figurant sur le relevé (€)<input name="statementBalance" defaultValue={reconciliation ? decimalMoney(reconciliation.statementBalanceCents) : ''} inputMode="decimal" required /></label><button className="finance-button">Enregistrer le rapprochement</button></Form>; }}
+    />
+  </section>;
 }
 function Calendar({ data }: { data: Data }) {
   const calendar = data.calendar;
   const kind = { commitment: 'Engagement', goal: 'Objectif', regulation: 'Règle à revoir', debt: 'Dette à dater', business: 'Observation business' };
-  return <section className="finance-content"><nav className="finance-month" aria-label="Période du calendrier"><Link to={path('calendar', near(data.period, -1))}>Mois précédent</Link><strong>{calendar.period}</strong><Link to={path('calendar', near(data.period, 1))}>Mois suivant</Link></nav><section className="finance-card"><h2>Échéances datées</h2><p className="finance-help">Uniquement les dates réellement enregistrées. Un engagement prévu ne devient jamais un paiement dans ce calendrier.</p>{calendar.events.length === 0 ? <p>Aucune échéance datée pour cette période.</p> : <ul className="finance-records">{calendar.events.map((event) => <li key={event.id}><div><strong>{event.date} · {event.title}</strong><p>{kind[event.kind]} · {event.detail}</p></div>{event.amountCents === null ? null : <Currency cents={event.amountCents} />}</li>)}</ul>}</section><section className="finance-card"><h2>À dater</h2><p className="finance-help">Ces éléments sont connus, mais leurs données ne donnent pas de jour fiable. Ils ne sont donc pas placés arbitrairement dans le mois.</p>{calendar.undated.length === 0 ? <p>Aucun élément à dater.</p> : <ul className="finance-records">{calendar.undated.map((event) => <li key={event.id}><div><strong>{event.title}</strong><p>{kind[event.kind]} · {event.detail}</p></div>{event.amountCents === null ? null : <Currency cents={event.amountCents} />}</li>)}</ul>}</section></section>;
+  const montant = (event: { amountCents: number | null }) => event.amountCents === null ? '—' : <Currency cents={event.amountCents} />;
+  return <section className="finance-content">
+    <nav className="finance-month" aria-label="Période du calendrier"><Link to={path('calendar', near(data.period, -1))}>Mois précédent</Link><strong>{calendar.period}</strong><Link to={path('calendar', near(data.period, 1))}>Mois suivant</Link></nav>
+    <section className="finance-card"><h2>Échéances datées</h2><p className="finance-help">Uniquement les dates réellement enregistrées. Un engagement prévu ne devient jamais un paiement dans ce calendrier.</p>{calendar.events.length === 0 ? <p>Aucune échéance datée pour cette période.</p> : <TableauDense
+      legende={`${calendar.events.length} échéance${calendar.events.length > 1 ? 's' : ''} en ${calendar.period}`}
+      lignes={calendar.events}
+      cle={(event) => event.id}
+      colonnes={[
+        { cle: 'date', libelle: 'Date', valeur: (event) => <time dateTime={event.date}>{dateCourte(event.date)}</time>, tri: (event) => event.date },
+        { cle: 'titre', libelle: 'Échéance', valeur: (event) => <>{event.title}<span className="finance-table__aparte"> · {event.detail}</span></>, tri: (event) => event.title },
+        { cle: 'nature', libelle: 'Nature', valeur: (event) => kind[event.kind], tri: (event) => kind[event.kind] },
+        { cle: 'montant', libelle: 'Montant', numerique: true, valeur: montant, tri: (event) => event.amountCents },
+      ]}
+      carte={{ titre: (event) => event.title, sousTitre: (event) => `${dateCourte(event.date)} · ${kind[event.kind]}`, montant }}
+    />}</section>
+    <section className="finance-card"><h2>À dater</h2><p className="finance-help">Ces éléments sont connus, mais leurs données ne donnent pas de jour fiable. Ils ne sont donc pas placés arbitrairement dans le mois.</p>{calendar.undated.length === 0 ? <p>Aucun élément à dater.</p> : <TableauDense
+      legende={`${calendar.undated.length} élément${calendar.undated.length > 1 ? 's' : ''} sans jour fiable`}
+      lignes={calendar.undated}
+      cle={(event) => event.id}
+      colonnes={[
+        { cle: 'titre', libelle: 'Élément', valeur: (event) => <>{event.title}<span className="finance-table__aparte"> · {event.detail}</span></>, tri: (event) => event.title },
+        { cle: 'nature', libelle: 'Nature', valeur: (event) => kind[event.kind], tri: (event) => kind[event.kind] },
+        { cle: 'montant', libelle: 'Montant', numerique: true, valeur: montant, tri: (event) => event.amountCents },
+      ]}
+      carte={{ titre: (event) => event.title, sousTitre: (event) => kind[event.kind], montant }}
+    />}</section>
+  </section>;
 }
 /**
  * Tuile de métrique. Deux variantes, pas trois.
@@ -618,7 +731,7 @@ function TendanceMrr({ history }: { history: Data['business']['mrrHistory'] }) {
 }
 
 /**
- * La barre de progression d'un objectif.
+ * La barre de progression d'un objectif, à la taille d'une cellule de tableau.
  *
  * ⚠️ Le pourcentage affiché n'est plus plafonné à 100 %. L'ancienne version
  * écrivait `Math.min(100, …)` : un objectif dépassé de 40 % s'affichait
@@ -626,29 +739,59 @@ function TendanceMrr({ history }: { history: Data['business']['mrrHistory'] }) {
  * disparaissait. Seule la LARGEUR de la barre est bornée ; le chiffre dit vrai,
  * et la barre change de couleur au-delà de la cible.
  */
-function Progression({ atteint, cible }: { atteint: number; cible: number }) {
-  // Une cible à zéro n'a pas de pourcentage : on ne divise pas, on le dit.
+function ProgressionCompacte({ atteint, cible }: { atteint: number; cible: number }) {
   const part = cible > 0 ? (atteint / cible) * 100 : null;
   const largeur = part === null ? 0 : Math.min(100, Math.max(0, part));
-  return <div className={`finance-progress${part !== null && part > 100 ? ' finance-progress--over' : ''}`}>
-    {/* La piste est décorative : la ligne qui suit porte déjà les deux montants
-        et le pourcentage en texte. Un `role="progressbar"` ferait tout annoncer
-        deux fois. */}
-    <div className="finance-progress__track" aria-hidden="true">
-      <div className="finance-progress__fill" style={{ width: `${largeur}%` }} />
-    </div>
-    <p className="finance-progress__legend">
-      <span><b>{money(atteint)}</b> sur {money(cible)}</span>
-      <span>{part === null ? 'cible non chiffrée' : `${part.toFixed(1).replace('.', ',')} %`}</span>
-    </p>
-  </div>;
+  return <span className={`finance-progress finance-progress--cellule${part !== null && part > 100 ? ' finance-progress--over' : ''}`}>
+    <span className="finance-progress__track" aria-hidden="true"><span className="finance-progress__fill" style={{ width: `${largeur}%` }} /></span>
+    <span>{part === null ? 'cible non chiffrée' : `${part.toFixed(1).replace('.', ',')} %`}</span>
+  </span>;
 }
-
 function List({ rows }: { rows: [string, string][] }) { return <ul className="finance-list">{rows.map(([left, right]) => <li key={`${left}-${right}`}><span>{left}</span><span>{right}</span></li>)}</ul>; }
 
-function Accounts({ data, balances }: { data: Data; balances: Map<string, number> }) { const date = `${data.period}-01`; return <section className="finance-content finance-grid"><section className="finance-card"><h2>Entité économique</h2><p className="finance-help">Crée ton foyer personnel avant d’ajouter un compte.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createEntity" /><label>Nom<input name="name" required maxLength={100} /></label><label>Type<select name="type" defaultValue="personal"><option value="personal">Personnel</option><option value="business">Business</option></select></label><button className="finance-button">Ajouter l’entité</button></Form>{data.entities.length ? <List rows={data.entities.map((entity) => [entity.name, entity.type === 'personal' ? 'Personnel' : 'Business'])} /> : null}</section><section className="finance-card"><h2>Compte et solde d’ouverture</h2>{data.entities.length === 0 ? <p>Ajoute d’abord une entité économique.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createAccount" /><label>Entité<select name="entityId">{data.entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label><label>Nom<input name="name" required maxLength={100} /></label><label>Type<select name="type" defaultValue="checking"><option value="checking">Compte courant</option><option value="savings">Épargne</option><option value="cash">Espèces</option></select></label><label>Solde d’ouverture (€)<input name="openingBalance" inputMode="decimal" placeholder="0,00" required /></label><label>Date d’ouverture<input name="openingDate" type="date" defaultValue={date} required /></label><button className="finance-button">Ajouter le compte</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Comptes enregistrés</h2>{data.accounts.length === 0 ? <p>Aucun compte saisi.</p> : <ul className="finance-records">{data.accounts.map((account) => <li key={account.id}><div><strong>{account.name}</strong><p>{account.type} · ouverture le {account.openingDate} · {account.isActive ? 'actif' : 'archivé'}</p><p>Solde courant : <Currency cents={balances.get(account.id) ?? account.openingBalanceCents} /></p></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateAccount" /><input type="hidden" name="id" value={account.id} /><input type="hidden" name="type" value={account.type} /><label>Nom<input name="name" defaultValue={account.name} required maxLength={100} /></label><label>Solde d’ouverture (€)<input name="openingBalance" defaultValue={decimalMoney(account.openingBalanceCents)} inputMode="decimal" required /></label><label>Date d’ouverture<input name="openingDate" type="date" defaultValue={account.openingDate} required /></label><label>État<select name="isActive" defaultValue={String(account.isActive)}><option value="true">Actif</option><option value="false">Archivé</option></select></label><button className="finance-button">Enregistrer</button></Form></details></li>)}</ul>}</section></section>; }
+const accountTypeLabel = { checking: 'Compte courant', savings: 'Épargne', cash: 'Espèces' } as const;
+function Accounts({ data, balances }: { data: Data; balances: Map<string, number> }) {
+  const date = `${data.period}-01`;
+  const solde = (account: Data['accounts'][number]) => balances.get(account.id) ?? account.openingBalanceCents;
+  const total = sumEuroCents(data.accounts.map((account) => euroCents(solde(account))));
+  return <section className="finance-content finance-grid">
+    <section className="finance-card"><h2>Entité économique</h2><p className="finance-help">Crée ton foyer personnel avant d’ajouter un compte.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createEntity" /><label>Nom<input name="name" required maxLength={100} /></label><label>Type<select name="type" defaultValue="personal"><option value="personal">Personnel</option><option value="business">Business</option></select></label><button className="finance-button">Ajouter l’entité</button></Form>{data.entities.length ? <List rows={data.entities.map((entity) => [entity.name, entity.type === 'personal' ? 'Personnel' : 'Business'])} /> : null}</section>
+    <section className="finance-card"><h2>Compte et solde d’ouverture</h2>{data.entities.length === 0 ? <p>Ajoute d’abord une entité économique.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createAccount" /><label>Entité<select name="entityId">{data.entities.map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label><label>Nom<input name="name" required maxLength={100} /></label><label>Type<select name="type" defaultValue="checking"><option value="checking">Compte courant</option><option value="savings">Épargne</option><option value="cash">Espèces</option></select></label><label>Solde d’ouverture (€)<input name="openingBalance" inputMode="decimal" placeholder="0,00" required /></label><label>Date d’ouverture<input name="openingDate" type="date" defaultValue={date} required /></label><button className="finance-button">Ajouter le compte</button></Form>}</section>
+    <section className="finance-card finance-card--wide"><h2>Comptes enregistrés</h2>{data.accounts.length === 0 ? <p>Aucun compte saisi.</p> : <TableauDense
+      legende={`Soldes à la fin de ${data.period}. Un compte archivé garde son historique.`}
+      lignes={data.accounts}
+      cle={(account) => account.id}
+      colonnes={[
+        { cle: 'nom', libelle: 'Compte', valeur: (account) => account.name, tri: (account) => account.name },
+        { cle: 'type', libelle: 'Type', valeur: (account) => accountTypeLabel[account.type], tri: (account) => accountTypeLabel[account.type] },
+        { cle: 'ouverture', libelle: 'Ouverture', valeur: (account) => <time dateTime={account.openingDate}>{dateAxe(account.openingDate)}</time>, tri: (account) => account.openingDate },
+        { cle: 'etat', libelle: 'État', valeur: (account) => account.isActive ? 'actif' : 'archivé', tri: (account) => account.isActive ? 0 : 1 },
+        { cle: 'solde', libelle: 'Solde', numerique: true, valeur: (account) => <Currency cents={solde(account)} />, tri: solde },
+      ]}
+      carte={{ titre: (account) => account.name, sousTitre: (account) => `${accountTypeLabel[account.type]}${account.isActive ? '' : ' · archivé'}`, montant: (account) => <Currency cents={solde(account)} /> }}
+      total={{ libelle: 'Total', cellules: { solde: <Currency cents={total} /> }, carte: <Currency cents={total} /> }}
+      detail={(account) => <Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateAccount" /><input type="hidden" name="id" value={account.id} /><input type="hidden" name="type" value={account.type} /><label>Nom<input name="name" defaultValue={account.name} required maxLength={100} /></label><label>Solde d’ouverture (€)<input name="openingBalance" defaultValue={decimalMoney(account.openingBalanceCents)} inputMode="decimal" required /></label><label>Date d’ouverture<input name="openingDate" type="date" defaultValue={account.openingDate} required /></label><label>État<select name="isActive" defaultValue={String(account.isActive)}><option value="true">Actif</option><option value="false">Archivé</option></select></label><button className="finance-button">Enregistrer</button></Form>}
+    />}</section>
+  </section>;
+}
 
-function Categories({ categories }: { categories: Data['categories'] }) { return <section className="finance-content finance-grid"><section className="finance-card"><h2>Nouvelle catégorie</h2><p className="finance-help">Les catégories séparent revenus et dépenses ; un transfert n’en utilise pas.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createCategory" /><label>Nom<input name="name" required maxLength={100} /></label><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><button className="finance-button">Ajouter la catégorie</button></Form></section><section className="finance-card"><h2>Catégories enregistrées</h2>{categories.length === 0 ? <p>Crée les catégories utiles avant de saisir le journal.</p> : <ul className="finance-records">{categories.map((category) => <li key={category.id}><div><strong>{category.name}</strong><p>{category.kind === 'income' ? 'Revenu' : 'Dépense'} · {category.isActive ? 'active' : 'archivée'}</p></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateCategory" /><input type="hidden" name="id" value={category.id} /><label>Nom<input name="name" defaultValue={category.name} required maxLength={100} /></label><label>Nature<select name="kind" defaultValue={category.kind}><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>État<select name="isActive" defaultValue={String(category.isActive)}><option value="true">Active</option><option value="false">Archivée</option></select></label><button className="finance-button">Enregistrer</button></Form></details></li>)}</ul>}</section></section>; }
+function Categories({ categories }: { categories: Data['categories'] }) {
+  return <section className="finance-content finance-grid">
+    <section className="finance-card"><h2>Nouvelle catégorie</h2><p className="finance-help">Les catégories séparent revenus et dépenses ; un transfert n’en utilise pas.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createCategory" /><label>Nom<input name="name" required maxLength={100} /></label><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><button className="finance-button">Ajouter la catégorie</button></Form></section>
+    <section className="finance-card"><h2>Catégories enregistrées</h2>{categories.length === 0 ? <p>Crée les catégories utiles avant de saisir le journal.</p> : <TableauDense
+      legende={`${categories.length} catégorie${categories.length > 1 ? 's' : ''}`}
+      lignes={categories}
+      cle={(category) => category.id}
+      colonnes={[
+        { cle: 'nom', libelle: 'Catégorie', valeur: (category) => category.name, tri: (category) => category.name },
+        { cle: 'nature', libelle: 'Nature', valeur: (category) => category.kind === 'income' ? 'Revenu' : 'Dépense', tri: (category) => category.kind },
+        { cle: 'etat', libelle: 'État', valeur: (category) => category.isActive ? 'active' : 'archivée', tri: (category) => category.isActive ? 0 : 1 },
+      ]}
+      carte={{ titre: (category) => category.name, sousTitre: (category) => `${category.kind === 'income' ? 'Revenu' : 'Dépense'}${category.isActive ? '' : ' · archivée'}` }}
+      detail={(category) => <Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateCategory" /><input type="hidden" name="id" value={category.id} /><label>Nom<input name="name" defaultValue={category.name} required maxLength={100} /></label><label>Nature<select name="kind" defaultValue={category.kind}><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>État<select name="isActive" defaultValue={String(category.isActive)}><option value="true">Active</option><option value="false">Archivée</option></select></label><button className="finance-button">Enregistrer</button></Form>}
+    />}</section>
+  </section>;
+}
 
 function AccountSelect({ accounts, name, selected }: { accounts: Data['accounts']; name: string; selected?: string }) { return <select name={name} defaultValue={selected} required>{accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select>; }
 function CategorySelect({ categories, selected }: { categories: Data['categories']; selected?: string }) { return <label>Catégorie<select name="categoryId" defaultValue={selected} required>{categories.map((category) => <option key={category.id} value={category.id}>{category.kind === 'income' ? 'Revenu' : 'Dépense'} — {category.name}</option>)}</select></label>; }
@@ -1111,11 +1254,24 @@ function Budget({ data }: { data: Data }) {
   const reserve = data.planning.reserve;
   return <section className="finance-content finance-grid">
     <section className="finance-card"><h2>Budget mensuel — {data.period}</h2>{expenses.length === 0 ? <p>Ajoute d’abord une catégorie de dépense.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="setBudget" /><input type="hidden" name="period" value={data.period} /><label>Catégorie<select name="categoryId">{expenses.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Prévu (€)<input name="plannedAmount" inputMode="decimal" placeholder="0,00" required /></label><button className="finance-button">Définir le budget</button></Form>}</section>
-    <section className="finance-card"><h2>Prévu et réalisé</h2>{data.dashboard.budgets.length === 0 ? <p>Aucun budget de dépense à afficher pour ce mois.</p> : <ul className="finance-records">{data.dashboard.budgets.map(({ category, budget, actualCents }) => <li key={category.id}><div><strong>{category.name}</strong><p>Prévu : {budget ? money(budget.plannedAmountCents) : '—'} · Réel : {money(actualCents)}</p></div>{budget ? <Delete intent="deleteBudget" id={budget.id} text="Retirer ce budget." /> : null}</li>)}</ul>}<p className="finance-help">Le réalisé provient des dépenses du journal. Les transferts ne sont ni revenus ni dépenses.</p></section>
-    <section className="finance-card finance-card--wide"><h2>Apports GoMining prévus — {data.period}</h2>{data.gominingBudgetPlans.length === 0 ? <p>Aucun apport GoMining lié à une catégorie de budget pour ce mois.</p> : <ul className="finance-records">{data.gominingBudgetPlans.map((plan) => { const category = data.categories.find((item) => item.id === plan.categoryId); return <li key={plan.scenarioId}><div><strong>{plan.name}</strong><p>{category?.name ?? 'Catégorie indisponible'} · prévu : {money(plan.contributionCents)}</p></div></li>; })}</ul>}<p className="finance-help">Cet apport est une indication de budget : il ne modifie pas le budget mensuel et ne crée aucune transaction réelle.</p></section>
+    <section className="finance-card finance-card--wide"><h2>Prévu et réalisé</h2>{data.dashboard.budgets.length === 0 ? <p>Aucun budget de dépense à afficher pour ce mois.</p> : <PrevuRealise budgets={data.dashboard.budgets} detail={({ category, budget }) => <>
+      <Form method="post" className="finance-form"><input type="hidden" name="intent" value="setBudget" /><input type="hidden" name="period" value={data.period} /><input type="hidden" name="categoryId" value={category.id} /><label>Prévu pour {category.name} (€)<input name="plannedAmount" defaultValue={budget ? decimalMoney(budget.plannedAmountCents) : ''} inputMode="decimal" placeholder="0,00" required /></label><button className="finance-button">{budget ? 'Modifier le prévu' : 'Définir le prévu'}</button></Form>
+      {budget ? <Delete intent="deleteBudget" id={budget.id} text="Retirer ce budget." /> : null}
+    </>} />}<p className="finance-help">Le réalisé provient des dépenses du journal. Les transferts ne sont ni revenus ni dépenses.</p></section>
+    <section className="finance-card finance-card--wide"><h2>Apports GoMining prévus — {data.period}</h2>{data.gominingBudgetPlans.length === 0 ? <p>Aucun apport GoMining lié à une catégorie de budget pour ce mois.</p> : <TableauDense
+      legende="Indication de budget : aucun apport ne crée de transaction."
+      lignes={data.gominingBudgetPlans}
+      cle={(plan) => plan.scenarioId}
+      colonnes={[
+        { cle: 'scenario', libelle: 'Scénario', valeur: (plan) => plan.name, tri: (plan) => plan.name },
+        { cle: 'categorie', libelle: 'Catégorie', valeur: (plan) => data.categories.find((item) => item.id === plan.categoryId)?.name ?? 'Catégorie indisponible' },
+        { cle: 'prevu', libelle: 'Apport prévu', numerique: true, valeur: (plan) => <Currency cents={plan.contributionCents} />, tri: (plan) => plan.contributionCents },
+      ]}
+      carte={{ titre: (plan) => plan.name, montant: (plan) => <Currency cents={plan.contributionCents} /> }}
+    />}<p className="finance-help">Cet apport est une indication de budget : il ne modifie pas le budget mensuel et ne crée aucune transaction réelle.</p></section>
     <section className="finance-card"><h2>Réserve de sécurité</h2><p className="finance-help">La réserve est calculée depuis les soldes des comptes cochés à la fin de cette période. Aucun solde n’est saisi deux fois.</p>{data.accounts.length === 0 ? <p>Ajoute un compte avant de configurer la réserve.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="setSafetyReserve" /><label>Cible (€)<input name="targetAmount" defaultValue={reserve ? decimalMoney(reserve.targetAmountCents) : ''} inputMode="decimal" required /></label><fieldset className="finance-checklist"><legend>Comptes inclus</legend>{data.accounts.map((account) => <label key={account.id}><input type="checkbox" name="accountIds" value={account.id} defaultChecked={reserve?.accounts.some((selected) => selected.id === account.id) ?? false} /> {account.name}</label>)}</fieldset><button className="finance-button">Enregistrer la réserve</button></Form>}{reserve ? <><p>Constaté : {money(reserve.currentAmountCents)} · cible : {money(reserve.targetAmountCents)}.</p><Delete intent="deleteSafetyReserve" text="Retirer cette configuration de réserve." /></> : null}</section>
     <section className="finance-card"><h2>Nouvel engagement mensuel</h2>{expenses.length === 0 ? <p>Ajoute une catégorie de dépense avant de définir un engagement.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createCommitment" /><label>Nom<input name="name" required maxLength={100} /></label><label>Catégorie<select name="categoryId">{expenses.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Montant prévu (€)<input name="plannedAmount" inputMode="decimal" placeholder="0,00" required /></label><label>Jour prévu<input name="dueDay" type="number" min="1" max="31" defaultValue="1" required /></label><label>À partir de<input name="startPeriod" type="month" defaultValue={data.period} required /></label><label>Jusqu’à (facultatif)<input name="endPeriod" type="month" /></label><button className="finance-button">Ajouter l’engagement</button></Form>}</section>
-    <section className="finance-card finance-card--wide"><h2>Engagements — {data.period}</h2>{data.planning.commitments.length === 0 ? <p>Aucun engagement planifié pour ce mois.</p> : <ul className="finance-records">{data.planning.commitments.map(({ commitment, categoryName, actualCents }) => <li key={commitment.id}><div><strong>{commitment.name}</strong><p>{categoryName} · prévu le {commitment.dueDay} · {money(actualCents)} payé / {money(commitment.plannedAmountCents)} prévu</p><p>{actualCents === 0 ? 'Aucun paiement réel relié.' : actualCents === commitment.plannedAmountCents ? 'Paiement conforme au prévu.' : `Écart constaté : ${money(actualCents - commitment.plannedAmountCents)}.`}</p></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateCommitment" /><input type="hidden" name="id" value={commitment.id} /><label>Nom<input name="name" defaultValue={commitment.name} required maxLength={100} /></label><label>Catégorie<select name="categoryId" defaultValue={commitment.categoryId}>{expenses.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Montant prévu (€)<input name="plannedAmount" defaultValue={decimalMoney(commitment.plannedAmountCents)} inputMode="decimal" required /></label><label>Jour prévu<input name="dueDay" type="number" min="1" max="31" defaultValue={commitment.dueDay} required /></label><label>À partir de<input name="startPeriod" type="month" defaultValue={commitment.startPeriod} required /></label><label>Jusqu’à (facultatif)<input name="endPeriod" type="month" defaultValue={commitment.endPeriod ?? ''} /></label><button className="finance-button">Enregistrer</button></Form><Delete intent="deleteCommitment" id={commitment.id} text="Supprimer cet engagement sans paiement relié." /></details></li>)}</ul>}<p className="finance-help">Un engagement est un prévu. Pour compter un paiement, relie explicitement la dépense correspondante depuis le journal, avec la même catégorie.</p></section>
+    <section className="finance-card finance-card--wide"><h2>Engagements — {data.period}</h2>{data.planning.commitments.length === 0 ? <p>Aucun engagement planifié pour ce mois.</p> : <EngagementsDuMois commitments={data.planning.commitments} detail={({ commitment }) => <><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateCommitment" /><input type="hidden" name="id" value={commitment.id} /><label>Nom<input name="name" defaultValue={commitment.name} required maxLength={100} /></label><label>Catégorie<select name="categoryId" defaultValue={commitment.categoryId}>{expenses.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label><label>Montant prévu (€)<input name="plannedAmount" defaultValue={decimalMoney(commitment.plannedAmountCents)} inputMode="decimal" required /></label><label>Jour prévu<input name="dueDay" type="number" min="1" max="31" defaultValue={commitment.dueDay} required /></label><label>À partir de<input name="startPeriod" type="month" defaultValue={commitment.startPeriod} required /></label><label>Jusqu’à (facultatif)<input name="endPeriod" type="month" defaultValue={commitment.endPeriod ?? ''} /></label><button className="finance-button">Enregistrer</button></Form><Delete intent="deleteCommitment" id={commitment.id} text="Supprimer cet engagement sans paiement relié." /></>} />}<p className="finance-help">Un engagement est un prévu. Pour compter un paiement, relie explicitement la dépense correspondante depuis le journal, avec la même catégorie.</p></section>
   </section>;
 }
 
@@ -1171,6 +1327,7 @@ const projectStatusLabel = { backlog: 'Backlog', active: 'En cours', paused: 'En
 function Goals({ data }: { data: Data }) {
   const goals = data.goals;
   const goalName = new Map(goals.goals.map((goal) => [goal.id, goal.name]));
+  const part = (goal: Data['goals']['goals'][number]) => goal.targetCents > 0 ? goal.progressCents / goal.targetCents : null;
   return <section className="finance-content finance-grid">
     <section className="finance-card finance-card--wide"><h2>Priorités manuelles</h2><p className="finance-help">Les objectifs et projets organisent les intentions ; leur progression, coût et charge sont saisis manuellement. Ils ne créent aucune transaction, n’allouent aucun cash et ne remplacent pas les sources budget, patrimoine ou business.</p></section>
     <section className="finance-card"><h2>Capacité mensuelle</h2><Form method="post" className="finance-form"><input type="hidden" name="intent" value="setProjectCapacity" /><label>Minutes disponibles par mois<input name="monthlyCapacityMinutes" type="number" min="0" max="44640" step="1" defaultValue={goals.capacity?.monthlyCapacityMinutes ?? ''} required /></label><button className="finance-button">Enregistrer la capacité</button></Form></section>
@@ -1178,8 +1335,36 @@ function Goals({ data }: { data: Data }) {
     <section className="finance-card"><h2>Concentration</h2>{goals.activeProjectLimitStatus === 'within-limit' ? <p>{goals.activeProjectCount}/{goals.activeProjectLimit} projets en cours : limite souple respectée.</p> : <p>À surveiller : {goals.activeProjectCount} projets sont en cours, au-delà de la limite souple de {goals.activeProjectLimit}.</p>}<p className="finance-help">Tu peux toujours activer un autre projet : ce signal ne bloque aucune action.</p></section>
     <section className="finance-card"><h2>Nouvel objectif</h2><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createGoal" /><label>Nom<input name="name" required maxLength={100} /></label><label>Montant cible (€)<input name="targetAmount" inputMode="decimal" required /></label><label>Progression observée (€)<input name="progressAmount" defaultValue="0,00" inputMode="decimal" required /></label><label>Échéance (facultative)<input name="targetDate" type="date" /></label><label>Priorité (1 = première)<input name="priority" type="number" min="1" max="999" step="1" defaultValue="1" required /></label><button className="finance-button">Ajouter l’objectif</button></Form></section>
     <section className="finance-card"><h2>Nouveau projet</h2><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createProject" /><label>Objectif lié (facultatif)<select name="goalId"><option value="">Aucun</option>{goals.goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label><label>Nom<input name="name" required maxLength={100} /></label><label>Statut<select name="status" defaultValue="backlog"><option value="backlog">Backlog</option><option value="active">En cours</option><option value="paused">En pause</option><option value="done">Terminé</option></select></label><label>Priorité (1 = première)<input name="priority" type="number" min="1" max="999" step="1" defaultValue="1" required /></label><label>Coût estimé (€ — facultatif)<input name="estimatedCostAmount" inputMode="decimal" /></label><label>Charge estimée (minutes — facultatif)<input name="estimatedEffortMinutes" type="number" min="0" max="44640" step="1" /></label><label>Prochaine action<input name="nextAction" maxLength={240} /></label><button className="finance-button">Ajouter le projet</button></Form></section>
-    <section className="finance-card finance-card--wide"><h2>Objectifs</h2>{goals.goals.length === 0 ? <p>Aucun objectif : commence par rendre une intention mesurable, sans la relier automatiquement à un compte.</p> : <ul className="finance-records">{goals.goals.map((goal) => <li key={goal.id}><div><strong>{goal.name}</strong><p>Priorité {goal.priority} · {goal.targetDate ? `échéance : ${goal.targetDate}` : 'sans échéance'}</p><Progression atteint={goal.progressCents} cible={goal.targetCents} /></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateGoal" /><input type="hidden" name="id" value={goal.id} /><label>Nom<input name="name" defaultValue={goal.name} required maxLength={100} /></label><label>Montant cible (€)<input name="targetAmount" defaultValue={decimalMoney(goal.targetCents)} inputMode="decimal" required /></label><label>Progression observée (€)<input name="progressAmount" defaultValue={decimalMoney(goal.progressCents)} inputMode="decimal" required /></label><label>Échéance (facultative)<input name="targetDate" type="date" defaultValue={goal.targetDate ?? ''} /></label><label>Priorité (1 = première)<input name="priority" type="number" min="1" max="999" step="1" defaultValue={goal.priority} required /></label><button className="finance-button">Enregistrer</button></Form></details></li>)}</ul>}</section>
-    <section className="finance-card finance-card--wide"><h2>Projets</h2>{goals.projects.length === 0 ? <p>Aucun projet dans le backlog.</p> : <ul className="finance-records">{goals.projects.map((project) => <li key={project.id}><div><strong>{project.name}</strong><p>{projectStatusLabel[project.status]} · priorité {project.priority} · {project.goalId ? `objectif : ${goalName.get(project.goalId) ?? 'indisponible'}` : 'sans objectif lié'}</p><p>Coût estimé : {project.estimatedCostCents === null ? 'non renseigné' : money(project.estimatedCostCents)} · charge : {project.estimatedEffortMinutes === null ? 'non renseignée' : formatMaintenance(project.estimatedEffortMinutes)} · prochaine action : {project.nextAction || 'non renseignée'}</p></div><details><summary>Modifier</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateProject" /><input type="hidden" name="id" value={project.id} /><label>Objectif lié (facultatif)<select name="goalId" defaultValue={project.goalId ?? ''}><option value="">Aucun</option>{goals.goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label><label>Nom<input name="name" defaultValue={project.name} required maxLength={100} /></label><label>Statut<select name="status" defaultValue={project.status}><option value="backlog">Backlog</option><option value="active">En cours</option><option value="paused">En pause</option><option value="done">Terminé</option></select></label><label>Priorité (1 = première)<input name="priority" type="number" min="1" max="999" step="1" defaultValue={project.priority} required /></label><label>Coût estimé (€ — facultatif)<input name="estimatedCostAmount" defaultValue={project.estimatedCostCents === null ? '' : decimalMoney(project.estimatedCostCents)} inputMode="decimal" /></label><label>Charge estimée (minutes — facultatif)<input name="estimatedEffortMinutes" type="number" min="0" max="44640" step="1" defaultValue={project.estimatedEffortMinutes ?? ''} /></label><label>Prochaine action<input name="nextAction" defaultValue={project.nextAction} maxLength={240} /></label><button className="finance-button">Enregistrer</button></Form></details></li>)}</ul>}</section>
+    <section className="finance-card finance-card--wide"><h2>Objectifs</h2>{goals.goals.length === 0 ? <p>Aucun objectif : commence par rendre une intention mesurable, sans la relier automatiquement à un compte.</p> : <TableauDense
+      legende="Progression saisie à la main : elle n’est reliée à aucun compte."
+      lignes={goals.goals}
+      cle={(goal) => goal.id}
+      colonnes={[
+        { cle: 'priorite', libelle: 'Priorité', numerique: true, valeur: (goal) => goal.priority, tri: (goal) => goal.priority },
+        { cle: 'nom', libelle: 'Objectif', valeur: (goal) => goal.name, tri: (goal) => goal.name },
+        { cle: 'echeance', libelle: 'Échéance', valeur: (goal) => goal.targetDate ? <time dateTime={goal.targetDate}>{dateAxe(goal.targetDate)}</time> : 'sans échéance', tri: (goal) => goal.targetDate },
+        { cle: 'avancement', libelle: 'Avancement', valeur: (goal) => <ProgressionCompacte atteint={goal.progressCents} cible={goal.targetCents} />, tri: part },
+        { cle: 'atteint', libelle: 'Atteint', numerique: true, valeur: (goal) => <Currency cents={goal.progressCents} />, tri: (goal) => goal.progressCents },
+        { cle: 'cible', libelle: 'Cible', numerique: true, valeur: (goal) => <Currency cents={goal.targetCents} />, tri: (goal) => goal.targetCents },
+      ]}
+      carte={{ titre: (goal) => goal.name, sousTitre: (goal) => `priorité ${goal.priority} · ${goal.targetDate ? `échéance ${dateAxe(goal.targetDate)}` : 'sans échéance'}`, montant: (goal) => <Currency cents={goal.targetCents} /> }}
+      detail={(goal) => <Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateGoal" /><input type="hidden" name="id" value={goal.id} /><label>Nom<input name="name" defaultValue={goal.name} required maxLength={100} /></label><label>Montant cible (€)<input name="targetAmount" defaultValue={decimalMoney(goal.targetCents)} inputMode="decimal" required /></label><label>Progression observée (€)<input name="progressAmount" defaultValue={decimalMoney(goal.progressCents)} inputMode="decimal" required /></label><label>Échéance (facultative)<input name="targetDate" type="date" defaultValue={goal.targetDate ?? ''} /></label><label>Priorité (1 = première)<input name="priority" type="number" min="1" max="999" step="1" defaultValue={goal.priority} required /></label><button className="finance-button">Enregistrer</button></Form>}
+    />}</section>
+    <section className="finance-card finance-card--wide"><h2>Projets</h2>{goals.projects.length === 0 ? <p>Aucun projet dans le backlog.</p> : <TableauDense
+      legende="Coût et charge sont des estimations saisies ; « — » signale une valeur non renseignée, jamais un zéro."
+      lignes={goals.projects}
+      cle={(project) => project.id}
+      colonnes={[
+        { cle: 'priorite', libelle: 'Priorité', numerique: true, valeur: (project) => project.priority, tri: (project) => project.priority },
+        { cle: 'nom', libelle: 'Projet', valeur: (project) => <>{project.name}{project.nextAction ? <span className="finance-table__aparte"> · {project.nextAction}</span> : null}</>, tri: (project) => project.name },
+        { cle: 'statut', libelle: 'Statut', valeur: (project) => projectStatusLabel[project.status], tri: (project) => projectStatusLabel[project.status] },
+        { cle: 'objectif', libelle: 'Objectif', valeur: (project) => project.goalId ? goalName.get(project.goalId) ?? 'indisponible' : '—', tri: (project) => project.goalId ? goalName.get(project.goalId) ?? null : null },
+        { cle: 'charge', libelle: 'Charge', numerique: true, valeur: (project) => project.estimatedEffortMinutes === null ? '—' : formatMaintenance(project.estimatedEffortMinutes), tri: (project) => project.estimatedEffortMinutes },
+        { cle: 'cout', libelle: 'Coût', numerique: true, valeur: (project) => project.estimatedCostCents === null ? '—' : <Currency cents={project.estimatedCostCents} />, tri: (project) => project.estimatedCostCents },
+      ]}
+      carte={{ titre: (project) => project.name, sousTitre: (project) => `${projectStatusLabel[project.status]} · priorité ${project.priority}`, montant: (project) => project.estimatedCostCents === null ? '—' : <Currency cents={project.estimatedCostCents} /> }}
+      detail={(project) => <Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateProject" /><input type="hidden" name="id" value={project.id} /><label>Objectif lié (facultatif)<select name="goalId" defaultValue={project.goalId ?? ''}><option value="">Aucun</option>{goals.goals.map((goal) => <option key={goal.id} value={goal.id}>{goal.name}</option>)}</select></label><label>Nom<input name="name" defaultValue={project.name} required maxLength={100} /></label><label>Statut<select name="status" defaultValue={project.status}><option value="backlog">Backlog</option><option value="active">En cours</option><option value="paused">En pause</option><option value="done">Terminé</option></select></label><label>Priorité (1 = première)<input name="priority" type="number" min="1" max="999" step="1" defaultValue={project.priority} required /></label><label>Coût estimé (€ — facultatif)<input name="estimatedCostAmount" defaultValue={project.estimatedCostCents === null ? '' : decimalMoney(project.estimatedCostCents)} inputMode="decimal" /></label><label>Charge estimée (minutes — facultatif)<input name="estimatedEffortMinutes" type="number" min="0" max="44640" step="1" defaultValue={project.estimatedEffortMinutes ?? ''} /></label><label>Prochaine action<input name="nextAction" defaultValue={project.nextAction} maxLength={240} /></label><button className="finance-button">Enregistrer</button></Form>}
+    />}</section>
   </section>;
 }
 
@@ -1253,15 +1438,94 @@ function Regulations({ data }: { data: Data }) {
   const resolution = actionData && 'regulationResolution' in actionData ? actionData.regulationResolution : undefined;
   const names = [...new Map(data.regulations.rules.map((rule) => [rule.name.normalize('NFKC').trim().toLocaleLowerCase('fr-FR'), rule.name])).values()];
   const status = (value: RegulatoryResolution['status']) => ({ applicable: 'applicable', missing: 'indisponible', overlap: 'chevauchement à corriger' })[value];
-  return <section className="finance-content finance-grid"><section className="finance-card"><h2>Nouvelle règle</h2><p className="finance-help">Registre manuel : vérifier la source avant toute utilisation. Aucune valeur ne déclenche un calcul fiscal automatique.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createRegulatoryRule" /><label>Nom<input name="name" required maxLength={100} /></label><label>Valeur / règle<input name="value" required maxLength={120} /></label><label>Source<input name="source" required maxLength={500} /></label><label>Vérifiée le<input name="verifiedOn" type="date" required /></label><label>Valable à partir du<input name="validFrom" type="date" required /></label><label>Valable jusqu’au (facultatif)<input name="validTo" type="date" /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer la règle</button></Form></section><section className="finance-card"><h2>Résoudre à une date</h2><p className="finance-help">La recherche reste privée : nom et date sont envoyés par POST, jamais dans l’URL.</p>{names.length === 0 ? <p>Aucune règle à résoudre.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="resolveRegulatoryRule" /><label>Règle<select name="name">{names.map((name) => <option key={name} value={name}>{name}</option>)}</select></label><label>Date d’application<input name="asOf" type="date" defaultValue={data.regulations.asOf} required /></label><button className="finance-button">Vérifier l’application</button></Form>}{resolution ? <div className="finance-alert" role="status"><p><strong>{resolution.name}</strong> au {resolution.asOf} : {status(resolution.status)}.</p>{resolution.status === 'applicable' ? <p>Valeur retenue : {resolution.rules[0]?.value}</p> : <p>Aucune valeur n’est retenue automatiquement.</p>}</div> : null}</section><section className="finance-card finance-card--wide"><h2>Couverture au {data.regulations.asOf}</h2>{data.regulations.coverage.length === 0 ? <p>Aucune règle vérifiée.</p> : <ul className="finance-records">{data.regulations.coverage.map((item) => <li key={item.name}><div><strong>{item.name}</strong><p>{status(item.status)}{item.status === 'overlap' ? ` : ${item.rules.length} règles applicables.` : ''}</p></div></li>)}</ul>}<h2>Règles enregistrées</h2>{data.regulations.rules.length === 0 ? <p>Aucune règle vérifiée.</p> : <ul className="finance-records">{data.regulations.rules.map((rule) => <li key={rule.id}><div><strong>{rule.name}</strong><p>Révision {rule.revision} · {rule.value} · valide du {rule.validFrom}{rule.validTo ? ` au ${rule.validTo}` : ''} · vérifiée le {rule.verifiedOn}</p><p>Source : {rule.source}{rule.note ? ` · ${rule.note}` : ''}</p></div><RegulatoryHistory versions={rule.versions} /><details><summary>Créer une nouvelle révision</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateRegulatoryRule" /><input type="hidden" name="id" value={rule.id} /><label>Nom<input name="name" defaultValue={rule.name} required maxLength={100} /></label><label>Valeur / règle<input name="value" defaultValue={rule.value} required maxLength={120} /></label><label>Source<input name="source" defaultValue={rule.source} required maxLength={500} /></label><label>Vérifiée le<input name="verifiedOn" type="date" defaultValue={rule.verifiedOn} required /></label><label>Valable à partir du<input name="validFrom" type="date" defaultValue={rule.validFrom} required /></label><label>Valable jusqu’au (facultatif)<input name="validTo" type="date" defaultValue={rule.validTo ?? ''} /></label><label>Note facultative<input name="note" defaultValue={rule.note} maxLength={240} /></label><button className="finance-button">Créer la révision</button></Form></details></li>)}</ul>}</section></section>;
+  const validite = (rule: Data['regulations']['rules'][number]) => `du ${dateAxe(rule.validFrom)}${rule.validTo ? ` au ${dateAxe(rule.validTo)}` : ''}`;
+  return <section className="finance-content finance-grid">
+    <section className="finance-card"><h2>Nouvelle règle</h2><p className="finance-help">Registre manuel : vérifier la source avant toute utilisation. Aucune valeur ne déclenche un calcul fiscal automatique.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="createRegulatoryRule" /><label>Nom<input name="name" required maxLength={100} /></label><label>Valeur / règle<input name="value" required maxLength={120} /></label><label>Source<input name="source" required maxLength={500} /></label><label>Vérifiée le<input name="verifiedOn" type="date" required /></label><label>Valable à partir du<input name="validFrom" type="date" required /></label><label>Valable jusqu’au (facultatif)<input name="validTo" type="date" /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer la règle</button></Form></section>
+    <section className="finance-card"><h2>Résoudre à une date</h2><p className="finance-help">La recherche reste privée : nom et date sont envoyés par POST, jamais dans l’URL.</p>{names.length === 0 ? <p>Aucune règle à résoudre.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="resolveRegulatoryRule" /><label>Règle<select name="name">{names.map((name) => <option key={name} value={name}>{name}</option>)}</select></label><label>Date d’application<input name="asOf" type="date" defaultValue={data.regulations.asOf} required /></label><button className="finance-button">Vérifier l’application</button></Form>}{resolution ? <div className="finance-alert" role="status"><p><strong>{resolution.name}</strong> au {resolution.asOf} : {status(resolution.status)}.</p>{resolution.status === 'applicable' ? <p>Valeur retenue : {resolution.rules[0]?.value}</p> : <p>Aucune valeur n’est retenue automatiquement.</p>}</div> : null}</section>
+    <section className="finance-card finance-card--wide"><h2>Couverture au {data.regulations.asOf}</h2>{data.regulations.coverage.length === 0 ? <p>Aucune règle vérifiée.</p> : <TableauDense
+      legende="Une règle en chevauchement n’est jamais appliquée : aucune valeur n’est choisie à ta place."
+      lignes={data.regulations.coverage}
+      cle={(item) => item.name}
+      colonnes={[
+        { cle: 'nom', libelle: 'Règle', valeur: (item) => item.name, tri: (item) => item.name },
+        { cle: 'etat', libelle: 'État', valeur: (item) => `${status(item.status)}${item.status === 'overlap' ? ` (${item.rules.length} règles)` : ''}`, tri: (item) => status(item.status) },
+      ]}
+      carte={{ titre: (item) => item.name, sousTitre: (item) => status(item.status) }}
+    />}</section>
+    <section className="finance-card finance-card--wide"><h2>Règles enregistrées</h2>{data.regulations.rules.length === 0 ? <p>Aucune règle vérifiée.</p> : <TableauDense
+      legende="Corriger une règle crée une révision : l’historique reste consultable et immuable."
+      lignes={data.regulations.rules}
+      cle={(rule) => rule.id}
+      colonnes={[
+        { cle: 'nom', libelle: 'Règle', valeur: (rule) => rule.name, tri: (rule) => rule.name },
+        { cle: 'valeur', libelle: 'Valeur', valeur: (rule) => rule.value },
+        { cle: 'validite', libelle: 'Validité', valeur: validite, tri: (rule) => rule.validFrom },
+        { cle: 'verifiee', libelle: 'Vérifiée le', valeur: (rule) => <time dateTime={rule.verifiedOn}>{dateAxe(rule.verifiedOn)}</time>, tri: (rule) => rule.verifiedOn },
+        { cle: 'revision', libelle: 'Révision', numerique: true, valeur: (rule) => rule.revision, tri: (rule) => rule.revision },
+      ]}
+      carte={{ titre: (rule) => rule.name, sousTitre: (rule) => `${rule.value} · ${validite(rule)}` }}
+      libelleDetail="Détail"
+      detail={(rule) => <>
+        <p className="finance-help">Source : {rule.source}{rule.note ? ` · ${rule.note}` : ''}</p>
+        <RegulatoryHistory versions={rule.versions} />
+        <details><summary>Créer une nouvelle révision</summary><Form method="post" className="finance-form"><input type="hidden" name="intent" value="updateRegulatoryRule" /><input type="hidden" name="id" value={rule.id} /><label>Nom<input name="name" defaultValue={rule.name} required maxLength={100} /></label><label>Valeur / règle<input name="value" defaultValue={rule.value} required maxLength={120} /></label><label>Source<input name="source" defaultValue={rule.source} required maxLength={500} /></label><label>Vérifiée le<input name="verifiedOn" type="date" defaultValue={rule.verifiedOn} required /></label><label>Valable à partir du<input name="validFrom" type="date" defaultValue={rule.validFrom} required /></label><label>Valable jusqu’au (facultatif)<input name="validTo" type="date" defaultValue={rule.validTo ?? ''} /></label><label>Note facultative<input name="note" defaultValue={rule.note} maxLength={240} /></label><button className="finance-button">Créer la révision</button></Form></details>
+      </>}
+    />}</section>
+  </section>;
 }
 
 function StatusComparisons({ data }: { data: Data }) {
   const latest = data.statusComparisons[0];
-  return <section className="finance-content finance-grid"><RegulatorySourceChecks sources={data.regulatorySources} /><section className="finance-card finance-card--wide"><h2>France — prestation de services BIC</h2><p className="finance-help">Micro-entreprise contre SASU sans rémunération, donc 100 % dividendes potentiels. Le comparateur ne choisit jamais un statut et exclut l’impôt personnel sur le revenu et sur les dividendes.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="compareMicroToSasu" /><label>CA annuel HT (€)<input name="annualRevenue" defaultValue={decimalMoney(data.business.revenueCents * 12)} inputMode="decimal" required /></label><label>Charges opérationnelles annuelles (€)<input name="annualOperatingExpense" defaultValue={decimalMoney(data.business.operatingExpenseCents * 12)} inputMode="decimal" required /></label><label>Taux de cotisations micro BIC services (%)<input name="microSocialRate" inputMode="decimal" required /></label><label>Taux d’IS SASU (%)<input name="sasuCorporateTaxRate" inputMode="decimal" required /></label><p className="finance-help">Recopie uniquement des taux que tu as vérifiés dans « Règles ». Ces quatre valeurs exactes sont figées avec le résultat.</p><button className="finance-button">Comparer et conserver</button></Form></section><section className="finance-card finance-card--wide"><h2>Comparaisons enregistrées</h2>{data.statusComparisons.length === 0 ? <p>Aucune comparaison enregistrée.</p> : <ul className="finance-records">{data.statusComparisons.map((comparison) => <li key={comparison.id}><div><strong>{comparison.createdAt.slice(0, 16).replace('T', ' ')} UTC</strong><p>Micro : {money(comparison.result.microCashBeforePersonalTaxCents)} avant impôt personnel, après {money(comparison.result.microSocialContributionsCents)} de cotisations.</p><p>SASU : résultat {money(comparison.result.sasuOperatingResultCents)} · IS {money(comparison.result.sasuCorporateTaxCents)} · dividendes bruts potentiels {money(comparison.result.sasuPotentialGrossDividendsCents)}.</p><p>Écart SASU − micro : {comparison.result.differenceCents === 0 ? 'nul' : `${comparison.result.differenceCents > 0 ? '+' : '−'}${money(Math.abs(comparison.result.differenceCents))}`}. Taux figés : micro {formatPercent(comparison.input.microBicServiceSocialRateBasisPoints)} · IS {formatPercent(comparison.input.sasuCorporateTaxRateBasisPoints)}.</p><details><summary>Limites du calcul</summary><ul>{comparison.result.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></details></div></li>)}</ul>}{latest ? <p className="finance-help">Dernier instantané : CA {money(latest.input.annualRevenueCents)} et charges {money(latest.input.annualOperatingExpenseCents)}.</p> : null}</section></section>;
+  const horodatage = (iso: string) => `${iso.slice(0, 16).replace('T', ' ')} UTC`;
+  return <section className="finance-content finance-grid">
+    <RegulatorySourceChecks sources={data.regulatorySources} />
+    <section className="finance-card finance-card--wide"><h2>France — prestation de services BIC</h2><p className="finance-help">Micro-entreprise contre SASU sans rémunération, donc 100 % dividendes potentiels. Le comparateur ne choisit jamais un statut et exclut l’impôt personnel sur le revenu et sur les dividendes.</p><Form method="post" className="finance-form"><input type="hidden" name="intent" value="compareMicroToSasu" /><label>CA annuel HT (€)<input name="annualRevenue" defaultValue={decimalMoney(data.business.revenueCents * 12)} inputMode="decimal" required /></label><label>Charges opérationnelles annuelles (€)<input name="annualOperatingExpense" defaultValue={decimalMoney(data.business.operatingExpenseCents * 12)} inputMode="decimal" required /></label><label>Taux de cotisations micro BIC services (%)<input name="microSocialRate" inputMode="decimal" required /></label><label>Taux d’IS SASU (%)<input name="sasuCorporateTaxRate" inputMode="decimal" required /></label><p className="finance-help">Recopie uniquement des taux que tu as vérifiés dans « Règles ». Ces quatre valeurs exactes sont figées avec le résultat.</p><button className="finance-button">Comparer et conserver</button></Form></section>
+    <section className="finance-card finance-card--wide"><h2>Comparaisons enregistrées</h2>{data.statusComparisons.length === 0 ? <p>Aucune comparaison enregistrée.</p> : <TableauDense
+      legende="Montants avant impôt personnel. L’écart compare les dividendes bruts potentiels de la SASU au net micro."
+      lignes={data.statusComparisons}
+      cle={(comparison) => comparison.id}
+      colonnes={[
+        { cle: 'date', libelle: 'Enregistrée', valeur: (comparison) => horodatage(comparison.createdAt), tri: (comparison) => comparison.createdAt },
+        { cle: 'ca', libelle: 'CA annuel', numerique: true, valeur: (comparison) => <Currency cents={comparison.input.annualRevenueCents} />, tri: (comparison) => comparison.input.annualRevenueCents },
+        { cle: 'micro', libelle: 'Micro', numerique: true, valeur: (comparison) => <Currency cents={comparison.result.microCashBeforePersonalTaxCents} />, tri: (comparison) => comparison.result.microCashBeforePersonalTaxCents },
+        { cle: 'sasu', libelle: 'SASU', numerique: true, valeur: (comparison) => <Currency cents={comparison.result.sasuPotentialGrossDividendsCents} />, tri: (comparison) => comparison.result.sasuPotentialGrossDividendsCents },
+        { cle: 'ecart', libelle: 'SASU − micro', numerique: true, valeur: (comparison) => <Currency cents={comparison.result.differenceCents} signe />, tri: (comparison) => comparison.result.differenceCents, classe: (comparison) => classeMontant(comparison.result.differenceCents) },
+      ]}
+      carte={{ titre: (comparison) => horodatage(comparison.createdAt), sousTitre: (comparison) => `micro ${money(comparison.result.microCashBeforePersonalTaxCents)} · SASU ${money(comparison.result.sasuPotentialGrossDividendsCents)}`, montant: (comparison) => <Currency cents={comparison.result.differenceCents} signe /> }}
+      libelleDetail="Détail"
+      detail={(comparison) => <>
+        <List rows={[
+          ['Cotisations micro', money(comparison.result.microSocialContributionsCents)],
+          ['Résultat SASU', money(comparison.result.sasuOperatingResultCents)],
+          ['IS SASU', money(comparison.result.sasuCorporateTaxCents)],
+          ['Taux micro figé', formatPercent(comparison.input.microBicServiceSocialRateBasisPoints)],
+          ['Taux d’IS figé', formatPercent(comparison.input.sasuCorporateTaxRateBasisPoints)],
+          ['Charges annuelles', money(comparison.input.annualOperatingExpenseCents)],
+        ]} />
+        <details><summary>Limites du calcul</summary><ul>{comparison.result.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></details>
+      </>}
+    />}{latest ? <p className="finance-help">Dernier instantané : CA {money(latest.input.annualRevenueCents)} et charges {money(latest.input.annualOperatingExpenseCents)}.</p> : null}</section>
+  </section>;
 }
 
-function RegulatorySourceChecks({ sources }: { sources: Data['regulatorySources'] }) { return <section className="finance-card finance-card--wide"><h2>Vérification manuelle des sources</h2><p className="finance-help">Le bouton consulte uniquement une URL officielle prédéfinie, avec délai et taille limités. Un changement ne met aucune règle à jour : relis la source puis crée une nouvelle révision dans « Règles ».</p><ul className="finance-records">{sources.map((source) => <li key={source.sourceKey}><div><strong>{source.label}</strong><p>{source.latest === null ? 'Jamais vérifiée.' : `${({ review: 'à revoir manuellement', unchanged: 'inchangée depuis le dernier contrôle', changed: 'modifiée : revue requise', unavailable: 'indisponible lors du contrôle' })[source.latest.state]} · ${source.latest.checkedAt.slice(0, 16).replace('T', ' ')} UTC`}</p><a className="finance-text-link" href={source.url} target="_blank" rel="noreferrer">Ouvrir la source officielle</a></div><Form method="post"><input type="hidden" name="intent" value="checkRegulatorySource" /><input type="hidden" name="sourceKey" value={source.sourceKey} /><button className="finance-button finance-button--quiet">Vérifier maintenant</button></Form></li>)}</ul></section>; }
+function RegulatorySourceChecks({ sources }: { sources: Data['regulatorySources'] }) {
+  const etat = (source: Data['regulatorySources'][number]) => source.latest === null ? 'jamais vérifiée' : ({ review: 'à revoir manuellement', unchanged: 'inchangée depuis le dernier contrôle', changed: 'modifiée : revue requise', unavailable: 'indisponible lors du contrôle' })[source.latest.state];
+  return <section className="finance-card finance-card--wide"><h2>Vérification manuelle des sources</h2>
+    <p className="finance-help">Le bouton consulte uniquement une URL officielle prédéfinie, avec délai et taille limités. Un changement ne met aucune règle à jour : relis la source puis crée une nouvelle révision dans « Règles ».</p>
+    <TableauDense
+      legende={`${sources.length} source${sources.length > 1 ? 's' : ''} officielle${sources.length > 1 ? 's' : ''}`}
+      lignes={sources}
+      cle={(source) => source.sourceKey}
+      colonnes={[
+        { cle: 'source', libelle: 'Source', valeur: (source) => <a className="finance-text-link" href={source.url} target="_blank" rel="noreferrer">{source.label}</a>, tri: (source) => source.label },
+        { cle: 'etat', libelle: 'État', valeur: etat, tri: etat },
+        { cle: 'controle', libelle: 'Dernier contrôle', valeur: (source) => source.latest ? `${source.latest.checkedAt.slice(0, 16).replace('T', ' ')} UTC` : '—', tri: (source) => source.latest?.checkedAt ?? null },
+        { cle: 'action', libelle: 'Action', valeur: (source) => <Form method="post"><input type="hidden" name="intent" value="checkRegulatorySource" /><input type="hidden" name="sourceKey" value={source.sourceKey} /><button className="finance-button finance-button--quiet finance-button--mini">Vérifier maintenant</button></Form> },
+      ]}
+      carte={{ titre: (source) => source.label, sousTitre: etat }}
+    />
+  </section>;
+}
 
 function RegulatoryHistory({ versions }: { versions: Data['regulations']['rules'][number]['versions'] }) { return <details className="finance-details"><summary>Historique immuable — {versions.length} révision{versions.length > 1 ? 's' : ''}</summary><ul className="finance-records">{versions.map((rule) => <li key={rule.id}><div><strong>Révision {rule.revision} · enregistrée le {rule.createdAt.slice(0, 16).replace('T', ' ')} UTC</strong><p>{rule.value} · valide du {rule.validFrom}{rule.validTo ? ` au ${rule.validTo}` : ''} · vérifiée le {rule.verifiedOn}</p><p>Source : {rule.source}{rule.note ? ` · ${rule.note}` : ''}</p></div>{rule.revision === versions[0]?.revision ? <p className="finance-help">Révision courante</p> : null}</li>)}</ul><p className="finance-help">Une révision historique ne peut pas être modifiée ni supprimée.</p></details>; }
 

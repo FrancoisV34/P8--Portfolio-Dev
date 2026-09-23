@@ -336,6 +336,11 @@
   box-shadow: var(--shadow-xs);
 }
 .finance-table-scroll { max-height: min(64vh, 560px); overflow: auto; }
+/* Un texte qui suit un tableau — une aide, un lien — respire comme après une
+   carte. Sur mobile, la liste de cartes remplace le tableau : la même règle
+   vaut pour elle. */
+.finance-table-wrap + *,
+.finance-cards + * { margin-top: 12px; }
 .finance-table { width: 100%; border-collapse: collapse; font-size: var(--density-font); }
 .finance-table caption {
   padding: 12px 14px;
@@ -659,6 +664,21 @@ button:focus-visible {
 /* ⚠️ Au-delà de la cible, la barre est pleine mais se distingue : une barre
    pleine « 100 % » et une barre pleine « 140 % » ne doivent pas se ressembler. */
 .finance-progress--over .finance-progress__fill { background: var(--color-amount-positive); }
+/* Dans une cellule : barre et pourcentage sur une ligne, à la hauteur d'une
+   ligne dense. La barre porte une largeur fixe pour que les avancements se
+   comparent d'une ligne à l'autre. */
+.finance-progress--cellule {
+  grid-template-columns: 96px auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.finance-progress--cellule .finance-progress__track,
+.finance-progress--cellule .finance-progress__fill { display: block; }
+.finance-progress--cellule .finance-progress__track { height: 6px; }
 .finance-progress__legend {
   display: flex;
   justify-content: space-between;
@@ -709,6 +729,16 @@ details > .finance-form, details > .finance-delete { margin-top: 12px; }
 .finance-cards dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; padding: 0 14px 12px; font-size: var(--text-dense-sm); }
 .finance-cards dt { color: var(--color-foreground-muted); }
 .finance-cards__corriger { padding: 0 14px 12px; }
+/* Le total d'une liste de cartes : même grammaire que la ligne de total du
+   tableau, sans être dépliable. */
+.finance-cards > .finance-cards__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--color-table-total-bg);
+  font-weight: 600;
+}
 .finance-cards__corriger > summary {
   display: inline-flex;
   min-height: 44px;

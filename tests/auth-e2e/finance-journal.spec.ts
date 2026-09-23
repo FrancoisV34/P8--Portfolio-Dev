@@ -27,14 +27,14 @@ async function decor(page: Page) {
   await page.locator('form:has(input[value="createAccount"]) input[name="name"]').fill('Compte courant');
   await page.locator('form:has(input[value="createAccount"]) input[name="openingBalance"]').fill('1000,00');
   await page.getByRole('button', { name: 'Ajouter le compte' }).click();
-  await expect(page.locator('.finance-records').getByText('Compte courant')).toBeVisible();
+  await expect(page.locator('[data-view="table"] tbody td:first-child').getByText('Compte courant', { exact: true })).toBeVisible();
 
   await page.getByRole('link', { name: 'Catégories', exact: true }).click();
   for (const [nom, nature] of [['Courses', 'expense'], ['Salaire', 'income']] as const) {
     await page.locator('form:has(input[value="createCategory"]) input[name="name"]').fill(nom);
     await page.locator('form:has(input[value="createCategory"]) select[name="kind"]').selectOption(nature);
     await page.getByRole('button', { name: 'Ajouter la catégorie' }).click();
-    await expect(page.locator('.finance-records').getByText(nom, { exact: true })).toBeVisible();
+    await expect(page.locator('[data-view="table"] tbody td:first-child').getByText(nom, { exact: true })).toBeVisible();
   }
 }
 
@@ -123,4 +123,44 @@ test('sous 680 px le tableau cède la place aux lignes dépliables', async ({ pa
   // La page ne défile jamais latéralement : c'est ce que le tableau aurait fait.
   const debordement = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(debordement).toBeLessThanOrEqual(0);
+});
+
+test('les tableaux denses des autres sections se trient et déplient leur correction', async ({ page }) => {
+  await connexion(page);
+  await page.getByRole('link', { name: 'Catégories', exact: true }).click();
+
+  const tableau = page.locator('[data-view="table"]');
+  const noms = tableau.locator('tbody tr td:first-child');
+  await expect(noms).toHaveText(['Courses', 'Salaire']);
+
+  // Un premier clic sur une colonne de texte trie de A à Z, le second inverse.
+  await tableau.getByRole('button', { name: /^Catégorie/ }).click();
+  await expect(tableau.locator('th[aria-sort="ascending"]')).toHaveText(/Catégorie/);
+  await tableau.getByRole('button', { name: /^Catégorie/ }).click();
+  await expect(noms).toHaveText(['Salaire', 'Courses']);
+
+  // « Modifier » déplie la correction sous SA ligne, et la replie.
+  const modifier = tableau.getByRole('row', { name: /Courses/ }).getByRole('button', { name: 'Modifier' });
+  await modifier.click();
+  await expect(modifier).toHaveAttribute('aria-expanded', 'true');
+  await expect(tableau.locator('.finance-table__edition input[name="name"]')).toHaveValue('Courses');
+  await modifier.click();
+  await expect(tableau.locator('.finance-table__edition')).toHaveCount(0);
+
+  // Les soldes de la synthèse gardent leur ligne de total.
+  await page.getByRole('link', { name: 'Synthèse', exact: true }).click();
+  const soldes = page.locator('.finance-card', { has: page.getByRole('heading', { name: 'Soldes à la fin de la période' }) }).locator('[data-view="table"]');
+  await expect(soldes.locator('tfoot')).toContainText('Total');
+});
+
+test('sous 680 px les tableaux denses deviennent des cartes, sans défilement latéral', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 780 });
+  await connexion(page);
+  for (const section of ['accounts', 'categories', 'budget']) {
+    await page.goto(`/finance/${section}?period=2026-09`);
+    for (const vue of await page.locator('[data-view="table"]').all()) await expect(vue).toBeHidden();
+    await expect(page.locator('[data-view="cards"]').first()).toBeVisible();
+    const debordement = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(debordement, section).toBeLessThanOrEqual(0);
+  }
 });

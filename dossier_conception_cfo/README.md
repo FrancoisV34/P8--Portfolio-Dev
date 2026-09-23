@@ -15,7 +15,7 @@ Objectif : intégrer dans une application existante un module de pilotage financ
 ## Roadmap interactive — 9 septembre 2026
 - [Roadmap détaillée](13_ROADMAP.md) : 20 lots, dépendances, jalons et critères de fin.
 - [Journal des arbitrages](17_DECISIONS_REALISATION.md) : choix de réalisation à prendre un par un ; D01 est validé, **partie privée et budget d'abord**, puis GoMining et patrimoine.
-- [État d'implémentation mesuré](21_ETAT_IMPLEMENTATION.md) — relevé du 18 septembre 2026 : `L00`–`L16` codés, `L17` (blog) vide, `L19` reporté ; le système visuel est appliqué partout mais **huit sections sur quatorze n'ont pas encore leur tableau dense**.
+- [État d'implémentation mesuré](21_ETAT_IMPLEMENTATION.md) — mis à jour le 23 septembre 2026 : `L00`–`L16` codés, `L17` (blog) vide, `L19` reporté ; les huit sections restantes ont reçu leur tableau dense, et Patrimoine, Business, CFO et GoMining restent partiels.
 - Branche de travail : `refacto`, migration directe validée. [Suivi du premier lot](18_MIGRATION_SOCLE.md). La connexion locale du compte unique est opérationnelle ; le prochain choix produit concerne le périmètre du premier budget (D05).
 
 ## Hypothèses de départ
