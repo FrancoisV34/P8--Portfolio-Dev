@@ -2,7 +2,8 @@
 
 Relevé du **18 septembre 2026**, sur la branche `refacto`, à `d528575`.
 Mis à jour le **23 septembre 2026** : voir les deux encarts datés ci-dessous
-(sections 1 et 2) et la section 4, réécrite.
+(sections 1 et 2). Mis à jour le **3 octobre 2026** : encart de la section 1,
+section 4 réécrite.
 
 Ce document ne remplace ni la [roadmap](13_ROADMAP.md), qui dit ce qu'il faut
 faire, ni le [journal des décisions](17_DECISIONS_REALISATION.md), qui dit ce
@@ -25,7 +26,7 @@ motifs dans `app/routes/finance.tsx`, comparaison avec `git show 022c3d7^`,
 | `L12`, `L13` | Objectifs et projets, registre réglementaire daté | codés |
 | `L14`, `L15`, `L16` | Moteur CFO, simulations, comparateur Micro/SASU | codés |
 | `L17` | Portfolio finalisé et **blog** | 🔴 **aucune route blog n'existe** |
-| `L18` | Mise en service | en ligne — François déploie par `fly deploy` (confirmé le 23 septembre 2026). Reste à tester une restauration de sauvegarde |
+| `L18` | Mise en service | en ligne — François déploie par `fly deploy`. Restauration d'une sauvegarde de production testée le 3 octobre 2026 |
 | `L19` | Intelligence avancée (Monte Carlo, assistant) | non commencé — **reporté par décision**, pas en retard |
 
 13 dépôts métier existent et servent de vraies données. Les 14 sections de
@@ -37,6 +38,28 @@ plus 3 tests Playwright authentifiés (`npm run test:auth`, hors `npm run check`
 **23 septembre 2026** : 172 tests sur 25 fichiers, plus 6 tests Playwright. Les
 ajouts portent sur la file de validation des relevés importés et sur le tri des
 tableaux denses.
+
+**3 octobre 2026** : 207 tests sur 26 fichiers, plus 7 tests Playwright.
+
+### 3 octobre 2026 — import des relevés, rapprochement, revue de sécurité
+
+- **Import de relevés PDF Caisse d'Épargne** (`app/.server/imports/`) : texte
+  natif lu par pdfjs-dist dans un processus séparé et sans droits, import
+  refusé si solde de départ + opérations ≠ solde de fin. Vérifié sur un relevé
+  réel : 15 opérations, solde −172,52 € retrouvé au centime après validation.
+- **File de validation enrichie** (`app/.server/repositories/imports.ts`) :
+  rattachement à un mouvement déjà saisi, reconnaissance de la décision passée
+  par libellé, validation d'une ligne connue depuis la liste, validation groupée
+  en un clic des lignes identiques, création d'une catégorie ou d'un compte à la
+  volée, virements entre comptes reliés au centime près.
+- **Historique des relevés importés** avec retrait des lignes en attente ; un
+  même relevé téléchargé deux fois est refusé sur son contenu.
+- **Revue de sécurité** consignée dans `SECURITY.md` (section du 3 octobre).
+- **Restauration testée** sur la sauvegarde de production du 3 octobre :
+  `npm run db:restore` vers une base séparée, `npm run db:check` (intégrité,
+  clés étrangères, 28 migrations sur 28), migration à vide, relecture par le
+  code de l'app. La revue a révélé que la sauvegarde téléchargée contenait le
+  jeton de session actif ; il en est désormais retiré.
 
 ---
 
@@ -123,19 +146,18 @@ mutation et le test.**
 
 ## 4. Ce qui reste, par ordre de rendement
 
-Réécrit le 23 septembre 2026.
+Réécrit le 3 octobre 2026.
 
 1. **`L17` — le blog.** Aucune route n'existe ; c'est le seul lot du périmètre
    d'origine qui n'a rien.
-2. **Les lecteurs de relevés** : la file de validation est livrée, mais rien ne
-   dépose encore de lignes. Il manque l'envoi du fichier, le lecteur CSV (format
-   Caisse d'Épargne, décision D32) et le lecteur PDF natif.
-3. **Tester la restauration d'une sauvegarde** en conditions réelles.
-4. **Voir la courbe des 120 mois** de Simulations, qui demande de semer un jeu
-   d'hypothèses complet.
-5. **Les quatre sections partielles** : Patrimoine, Business, CFO et GoMining.
-6. `L19` seulement si le modèle déterministe est jugé fiable — c'est sa
-   condition d'entrée, et elle n'a pas été évaluée.
+2. **Serveur en utilisateur non-root.** Le conteneur tourne en root ; le
+   lecteur PDF en est déjà isolé. À faire avec une procédure d'administration
+   adaptée (voir `SECURITY.md`).
+3. **Les quatre sections partielles** : Patrimoine, Business, CFO et GoMining.
+4. **Voir la courbe des 120 mois** de Simulations.
+5. **Lecteur CSV et relevés multi-comptes**, si l'usage le demande : le PDF
+   mono-compte couvre l'usage actuel.
+6. `L19` seulement si le modèle déterministe est jugé fiable.
 
 ---
 

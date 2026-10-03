@@ -122,6 +122,17 @@ gardes du rapprochement ont été vérifiées par mutation (5 sur 5 détectées)
   échu) annulait tout le lot ; elle est maintenant laissée dans la file, les
   autres passent.
 
+- **Jeton de session dans les sauvegardes.** La sauvegarde téléchargée
+  contenait la table `session`, dont le jeton (gardé en clair par Better Auth)
+  ouvrait le compte sans mot de passe jusqu'à son expiration. La copie est
+  désormais purgée des sessions et jetons de vérification, puis réécrite par
+  `VACUUM` ; un test vérifie que le jeton n'est plus dans les octets du fichier.
+  La sauvegarde du 3 octobre, téléchargée avant ce correctif, impose une
+  déconnexion pour révoquer la session qu'elle contient.
+- **Restauration vérifiée** sur cette même sauvegarde de production :
+  `db:restore` vers une base séparée, `db:check`, migration à vide, relecture
+  par le code de l'app.
+
 **Risques résiduels acceptés**
 
 - Le conteneur tourne en root. Passer le serveur sous `node` est souhaitable,

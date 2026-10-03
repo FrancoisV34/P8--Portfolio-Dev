@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import Database from 'better-sqlite3';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDatabase } from '../../app/.server/db/connection';
@@ -140,7 +140,17 @@ describe('compte financier unique', () => {
     const downloaded = join(directory, 'downloaded.sqlite');
     writeFileSync(downloaded, Buffer.from(await response.arrayBuffer()));
     const backup = new Database(downloaded, { readonly: true });
-    try { expect(backup.pragma('quick_check', { simple: true })).toBe('ok'); } finally { backup.close(); }
+    try {
+      expect(backup.pragma('quick_check', { simple: true })).toBe('ok');
+      // Aucune session dans la copie : le jeton, gardé en clair, ouvrirait le compte sans mot de passe.
+      expect(backup.prepare('select count(*) as n from session').get()).toEqual({ n: 0 });
+      expect(backup.prepare('select count(*) as n from user').get()).toEqual({ n: 2 });
+    } finally { backup.close(); }
+    // Ni le jeton ni l'empreinte du cookie ne subsistent dans les octets du fichier.
+    const token = decodeURIComponent(ownerCookie.split('=')[1]).split('.')[0];
+    expect(readFileSync(downloaded).includes(Buffer.from(token))).toBe(false);
+    // La session du propriétaire, elle, reste ouverte sur le serveur.
+    await expect(requireOwner(request('/get-session', 'GET', ownerCookie))).resolves.toMatchObject({ user: { email: ownerEmail } });
 
     const tooSoon = await backupAction({ request: new Request('https://portfolio.example/api/finance/backup', { method: 'POST', headers: { origin: 'https://portfolio.example', cookie: ownerCookie } }) });
     expect(tooSoon.status).toBe(429);

@@ -46,8 +46,10 @@ export async function createBackup(sqlite: Database.Database, source: string, de
     chmodSync(temporary, 0o600);
     verifyDatabase(temporary);
     renameSync(temporary, destination);
+    removeSidecars(temporary);
   } catch {
     rmSync(temporary, { force: true });
+    removeSidecars(temporary);
     failure('La sauvegarde SQLite n’a pas pu être créée.');
   }
 }
@@ -62,8 +64,10 @@ export async function restoreBackup(source: string, destination: string) {
     chmodSync(temporary, 0o600);
     verifyDatabase(temporary);
     renameSync(temporary, destination);
+    removeSidecars(temporary);
   } catch {
     rmSync(temporary, { force: true });
+    removeSidecars(temporary);
     failure('La restauration SQLite n’a pas pu être effectuée.');
   } finally {
     sqlite?.close();
@@ -71,6 +75,34 @@ export async function restoreBackup(source: string, destination: string) {
 }
 
 const maximumDownloadBytes = 64 * 1024 * 1024;
+
+/**
+ * ⚠️ **Une sauvegarde téléchargée ne doit pas pouvoir ouvrir une session.**
+ * Better Auth garde le jeton de session en clair : une copie de la base qui
+ * le contient permet de se connecter sans mot de passe tant qu'il n'a pas
+ * expiré. Constaté le 3 octobre 2026 sur une sauvegarde de production. Les
+ * sessions et jetons de vérification sont donc retirés de la copie, et
+ * `VACUUM` réécrit le fichier pour qu'ils ne survivent pas dans ses pages
+ * libres. Le mot de passe haché reste : sans lui, une base restaurée serait
+ * inutilisable.
+ */
+function withoutCredentials(path: string) {
+  const copy = new Database(path, { fileMustExist: true });
+  try {
+    copy.exec('delete from session; delete from verification;');
+    copy.pragma('journal_mode = DELETE');
+    copy.exec('VACUUM');
+  } finally {
+    copy.close();
+  }
+  verifyDatabase(path);
+  removeSidecars(path);
+}
+
+/** Une base ouverte en WAL laisse `-wal` et `-shm` à côté d'elle. */
+function removeSidecars(path: string) {
+  for (const suffix of ['-wal', '-shm']) rmSync(`${path}${suffix}`, { force: true });
+}
 
 /**
  * Produit une copie SQLite cohérente uniquement le temps d'un téléchargement
@@ -81,6 +113,7 @@ export async function createDownloadBackup(sqlite: Database.Database, source: st
   const destination = join(directory, 'finance.sqlite');
   try {
     await createBackup(sqlite, source, destination);
+    withoutCredentials(destination);
     const size = (await stat(destination)).size;
     if (size < 1 || size > maximumDownloadBytes) failure('La sauvegarde SQLite n’a pas pu être créée.');
     const downloadedAt = new Date().toISOString().replaceAll(':', '-').replace('.', '-');
