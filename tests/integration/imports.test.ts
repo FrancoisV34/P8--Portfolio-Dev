@@ -7,7 +7,7 @@ import { migrateDatabase } from '../../app/.server/db/migrate';
 import { accountsRepository } from '../../app/.server/repositories/accounts';
 import { budgetRepository } from '../../app/.server/repositories/budget';
 import { planningRepository } from '../../app/.server/repositories/planning';
-import { importsRepository, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
+import { DIRECTION_MISMATCH, importsRepository, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
 
 let directory: string;
 let connection: ReturnType<typeof openDatabase>;
@@ -392,6 +392,18 @@ describe('rapprochement et reconnaissance', () => {
       const jambe = connection.sqlite.prepare("select id from finance_transactions where account_id = ? and kind = 'transfer'").get(savings.id) as { id: string };
       expect(() => imports.linkLine({ id: ligne.line.id, transactionId: jambe.id, adopt: false })).toThrow('Les deux montants du virement ne correspondent pas');
       expect(() => imports.linkLine({ id: ligne.line.id, transactionId: jambe.id, adopt: true })).toThrow('Les deux montants du virement ne correspondent pas');
+    });
+
+    it('lit le sens du virement sur le signe de la ligne, et refuse un sens contraire', () => {
+      const { imports, budget, checking, savings } = setup();
+      imports.createBatch(statement(savings.id, { lines: [entree()] }));
+      const [ligne] = imports.listPending();
+      const decision = { id: ligne.line.id, kind: 'transfer' as const, counterpartAccountId: checking.id, amountCents: 130_000, occurredOn: '2026-09-05', note: '' };
+      expect(() => imports.acceptLine({ ...decision, direction: 'out' })).toThrow(DIRECTION_MISMATCH);
+      // Sans sens fourni : +1 300 sur le livret, donc du compte courant vers le livret.
+      imports.acceptLine(decision);
+      const jambes = budget.listTransactions('2026-09').map(({ transaction }) => [transaction.accountId === savings.id ? 'livret' : 'courant', transaction.amountCents]);
+      expect(jambes.sort()).toEqual([['courant', -130_000], ['livret', 130_000]]);
     });
   });
 });

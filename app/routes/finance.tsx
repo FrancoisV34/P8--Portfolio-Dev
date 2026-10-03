@@ -9,7 +9,7 @@ import { budgetRepository } from '../.server/repositories/budget.ts';
 import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
-import { importsRepository, OPENED_TOO_LATE, TRANSFER_MISMATCH } from '../.server/repositories/imports.ts';
+import { DIRECTION_MISMATCH, importsRepository, OPENED_TOO_LATE, TRANSFER_MISMATCH } from '../.server/repositories/imports.ts';
 import { MAX_PDF_BYTES, StatementError } from '../.server/imports/pdf-rows.server.ts';
 import { importStatement } from '../.server/imports/statement-upload.server.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
@@ -177,7 +177,7 @@ async function boundedFormData(request: Request) {
   return new Response(new Blob(chunks as BlobPart[]), { headers: { 'content-type': request.headers.get('content-type') ?? '' } }).formData();
 }
 const SAFE_ERRORS = new Set([
-  OPENED_TOO_LATE, TRANSFER_MISMATCH, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
+  OPENED_TOO_LATE, TRANSFER_MISMATCH, DIRECTION_MISMATCH, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
   'Choisir un existant ou en créer un, pas les deux.',
 ]);
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
@@ -309,7 +309,8 @@ export async function action({ request }: { request: Request }) {
           // Un nom saisi l'emporte sur la liste : c'est le geste le plus récent.
           const newAccount = optionalField(data, 'newAccountName', 100)?.trim();
           imports.acceptLine({
-            ...decision, kind, direction: field(data, 'direction', 4) as 'out' | 'in',
+            // Pas de sens envoyé : le serveur le lit sur le signe de la ligne.
+            ...decision, kind,
             ...(newAccount ? { newCounterpartAccount: { name: newAccount, type: field(data, 'newAccountType', 20) as 'checking' | 'savings' | 'cash' } } : { counterpartAccountId: field(data, 'counterpartAccountId', 64) }),
           });
         } else {
@@ -952,6 +953,10 @@ function ModaleImport({ item, data, accounts, categories, onFermer }: {
   const [nature, setNature] = useState<'income' | 'expense' | 'transfer'>(decision?.kind ?? (line.amountCents > 0 ? 'income' : 'expense'));
   const autresComptes = accounts.filter((account) => account.id !== batch.accountId && account.isActive);
   const actives = categories.filter((category) => category.isActive && category.kind === nature);
+  const [autreCompte, setAutreCompte] = useState(decision?.kind === 'transfer' ? decision.counterpartAccountId : '');
+  const [nouveauCompte, setNouveauCompte] = useState('');
+  // Le nom saisi l'emporte sur la liste, comme côté serveur.
+  const autreNom = nouveauCompte.trim() || autresComptes.find((account) => account.id === autreCompte)?.name || 'l’autre compte';
   const erreur = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
 
   useEffect(() => { panneau.current?.querySelector<HTMLElement>(SELECTEUR_FOCUSABLE)?.focus(); }, []);
@@ -993,14 +998,12 @@ function ModaleImport({ item, data, accounts, categories, onFermer }: {
             <option value="expense">Dépense</option><option value="income">Revenu</option><option value="transfer">Transfert</option>
           </select></label>
           {nature === 'transfer' ? <>
-            <label>Autre compte<select name="counterpartAccountId" defaultValue={decision?.kind === 'transfer' ? decision.counterpartAccountId : ''}>
+            <label>Autre compte<select name="counterpartAccountId" value={autreCompte} onChange={(evenement) => setAutreCompte(evenement.target.value)}>
               <option value="">—</option>{autresComptes.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
             </select></label>
-            <label>ou nouveau compte<input name="newAccountName" maxLength={100} placeholder="Nom du compte" /></label>
+            <label>ou nouveau compte<input name="newAccountName" maxLength={100} placeholder="Nom du compte" value={nouveauCompte} onChange={(evenement) => setNouveauCompte(evenement.target.value)} /></label>
             <label>Type du nouveau compte<select name="newAccountType" defaultValue="checking"><option value="checking">Courant</option><option value="savings">Épargne</option><option value="cash">Espèces</option></select></label>
-            <label>Sens<select name="direction" defaultValue={decision?.kind === 'transfer' ? decision.direction : line.amountCents < 0 ? 'out' : 'in'}>
-              <option value="out">Sortant de {accountName}</option><option value="in">Entrant sur {accountName}</option>
-            </select></label>
+            <p className="finance-help" aria-live="polite">Virement : <strong>{line.amountCents < 0 ? `${accountName} → ${autreNom}` : `${autreNom} → ${accountName}`}</strong>. Le sens vient du relevé : {line.amountCents < 0 ? 'la ligne est négative, l’argent sort' : 'la ligne est positive, l’argent entre'}.</p>
           </> : <>
             <label>Catégorie<select name="categoryId" defaultValue={decision && decision.kind !== 'transfer' && decision.kind === nature ? decision.categoryId : actives[0]?.id ?? ''}>
               <option value="">—</option>{actives.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}

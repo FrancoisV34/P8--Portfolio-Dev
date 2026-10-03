@@ -38,7 +38,7 @@ const acceptInput = z.discriminatedUnion('kind', [
   z.object({
     id: z.uuid(), kind: z.literal('transfer'), counterpartAccountId: z.uuid().optional(),
     newCounterpartAccount: z.object({ name: newName, type: z.enum(['checking', 'savings', 'cash']) }).strict().optional(),
-    direction: z.enum(['out', 'in']), amountCents, occurredOn: z.string(), note,
+    direction: z.enum(['out', 'in']).optional(), amountCents, occurredOn: z.string(), note,
   }).strict(),
 ]);
 const linkInput = z.object({ id: z.uuid(), transactionId: z.uuid(), adopt: z.boolean() }).strict();
@@ -46,6 +46,7 @@ const linkInput = z.object({ id: z.uuid(), transactionId: z.uuid(), adopt: z.boo
 export type CreateImportBatch = z.input<typeof batchInput>;
 export type AcceptImportLine = z.input<typeof acceptInput>;
 export const TRANSFER_MISMATCH = 'Les deux montants du virement ne correspondent pas : ce n’est pas la même opération.';
+export const DIRECTION_MISMATCH = 'Le sens du virement contredit le relevé : une ligne négative sort de ce compte, une ligne positive y entre.';
 export const OPENED_TOO_LATE = 'Le relevé commence avant la date d’ouverture de ce compte : avance cette date dans la section Comptes, puis réimporte.';
 export type LinkImportLine = z.input<typeof linkInput>;
 export type ImportDuplicate = 'imported' | 'journal' | null;
@@ -305,7 +306,11 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
               openingBalanceCents: 0, openingDate: values.occurredOn,
             }).id;
           }
-          const [fromAccountId, toAccountId] = values.direction === 'out'
+          // Le relevé dit déjà le sens : négatif, l'argent sort de ce compte ;
+          // positif, il y entre. Un sens contraire n'est pas une correction.
+          const direction = found.line.amountCents < 0 ? 'out' : 'in';
+          if (values.direction && values.direction !== direction) throw new Error(DIRECTION_MISMATCH);
+          const [fromAccountId, toAccountId] = direction === 'out'
             ? [found.accountId, counterpartAccountId] : [counterpartAccountId, found.accountId];
           const transferGroupId = budget.createTransfer({ fromAccountId, toAccountId, amountCents: values.amountCents, occurredOn: values.occurredOn, note: values.note });
           // Le relevé ne décrit que la jambe de son propre compte.
