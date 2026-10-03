@@ -212,4 +212,12 @@ test('un relevé PDF déposé remplit la file de validation, et un second envoi 
   await expect(page.getByRole('heading', { name: '5 écritures à valider' })).toBeVisible();
   await page.getByRole('link', { name: 'Catégories', exact: true }).click();
   await expect(page.locator('[data-view="table"] tbody td:first-child').getByText('Salaire synthétique', { exact: true })).toBeVisible();
+
+  // ── Retirer le reste du relevé : la ligne validée reste au journal ──────
+  await page.getByRole('link', { name: 'Transactions', exact: true }).click();
+  const releves = page.locator('.finance-card', { has: page.getByRole('heading', { name: 'Relevés importés' }) });
+  await releves.getByLabel(/Retirer les 5 lignes en attente/).check();
+  await releves.getByRole('button', { name: 'Retirer' }).click();
+  await expect(page.getByRole('heading', { name: /à valider/ })).toHaveCount(0);
+  await expect(releves).toContainText('0 en attente · 1 validée · 0 ignorée');
 });

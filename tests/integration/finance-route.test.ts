@@ -372,6 +372,8 @@ describe('route finance privée', () => {
     await expect(post({ intent: 'linkImportLine', id: autre.line.id, transactionId: manual.id, adopt: '1' })).resolves.toEqual({ error: 'Ce mouvement est déjà rapproché d’une autre ligne.' });
     // « Valider » sur une ligne sans proposition sûre : refusé avec une consigne lisible.
     await expect(post({ intent: 'acceptSuggestedImportLine', id: autre.line.id })).resolves.toEqual({ error: 'Cette ligne demande une vérification : ouvre-la avec « Traiter ».' });
+    // Retirer un relevé exige la confirmation explicite.
+    await expect(post({ intent: 'discardImportBatch', id: saisie.batch.id })).resolves.toMatchObject({ error: expect.any(String) });
     // Le nom saisi l'emporte sur la liste, et crée la catégorie.
     await expect(post({ intent: 'acceptImportLine', id: nouvelle.line.id, kind: 'expense', categoryId: category.id, newCategoryName: '  Nouvelle catégorie  ', amount: '7,00', occurredOn: '2026-09-03', note: '' })).resolves.toMatchObject({ status: 302 });
 

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { and, asc, count, desc, eq, gt, gte, isNotNull, lt, lte, ne, notInArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gt, gte, inArray, isNotNull, lt, lte, ne, notInArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { parseCalendarDate } from '../../lib/finance/dates.ts';
 import { euroCents } from '../../lib/finance/units.ts';
@@ -78,6 +78,7 @@ export type ImportSuggestion = {
   quick: 'link' | 'create' | null;
   linkTo: string | null;
 };
+export const ALREADY_IMPORTED = 'Ces opérations sont déjà toutes dans un relevé importé pour ce compte : c’est sans doute le même relevé, téléchargé une seconde fois.';
 export const NEEDS_REVIEW = 'Cette ligne demande une vérification : ouvre-la avec « Traiter ».';
 
 /**
@@ -259,6 +260,16 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
           eq(importBatches.ownerId, ownerId), eq(importBatches.accountId, values.accountId), eq(importBatches.sourceSha256, values.sourceSha256),
         )).get();
         if (known) throw new Error('Ce relevé a déjà été importé pour ce compte.');
+        // La banque régénère son PDF à chaque téléchargement : deux fichiers
+        // différents peuvent porter le même relevé. Si TOUTES les opérations
+        // sont déjà dans un relevé importé (et non écarté), c'est un doublon.
+        // Un chevauchement partiel (deux exports qui se recouvrent) reste admis,
+        // ligne par ligne signalée.
+        const fingerprints = [...new Set(lines.map((line) => line.fingerprint))];
+        const seen = new Set(tx.select({ fingerprint: importLines.fingerprint }).from(importLines).where(and(
+          eq(importLines.ownerId, ownerId), inArray(importLines.fingerprint, fingerprints), ne(importLines.status, 'rejected'),
+        )).all().map(({ fingerprint: value }) => value));
+        if (fingerprints.every((value) => seen.has(value))) throw new Error(ALREADY_IMPORTED);
         const createdAt = new Date().toISOString();
         const batch = tx.insert(importBatches).values({
           id: randomUUID(), ownerId, accountId: values.accountId, sourceKind: values.sourceKind,
@@ -423,6 +434,39 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
         if (!found) throw new Error('Ligne introuvable.');
         const suggestion = suggestionFor(found.line, found.accountId, this.duplicateOf(found.line, found.accountId), historyFor(found.accountId));
         return applySuggestion.call(this, id, found.line, suggestion, 'quick');
+      });
+    },
+    /** Les relevés importés, du plus récent au plus ancien, avec l'état de leurs lignes. */
+    listBatches() {
+      return db.select({
+        id: importBatches.id, sourceName: importBatches.sourceName, sourceKind: importBatches.sourceKind, createdAt: importBatches.createdAt, accountName: accounts.name,
+        pending: sql<number>`sum(case when ${importLines.status} = 'pending' then 1 else 0 end)`,
+        accepted: sql<number>`sum(case when ${importLines.status} = 'accepted' then 1 else 0 end)`,
+        rejected: sql<number>`sum(case when ${importLines.status} = 'rejected' then 1 else 0 end)`,
+      }).from(importBatches)
+        .innerJoin(accounts, eq(importBatches.accountId, accounts.id))
+        .innerJoin(importLines, eq(importLines.batchId, importBatches.id))
+        .where(and(eq(importBatches.ownerId, ownerId), eq(importLines.ownerId, ownerId)))
+        .groupBy(importBatches.id).orderBy(desc(importBatches.createdAt)).limit(50).all();
+    },
+    /**
+     * Retire d'un relevé importé les lignes encore en attente. Les lignes déjà
+     * validées ne bougent pas : leurs mouvements sont au journal et se
+     * suppriment là, un par un, en connaissance de cause. Un relevé dont plus
+     * aucune ligne ne reste disparaît, et peut être réimporté.
+     */
+    discardBatch(batchId: string) {
+      z.uuid().parse(batchId);
+      return db.transaction((tx) => {
+        const batch = tx.select({ id: importBatches.id }).from(importBatches)
+          .where(and(eq(importBatches.id, batchId), eq(importBatches.ownerId, ownerId))).get();
+        if (!batch) throw new Error('Relevé introuvable.');
+        const removed = tx.delete(importLines).where(and(
+          eq(importLines.batchId, batchId), eq(importLines.ownerId, ownerId), eq(importLines.status, 'pending'),
+        )).run().changes;
+        const remaining = tx.select({ value: count() }).from(importLines).where(eq(importLines.batchId, batchId)).get()?.value ?? 0;
+        if (remaining === 0) tx.delete(importBatches).where(and(eq(importBatches.id, batchId), eq(importBatches.ownerId, ownerId))).run();
+        return { removed, batchDeleted: remaining === 0 };
       });
     },
     rejectLine(id: string) {

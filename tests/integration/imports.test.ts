@@ -7,7 +7,7 @@ import { migrateDatabase } from '../../app/.server/db/migrate';
 import { accountsRepository } from '../../app/.server/repositories/accounts';
 import { budgetRepository } from '../../app/.server/repositories/budget';
 import { planningRepository } from '../../app/.server/repositories/planning';
-import { DIRECTION_MISMATCH, importsRepository, NEEDS_REVIEW, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
+import { ALREADY_IMPORTED, DIRECTION_MISMATCH, importsRepository, NEEDS_REVIEW, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
 
 let directory: string;
 let connection: ReturnType<typeof openDatabase>;
@@ -155,9 +155,10 @@ describe('file des relevés importés', () => {
     budget.createTransaction({ accountId: checking.id, categoryId: groceries.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-09-03', note: 'saisie manuelle' });
     imports.createBatch(statement(checking.id));
     expect(imports.listPending().map(({ duplicate }) => duplicate)).toEqual(['journal', null]);
-    // Le même relevé, exporté une seconde fois (autre fichier), chevauche le premier.
-    imports.createBatch(statement(checking.id, { sourceKind: 'pdf', sourceName: 'releve.pdf', sourceSha256: sha('c') }));
-    expect(imports.listPending().map(({ duplicate }) => duplicate)).toEqual(['imported', 'imported', 'imported', 'imported']);
+    // Un second export qui chevauche le premier (une opération commune, une nouvelle) : admis, la commune est signalée.
+    const nouvelle = { rawDate: '20/09/2026', rawLabel: 'CB LIBRAIRIE', rawAmount: '-9,90', occurredOn: '2026-09-20', label: 'CB LIBRAIRIE', amountCents: -990 };
+    imports.createBatch(statement(checking.id, { sourceKind: 'pdf', sourceName: 'releve.pdf', sourceSha256: sha('c'), lines: [statement(checking.id).lines[1], nouvelle] }));
+    expect(imports.listPending().map(({ duplicate }) => duplicate)).toEqual(['journal', 'imported', 'imported', null]);
   });
 
   it('ne prend pas deux opérations identiques du même relevé pour un doublon', () => {
@@ -345,7 +346,7 @@ describe('rapprochement et reconnaissance', () => {
     const legs = budget.listTransactions('2026-09').filter(({ transaction }) => transaction.kind === 'transfer');
     expect(legs.map(({ accountName, transaction }) => [accountName, transaction.amountCents]).sort()).toEqual([['Compte autre banque', 130_000], ['Compte courant', -130_000]]);
 
-    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [coffee] }));
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [{ ...coffee, label: 'CB AUTRE CAFE', rawLabel: 'CB AUTRE CAFE' }] }));
     const [next] = imports.listPending();
     expect(() => imports.acceptLine({ id: next.line.id, kind: 'expense', categoryId: groceries.id, newCategoryName: 'Autre', amountCents: 4_210, occurredOn: '2026-09-03', note: '' })).toThrow('pas les deux');
     expect(() => imports.acceptLine({ id: next.line.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-09-03', note: '' })).toThrow('pas les deux');
@@ -468,6 +469,46 @@ describe('validation rapide d’une ligne connue', () => {
     expect(() => setup('other-test').imports.acceptSuggested(ligne.line.id)).toThrow('Ligne introuvable.');
     imports.rejectLine(ligne.line.id);
     expect(() => imports.acceptSuggested(ligne.line.id)).toThrow('Ligne introuvable.');
+  });
+});
+
+describe('relevés importés : doublons et retrait', () => {
+  it('refuse le même relevé sous un autre fichier, comme la banque en régénère à chaque téléchargement', () => {
+    const { imports, checking, savings } = setup();
+    imports.createBatch(statement(checking.id));
+    expect(() => imports.createBatch(statement(checking.id, { sourceKind: 'pdf', sourceSha256: sha('b') }))).toThrow(ALREADY_IMPORTED);
+    // Sur un autre compte, ce n'est pas le même relevé.
+    expect(imports.createBatch(statement(savings.id, { sourceSha256: sha('b') })).lineCount).toBe(2);
+  });
+
+  it('liste les relevés avec l’état de leurs lignes', () => {
+    const { imports, checking, groceries } = setup();
+    imports.createBatch(statement(checking.id));
+    const [first, second] = imports.listPending();
+    imports.acceptLine({ id: first.line.id, kind: 'expense', categoryId: groceries.id, amountCents: 4_210, occurredOn: '2026-09-03', note: '' });
+    imports.rejectLine(second.line.id);
+    expect(imports.listBatches()).toEqual([expect.objectContaining({ sourceName: 'releve-septembre.csv', accountName: 'Compte courant', pending: 0, accepted: 1, rejected: 1 })]);
+    expect(setup('other-test').imports.listBatches()).toEqual([]);
+  });
+
+  it('retire un relevé importé par erreur, qui peut alors être réimporté', () => {
+    const { imports, checking } = setup();
+    const { batch } = imports.createBatch(statement(checking.id));
+    expect(() => setup('other-test').imports.discardBatch(batch.id)).toThrow('Relevé introuvable.');
+    expect(imports.discardBatch(batch.id)).toEqual({ removed: 2, batchDeleted: true });
+    expect(imports.listBatches()).toEqual([]);
+    expect(imports.createBatch(statement(checking.id)).lineCount).toBe(2);
+  });
+
+  it('ne retire que les lignes en attente : ce qui est au journal y reste', () => {
+    const { imports, budget, checking, groceries } = setup();
+    const { batch } = imports.createBatch(statement(checking.id));
+    const [first] = imports.listPending();
+    imports.acceptLine({ id: first.line.id, kind: 'expense', categoryId: groceries.id, amountCents: 4_210, occurredOn: '2026-09-03', note: '' });
+    expect(imports.discardBatch(batch.id)).toEqual({ removed: 1, batchDeleted: false });
+    expect(imports.countPending()).toBe(0);
+    expect(budget.listTransactions('2026-09')).toHaveLength(1);
+    expect(imports.listBatches()).toEqual([expect.objectContaining({ pending: 0, accepted: 1 })]);
   });
 });
 

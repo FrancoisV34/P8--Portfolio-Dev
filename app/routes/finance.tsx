@@ -9,7 +9,7 @@ import { budgetRepository } from '../.server/repositories/budget.ts';
 import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
-import { DIRECTION_MISMATCH, importsRepository, NEEDS_REVIEW, OPENED_TOO_LATE, TRANSFER_MISMATCH } from '../.server/repositories/imports.ts';
+import { ALREADY_IMPORTED, DIRECTION_MISMATCH, importsRepository, NEEDS_REVIEW, OPENED_TOO_LATE, TRANSFER_MISMATCH } from '../.server/repositories/imports.ts';
 import { MAX_PDF_BYTES, StatementError } from '../.server/imports/pdf-rows.server.ts';
 import { importStatement } from '../.server/imports/statement-upload.server.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
@@ -177,7 +177,7 @@ async function boundedFormData(request: Request) {
   return new Response(new Blob(chunks as BlobPart[]), { headers: { 'content-type': request.headers.get('content-type') ?? '' } }).formData();
 }
 const SAFE_ERRORS = new Set([
-  OPENED_TOO_LATE, TRANSFER_MISMATCH, DIRECTION_MISMATCH, NEEDS_REVIEW, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
+  OPENED_TOO_LATE, TRANSFER_MISMATCH, DIRECTION_MISMATCH, NEEDS_REVIEW, ALREADY_IMPORTED, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
   'Choisir un existant ou en créer un, pas les deux.',
 ]);
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
@@ -240,7 +240,7 @@ export async function loader({ request, params }: { request: Request; params: Re
       cfo: { context: cfoInputFor(period, entities, dashboard, planningDashboard, wealthDashboard, businessDashboard, goalsDashboard, sumEuroCents(gominingBudgetPlans.map((plan) => euroCents(plan.contributionCents)))), rules: cfoRules, history: cfo.list() },
       simulations: { current: simulations.current(), runs: simulations.list() },
       statusComparisons: statusComparisons.list(),
-      imports: { pending: imports.listPending(), count: imports.countPending() },
+      imports: { pending: imports.listPending(), count: imports.countPending(), batches: imports.listBatches() },
       regulations: regulationsDashboard,
       calendar,
       regulatorySources: regulatorySources.dashboard(),
@@ -323,6 +323,7 @@ export async function action({ request }: { request: Request }) {
         break;
       }
       case 'linkImportLine': imports.linkLine({ id: field(data, 'id', 64), transactionId: field(data, 'transactionId', 64), adopt: data.get('adopt') === '1' }); break;
+      case 'discardImportBatch': if (field(data, 'confirmDelete', 10) !== 'delete') throw new Error('invalid'); imports.discardBatch(field(data, 'id', 64)); break;
       case 'acceptSuggestedImportLine': imports.acceptSuggested(field(data, 'id', 64)); break;
       case 'acceptRecognizedImportLines': imports.acceptRecognized(fields(data, 'ids', 64, 200)); break;
       case 'importStatement': await importStatement(data, imports); break;
@@ -846,7 +847,7 @@ function CategorySelect({ categories, selected }: { categories: Data['categories
 function CommitmentSelect({ commitments, selected }: { commitments: Data['commitments']; selected?: string | null }) { return <label>Engagement payé (facultatif)<select name="recurringCommitmentId" defaultValue={selected ?? ''}><option value="">Aucun</option>{commitments.map(({ commitment, categoryName }) => <option key={commitment.id} value={commitment.id}>{commitment.name} — {categoryName}</option>)}</select></label>; }
 function Delete({ intent, id, text }: { intent: 'deleteTransaction' | 'deleteBudget' | 'deleteSafetyReserve' | 'deleteCommitment' | 'deleteGoMiningScenario'; id?: string; text: string }) { return <Form method="post" className="finance-delete"><input type="hidden" name="intent" value={intent} />{id ? <input type="hidden" name="id" value={id} /> : null}<label><input type="checkbox" name="confirmDelete" value="delete" required /> {text}</label><button>Supprimer</button></Form>; }
 
-function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid">{data.imports.count > 0 ? <ImportsAValider data={data} accounts={accounts} categories={categories} /> : null}<ImportReleve accounts={accounts} /><section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2><Journal data={data} accounts={accounts} categories={categories} /></section></section>; }
+function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid">{data.imports.count > 0 ? <ImportsAValider data={data} accounts={accounts} categories={categories} /> : null}<ImportReleve accounts={accounts} /><RelevesImportes batches={data.imports.batches} /><section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2><Journal data={data} accounts={accounts} categories={categories} /></section></section>; }
 
 /**
  * Dépôt d'un relevé PDF. Les lignes lues rejoignent la file de validation ;
@@ -870,6 +871,34 @@ type LigneImport = Data['imports']['pending'][number];
 type CandidatImport = LigneImport['suggestion']['candidates'][number];
 // La moitié reçue d'un virement vient « de » l'autre compte ; la moitié émise y « va ».
 const libelleVirement = (candidat: CandidatImport) => `virement ${candidat.amountCents > 0 ? 'depuis' : 'vers'} ${candidat.counterpartAccountName}`;
+
+/**
+ * L'historique des relevés importés. « Retirer » enlève seulement les lignes
+ * encore en attente : ce qui a été validé est au journal et s'y supprime, un
+ * mouvement à la fois. Un relevé entièrement retiré peut être réimporté.
+ */
+function RelevesImportes({ batches }: { batches: Data['imports']['batches'] }) {
+  if (batches.length === 0) return null;
+  return <section className="finance-card">
+    <h2>Relevés importés</h2>
+    <ul className="finance-records">{batches.map((batch) => {
+      const decidees = batch.accepted + batch.rejected;
+      return <li key={batch.id}>
+        <div>
+          <strong>{batch.sourceName}</strong>
+          <p>{batch.accountName} · importé le <time dateTime={batch.createdAt}>{dateCourte(batch.createdAt.slice(0, 10))}</time></p>
+          <p>{batch.pending} en attente · {batch.accepted} validée{batch.accepted > 1 ? 's' : ''} · {batch.rejected} ignorée{batch.rejected > 1 ? 's' : ''}</p>
+        </div>
+        {batch.pending > 0 ? <Form method="post" className="finance-delete">
+          <input type="hidden" name="intent" value="discardImportBatch" />
+          <input type="hidden" name="id" value={batch.id} />
+          <label><input type="checkbox" name="confirmDelete" value="delete" required /> {decidees === 0 ? 'Supprimer ce relevé' : `Retirer les ${batch.pending} lignes en attente (les ${decidees} déjà traitées restent)`}</label>
+          <button>{decidees === 0 ? 'Supprimer' : 'Retirer'}</button>
+        </Form> : null}
+      </li>;
+    })}</ul>
+  </section>;
+}
 
 /**
  * Ce que l'app propose pour une ligne, en pastilles : la cible (catégorie ou
