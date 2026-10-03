@@ -1,7 +1,11 @@
 import { authIsConfigured } from '../.server/auth/config.ts';
 import { getAuth } from '../.server/auth/auth.server.ts';
 
-const allowed = new Set(['GET /get-session', 'POST /sign-in/email', 'POST /sign-out']);
+// Connexion et déconnexion passent par le formulaire privé et son action, qui
+// appellent `auth.api` côté serveur. Les exposer ici ouvrirait une seconde
+// porte de connexion, à une adresse publique et fixe, qui échapperait à la
+// limitation par adresse e-mail du formulaire caché.
+const allowed = new Set(['GET /get-session']);
 
 function unavailable() {
   return new Response('Service privé indisponible.', {

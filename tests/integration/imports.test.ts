@@ -6,6 +6,7 @@ import { openDatabase } from '../../app/.server/db/connection';
 import { migrateDatabase } from '../../app/.server/db/migrate';
 import { accountsRepository } from '../../app/.server/repositories/accounts';
 import { budgetRepository } from '../../app/.server/repositories/budget';
+import { planningRepository } from '../../app/.server/repositories/planning';
 import { importsRepository, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
 
 let directory: string;
@@ -289,6 +290,35 @@ describe('rapprochement et reconnaissance', () => {
     expect(october).toHaveLength(2);
     expect(october.find((transaction) => transaction.id === manual.id)?.occurredOn).toBe('2026-10-03');
     expect(() => imports.acceptRecognized([])).toThrow();
+  });
+
+  it('écarte du lot une ligne qui échoue, sans faire échouer les autres', () => {
+    const { imports, budget, checking, groceries } = setup();
+    // Un abonnement résilié : son engagement s'arrête en septembre.
+    const commitment = planningRepository(connection.db, 'owner-test').createCommitment({ name: 'Spotify', categoryId: groceries.id, plannedAmountCents: 1_214, dueDay: 25, startPeriod: '2026-09', endPeriod: '2026-09' });
+    const free = { rawDate: '04/09/2026', rawLabel: 'PRLV Free Telecom', rawAmount: '-39,99', occurredOn: '2026-09-04', label: 'PRLV Free Telecom', amountCents: -3_999 };
+    imports.createBatch(statement(checking.id, { lines: [spotify('240926'), free] }));
+    const [abonnement, box] = imports.listPending();
+    imports.acceptLine({ id: abonnement.line.id, kind: 'expense', categoryId: groceries.id, recurringCommitmentId: commitment.id, amountCents: 1_214, occurredOn: '2026-09-25', note: '' });
+    imports.acceptLine({ id: box.line.id, kind: 'expense', categoryId: groceries.id, amountCents: 3_999, occurredOn: '2026-09-04', note: '' });
+
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [spotify('241026', -1_214, '2026-10-25'), { ...free, occurredOn: '2026-10-04' }] }));
+    const pending = imports.listPending();
+    expect(pending.map(({ suggestion }) => suggestion.recognized)).toEqual(['create', 'create']);
+    // L'engagement échu fait refuser Spotify ; Free passe quand même.
+    expect(imports.acceptRecognized(pending.map(({ line }) => line.id))).toEqual({ accepted: 1, skipped: 1 });
+    expect(imports.listPending().map(({ line }) => line.label)).toEqual(['CB Spotify France FACT 241026']);
+    expect(budget.listTransactions('2026-10').map(({ transaction }) => transaction.amountCents)).toEqual([-3_999]);
+  });
+
+  it('rattache en lot un transfert identique sans en déplacer la date', () => {
+    const { imports, budget, checking, savings } = setup();
+    budget.createTransfer({ fromAccountId: checking.id, toAccountId: savings.id, amountCents: 5_000, occurredOn: '2026-09-08', note: 'saisi à la main' });
+    imports.createBatch(statement(checking.id, { lines: [{ rawDate: '10/09/2026', rawLabel: 'VIR LIVRET', rawAmount: '-50,00', occurredOn: '2026-09-10', label: 'VIR LIVRET', amountCents: -5_000 }] }));
+    const [line] = imports.listPending();
+    expect(line.suggestion.recognized).toBe('link');
+    expect(imports.acceptRecognized([line.line.id])).toEqual({ accepted: 1, skipped: 0 });
+    expect(budget.listTransactions('2026-09').map(({ transaction }) => transaction.occurredOn)).toEqual(['2026-09-08', '2026-09-08']);
   });
 
   it('ne propose plus une catégorie désactivée depuis', () => {

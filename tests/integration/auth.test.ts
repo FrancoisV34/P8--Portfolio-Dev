@@ -117,9 +117,11 @@ describe('compte financier unique', () => {
     expect(blocked.data.message).toBe('Trop de tentatives. Réessaie dans quelques minutes.');
   });
 
-  it('restreint le handler HTTP à connexion, session et déconnexion', async () => {
-    const denied = await handler({ request: request('/update-user') });
-    expect(denied.status).toBe(404);
+  it('restreint le handler HTTP à la lecture de session : la connexion ne passe que par l’adresse privée', async () => {
+    for (const path of ['/update-user', '/sign-in/email', '/sign-out']) {
+      const denied = await handler({ request: request(path) });
+      expect(denied.status, path).toBe(404);
+    }
     const noSession = await handler({ request: request('/get-session', 'GET') });
     expect(noSession.status).toBe(200);
     expect(await noSession.json()).toBeNull();

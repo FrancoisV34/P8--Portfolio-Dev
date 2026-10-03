@@ -78,7 +78,9 @@ fixtures. `npm audit` ne signale aucune vulnérabilité.
 | Adresse de connexion non publique, réponse identique ailleurs | `app/.server/security/private-path.server.ts` | `tests/unit/private-path.test.ts`, `tests/auth-e2e/login.spec.ts` |
 | Cookie de session `HttpOnly`, `SameSite=Strict`, `Secure` en HTTPS | `app/.server/auth/auth.server.ts` | `tests/auth-e2e/login.spec.ts` |
 | Relevés importés : rien n'entre au journal sans validation explicite, ligne par ligne et atomique | `app/.server/repositories/imports.ts` | `tests/integration/imports.test.ts`, `tests/integration/finance-route.test.ts` |
-| Relevé PDF déposé : taille, pages, texte et durée bornés, corps de requête borné, fichier jamais conservé, import refusé si les opérations lues ne retombent pas sur le solde de fin | `app/.server/imports/`, `boundedFormData` dans `app/routes/finance.tsx` | `tests/integration/statement-pdf.test.ts`, `tests/integration/finance-route.test.ts`, `tests/auth-e2e/finance-journal.spec.ts` |
+| Relevé PDF déposé : lu dans un processus séparé (tas plafonné, sans environnement, sous `nobody`, tué au délai), corps de requête borné, fichier jamais conservé, import refusé si les opérations lues ne retombent pas sur le solde de fin | `app/.server/imports/`, `boundedFormData` dans `app/routes/finance.tsx` | `tests/integration/statement-pdf.test.ts`, `tests/integration/finance-route.test.ts`, `tests/auth-e2e/finance-journal.spec.ts` |
+| Rapprochement et validation groupée : un clic explicite, reconnaissance recalculée côté serveur, un mouvement rattaché à une seule ligne, même compte et même sens exigés | `app/.server/repositories/imports.ts` | `tests/integration/imports.test.ts`, `tests/integration/finance-route.test.ts` |
+| Connexion uniquement par l'adresse privée : le routeur Better Auth n'expose que la lecture de session | `app/routes/api-auth.ts` | `tests/integration/auth.test.ts` |
 | Base et sauvegardes hors des fichiers servis | `app/.server/db/config.ts` | `tests/integration/database.test.ts`, `tests/dev/private-files.spec.ts` |
 
 Deux points méritent d'être connus plutôt que masqués :
@@ -89,6 +91,49 @@ Deux points méritent d'être connus plutôt que masqués :
 - `style-src` conserve `unsafe-inline`. React applique les styles calculés en
   attribut et la feuille Google Fonts est externe ; supprimer cette tolérance
   demanderait de retirer tout `style={{…}}` et d'héberger les fontes.
+
+## Revue du 3 octobre 2026 — import de relevés et rapprochement
+
+Revue menée après l'ajout de l'import PDF, du rapprochement et de la
+validation groupée, élargie au routeur d'authentification, aux dépendances et
+à l'image de production. Chaque correction est couverte par un test, et les
+gardes du rapprochement ont été vérifiées par mutation (5 sur 5 détectées).
+
+**Corrigé**
+
+- **Bombe de décompression PDF.** Un PDF de 160 Ko se déployant en 64 Mo de
+  texte faisait monter le serveur à 1 Go pendant 15 s, au-delà de la Machine
+  de 512 Mo ; le délai de 10 s ne pouvait pas se déclencher, pdf.js bloquant
+  la boucle d'événements. La lecture tourne désormais dans un processus jetable
+  (`pdf-child.ts`) : tas de 128 Mo, aucune variable d'environnement, `nobody`
+  quand le serveur est root, `oom_score_adj` à 1000, tué au délai. Vérifié dans
+  l'image Docker de production.
+- **Seconde porte de connexion.** `POST /api/auth/sign-in/email` et
+  `/sign-out` étaient servis à une adresse publique et fixe sans que rien ne
+  s'en serve ; la connexion y échappait à la limitation par adresse e-mail du
+  formulaire caché. Seule `GET /api/auth/get-session` reste exposée.
+- **Dépendances.** `express` et `@react-router/express`, importés par le
+  serveur de production, n'étaient pas déclarés : ils arrivaient par
+  `@react-router/serve`, inutilisé, qui embarquait `morgan` (injection dans les
+  journaux, GHSA-9f6g-j8ch-79g4). Ils sont désormais déclarés et épinglés, le
+  paquet inutile est retiré ; `brace-expansion` (eslint, dev) est corrigé.
+  `npm audit` : 0 vulnérabilité.
+- **Validation groupée fragile.** Une ligne reconnue qui échouait (engagement
+  échu) annulait tout le lot ; elle est maintenant laissée dans la file, les
+  autres passent.
+
+**Risques résiduels acceptés**
+
+- Le conteneur tourne en root. Passer le serveur sous `node` est souhaitable,
+  mais les scripts d'administration lancés par `fly ssh console` créeraient
+  alors des fichiers WAL appartenant à root que le serveur ne pourrait plus
+  écrire : à faire avec une procédure d'administration adaptée. Le lecteur PDF,
+  seule surface qui traite un fichier hostile, est déjà isolé sous `nobody`.
+- La mémoire hors tas (tampons décompressés) du lecteur n'a pas de plafond dur ;
+  le noyau le sacrifie en premier (`oom_score_adj`), avant le serveur.
+- `GET /api/auth/get-session` révèle qu'un système d'authentification existe.
+- La limitation par adresse e-mail permet de bloquer 5 minutes la connexion du
+  propriétaire si l'on connaît son adresse et l'adresse privée.
 
 ## Vérifications régulières
 

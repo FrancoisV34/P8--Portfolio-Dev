@@ -351,12 +351,23 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
           if (!found) continue;
           if (!histories.has(found.accountId)) histories.set(found.accountId, historyFor(found.accountId));
           const suggestion = suggestionFor(found.line, found.accountId, this.duplicateOf(found.line, found.accountId), histories.get(found.accountId)!);
-          if (suggestion.recognized === 'link') this.linkLine({ id, transactionId: suggestion.linkTo!, adopt: true });
-          else if (suggestion.recognized === 'create') {
-            const decision = suggestion.known!.decision;
-            const common = { id, amountCents: Math.abs(found.line.amountCents), occurredOn: found.line.occurredOn, note: found.line.label };
-            this.acceptLine(decision.kind === 'transfer' ? { ...common, ...decision } : { ...common, ...decision });
-          } else continue;
+          try {
+            if (suggestion.recognized === 'link') {
+              // Un transfert ne se réaligne pas d'ici : à montant identique, la
+              // date de la saisie est gardée.
+              const target = suggestion.candidates.find((candidate) => candidate.id === suggestion.linkTo)!;
+              this.linkLine({ id, transactionId: target.id, adopt: target.kind !== 'transfer' });
+            } else if (suggestion.recognized === 'create') {
+              const decision = suggestion.known!.decision;
+              const common = { id, amountCents: Math.abs(found.line.amountCents), occurredOn: found.line.occurredOn, note: found.line.label };
+              this.acceptLine(decision.kind === 'transfer' ? { ...common, ...decision } : { ...common, ...decision });
+            } else continue;
+          } catch {
+            // Une ligne refusée (engagement échu, compte fermé…) reste dans la
+            // file sans faire échouer les autres : son point de sauvegarde
+            // SQLite est annulé, pas la validation entière.
+            continue;
+          }
           accepted++;
         }
         return { accepted, skipped: list.length - accepted };
