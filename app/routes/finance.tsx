@@ -9,7 +9,7 @@ import { budgetRepository } from '../.server/repositories/budget.ts';
 import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
-import { importsRepository } from '../.server/repositories/imports.ts';
+import { importsRepository, OPENED_TOO_LATE } from '../.server/repositories/imports.ts';
 import { MAX_PDF_BYTES, StatementError } from '../.server/imports/pdf-rows.server.ts';
 import { importStatement } from '../.server/imports/statement-upload.server.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
@@ -176,6 +176,10 @@ async function boundedFormData(request: Request) {
   }
   return new Response(new Blob(chunks as BlobPart[]), { headers: { 'content-type': request.headers.get('content-type') ?? '' } }).formData();
 }
+const SAFE_ERRORS = new Set([
+  OPENED_TOO_LATE, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
+  'Un transfert se corrige depuis le journal.', 'Choisir un existant ou en créer un, pas les deux.',
+]);
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
 
 export async function loader({ request, params }: { request: Request; params: Record<string, string | undefined> }) {
@@ -301,19 +305,25 @@ export async function action({ request }: { request: Request }) {
       case 'acceptImportLine': {
         const kind = field(data, 'kind', 20);
         const decision = { id: field(data, 'id', 64), amountCents: amount(data, 'amount'), occurredOn: field(data, 'occurredOn', 10), note: field(data, 'note', 240) };
-        if (kind === 'transfer') imports.acceptLine({ ...decision, kind, counterpartAccountId: field(data, 'counterpartAccountId', 64), direction: field(data, 'direction', 4) as 'out' | 'in' });
-        else imports.acceptLine({ ...decision, kind: kind as 'income' | 'expense', categoryId: field(data, 'categoryId', 64), recurringCommitmentId: optionalField(data, 'recurringCommitmentId', 64) });
-        break;
-      }
-      case 'importStatement':
-        try { await importStatement(data, imports); } catch (error) {
-          // Seuls ces deux refus disent quelque chose d'utile ; tout le reste
-          // garde la réponse générique.
-          if (error instanceof StatementError) return { error: error.message };
-          if (error instanceof Error && error.message === 'Ce relevé a déjà été importé pour ce compte.') return { error: error.message };
-          throw error;
+        if (kind === 'transfer') {
+          // Un nom saisi l'emporte sur la liste : c'est le geste le plus récent.
+          const newAccount = optionalField(data, 'newAccountName', 100)?.trim();
+          imports.acceptLine({
+            ...decision, kind, direction: field(data, 'direction', 4) as 'out' | 'in',
+            ...(newAccount ? { newCounterpartAccount: { name: newAccount, type: field(data, 'newAccountType', 20) as 'checking' | 'savings' | 'cash' } } : { counterpartAccountId: field(data, 'counterpartAccountId', 64) }),
+          });
+        } else {
+          const newCategory = optionalField(data, 'newCategoryName', 100)?.trim();
+          imports.acceptLine({
+            ...decision, kind: kind as 'income' | 'expense', recurringCommitmentId: optionalField(data, 'recurringCommitmentId', 64),
+            ...(newCategory ? { newCategoryName: newCategory } : { categoryId: field(data, 'categoryId', 64) }),
+          });
         }
         break;
+      }
+      case 'linkImportLine': imports.linkLine({ id: field(data, 'id', 64), transactionId: field(data, 'transactionId', 64), adopt: data.get('adopt') === '1' }); break;
+      case 'acceptRecognizedImportLines': imports.acceptRecognized(fields(data, 'ids', 64, 200)); break;
+      case 'importStatement': await importStatement(data, imports); break;
       case 'rejectImportLine': imports.rejectLine(field(data, 'id', 64)); break;
       case 'setSafetyReserve': planning.setSafetyReserve({ targetAmountCents: amount(data, 'targetAmount'), accountIds: fields(data, 'accountIds', 64) }); break;
       case 'deleteSafetyReserve': if (field(data, 'confirmDelete', 10) !== 'delete') throw new Error('invalid'); planning.deleteSafetyReserve(); break;
@@ -376,7 +386,11 @@ export async function action({ request }: { request: Request }) {
       case 'checkRegulatorySource': await regulatorySources.check(field(data, 'sourceKey', 80)); break;
       default: throw new Error('invalid');
     }
-  } catch { return failure(); }
+  } catch (error) {
+    // Seuls des refus rédigés d'avance, sans aucune donnée, passent tels quels.
+    if (error instanceof StatementError || (error instanceof Error && SAFE_ERRORS.has(error.message))) return { error: error.message };
+    return failure();
+  }
   if (quick) return { saved: true } as const;
   return back(request);
 }
@@ -850,51 +864,155 @@ function ImportReleve({ accounts }: { accounts: Data['accounts'] }) {
   </section>;
 }
 
+type LigneImport = Data['imports']['pending'][number];
+
 /**
- * Les lignes lues dans un relevé, à valider une par une.
+ * Ce que l'app propose pour une ligne, en clair. La pastille « reconnue » est
+ * la seule qui envoie la ligne dans la validation groupée.
+ */
+function proposition({ suggestion, duplicate }: LigneImport, accounts: Data['accounts'], categories: Data['categories']) {
+  const decision = suggestion.known?.decision;
+  if (suggestion.recognized === 'link') return { reconnue: true, texte: 'Reconnue · déjà au journal' };
+  if (suggestion.recognized === 'create' && decision) {
+    const cible = decision.kind === 'transfer'
+      ? `transfert ${decision.direction === 'out' ? 'vers' : 'depuis'} ${accounts.find((account) => account.id === decision.counterpartAccountId)?.name ?? 'un compte'}`
+      : categories.find((category) => category.id === decision.categoryId)?.name ?? 'catégorie connue';
+    return { reconnue: true, texte: `Reconnue · ${cible}` };
+  }
+  if (suggestion.known && !suggestion.known.sameAmount) return { reconnue: false, texte: 'Montant différent de la dernière fois' };
+  if (suggestion.candidates.length > 0) return { reconnue: false, texte: 'Déjà saisie ? À vérifier' };
+  if (duplicate) return { reconnue: false, texte: 'Doublon possible' };
+  return { reconnue: false, texte: 'Nouvelle' };
+}
+
+/**
+ * Les lignes lues dans un relevé, en attente de décision.
  *
- * ⚠️ **Le texte lu reste affiché au-dessus du formulaire.** Les champs sont
- * pré-remplis par le lecteur mais corrigeables : sans la lecture d'origine sous
- * les yeux, une erreur de lecture corrigée de mémoire passerait inaperçue.
- *
- * ⚠️ **Deux boutons, deux intents, un seul formulaire.** « Ignorer » porte
- * `formNoValidate` : rejeter une ligne mal lue ne doit pas exiger qu'on la
- * corrige d'abord.
+ * ⚠️ **Un clic, jamais zéro.** Les lignes reconnues — rattachables à un
+ * mouvement déjà saisi, ou identiques à une décision passée, au centime près —
+ * partent ensemble sur « Valider les lignes reconnues », mais seulement sur ce
+ * clic : rien n'entre au journal sans lui (SECURITY.md). Le serveur recalcule
+ * la reconnaissance et laisse dans la file toute ligne qui ne l'est plus.
  */
 function ImportsAValider({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) {
   const { pending, count } = data.imports;
+  const [ouverte, setOuverte] = useState<string | null>(null);
+  const reconnues = pending.filter(({ suggestion }) => suggestion.recognized !== null);
+  const courante = pending.find(({ line }) => line.id === ouverte) ?? null;
   return <section className="finance-card finance-card--wide">
     <h2>{count} écriture{count > 1 ? 's' : ''} à valider</h2>
-    <p className="finance-help">Chaque ligne lue dans un relevé attend ta décision. Corrige ce qui a été mal lu, puis valide : la ligne entre alors au journal. Rien n’y entre automatiquement.</p>
+    <p className="finance-help">Chaque ligne lue dans un relevé attend ta décision : l’ajouter, la rattacher à un mouvement déjà saisi, ou l’ignorer. Rien n’entre au journal sans ton clic.</p>
     {pending.length < count ? <p className="finance-help">Les {pending.length} premières sont affichées ; les suivantes apparaîtront au fil des validations.</p> : null}
-    <ul className="finance-records">{pending.map(({ line, batch, accountName, duplicate }) => {
-      const kind = line.amountCents > 0 ? 'income' : 'expense';
-      const autresComptes = accounts.filter((account) => account.id !== batch.accountId);
+    {reconnues.length > 0 ? <Form method="post" className="finance-form">
+      <input type="hidden" name="intent" value="acceptRecognizedImportLines" />
+      {reconnues.map(({ line }) => <input key={line.id} type="hidden" name="ids" value={line.id} />)}
+      <p className="finance-help">{reconnues.length} ligne{reconnues.length > 1 ? 's sont reconnues' : ' est reconnue'} : même montant qu’un mouvement déjà saisi, ou que la dernière décision pour ce libellé. Une ligne dont le montant a changé reste à part.</p>
+      <button className="finance-button">Valider {reconnues.length > 1 ? `les ${reconnues.length} lignes reconnues` : 'la ligne reconnue'}</button>
+    </Form> : null}
+    <ul className="finance-records">{pending.map((item) => {
+      const { line } = item;
+      const { reconnue, texte } = proposition(item, accounts, categories);
       return <li key={line.id}>
         <div>
           <strong>{line.label || 'Sans libellé'}</strong>
-          <p>{accountName} · {batch.sourceName} · lu : « {line.rawDate} » « {line.rawLabel} » « {line.rawAmount} »</p>
-          {duplicate ? <p className="finance-alert" role="status">{duplicate === 'imported'
-            ? 'Doublon possible : la même opération figure déjà dans un autre relevé importé.'
-            : 'Doublon possible : un mouvement du même montant existe déjà ce jour-là sur ce compte.'}</p> : null}
+          <p><time dateTime={line.occurredOn}>{dateCourte(line.occurredOn)}</time> · <Currency cents={line.amountCents} signe /> · <span className={`finance-tag${reconnue ? ' finance-tag--ok' : ''}`}>{texte}</span></p>
         </div>
-        <Form method="post" className="finance-form">
-          <input type="hidden" name="id" value={line.id} />
-          <label>Nature<select name="kind" defaultValue={kind}><option value="expense">Dépense</option><option value="income">Revenu</option>{autresComptes.length > 0 ? <option value="transfer">Transfert</option> : null}</select></label>
-          <CategorySelect categories={categories} selected={categories.find((category) => category.kind === kind)?.id} />
-          {autresComptes.length > 0 ? <>
-            <label>Autre compte (transfert)<select name="counterpartAccountId" defaultValue=""><option value="">—</option>{autresComptes.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
-            <label>Sens (transfert)<select name="direction" defaultValue={line.amountCents < 0 ? 'out' : 'in'}><option value="out">Sortant de {accountName}</option><option value="in">Entrant sur {accountName}</option></select></label>
-          </> : null}
+        <button type="button" className="finance-button finance-button--quiet finance-button--mini" onClick={() => setOuverte(line.id)} aria-haspopup="dialog">Traiter</button>
+      </li>;
+    })}</ul>
+    {courante ? <ModaleImport key={courante.line.id} item={courante} data={data} accounts={accounts} categories={categories} onFermer={() => setOuverte(null)} /> : null}
+  </section>;
+}
+
+/**
+ * Traiter une ligne : la rattacher à un mouvement existant, l'ajouter au
+ * journal (en créant au besoin la catégorie ou le compte qui manque), ou
+ * l'ignorer.
+ *
+ * ⚠️ **Le texte lu reste affiché en tête.** Les champs sont pré-remplis mais
+ * corrigeables : sans la lecture d'origine sous les yeux, une erreur de
+ * lecture corrigée de mémoire passerait inaperçue.
+ *
+ * ⚠️ La modale se ferme d'elle-même après un succès : la ligne quitte la file,
+ * et le parent ne trouve plus de ligne à afficher.
+ */
+function ModaleImport({ item, data, accounts, categories, onFermer }: {
+  item: LigneImport; data: Data; accounts: Data['accounts']; categories: Data['categories']; onFermer: () => void;
+}) {
+  const fetcher = useFetcher<ActionData>();
+  const panneau = useRef<HTMLDivElement>(null);
+  const { line, batch, accountName, duplicate, suggestion } = item;
+  const decision = suggestion.known?.decision;
+  const [nature, setNature] = useState<'income' | 'expense' | 'transfer'>(decision?.kind ?? (line.amountCents > 0 ? 'income' : 'expense'));
+  const autresComptes = accounts.filter((account) => account.id !== batch.accountId && account.isActive);
+  const actives = categories.filter((category) => category.isActive && category.kind === nature);
+  const erreur = fetcher.data && 'error' in fetcher.data ? fetcher.data.error : null;
+
+  useEffect(() => { panneau.current?.querySelector<HTMLElement>(SELECTEUR_FOCUSABLE)?.focus(); }, []);
+  const surTouche = (evenement: React.KeyboardEvent<HTMLDivElement>) => {
+    if (evenement.key === 'Escape') { evenement.preventDefault(); onFermer(); return; }
+    pieger(evenement, panneau.current);
+  };
+
+  return <div className="finance-modal" onKeyDown={surTouche}>
+    <div className="finance-modal__panel" ref={panneau} role="dialog" aria-modal="true" aria-labelledby="import-titre">
+      <div className="finance-modal__tete">
+        <h2 id="import-titre">{line.label || 'Sans libellé'}</h2>
+        <button type="button" className="finance-button finance-button--quiet finance-button--mini" onClick={onFermer}>Fermer <kbd>Échap</kbd></button>
+      </div>
+      <p className="finance-modal__compte">{accountName} · {batch.sourceName} · lu : « {line.rawDate} » « {line.rawLabel} » « {line.rawAmount} »</p>
+      {duplicate ? <p className="finance-alert" role="status">{duplicate === 'imported'
+        ? 'Doublon possible : la même opération figure déjà dans un autre relevé importé.'
+        : 'Doublon possible : un mouvement du même montant existe déjà ce jour-là sur ce compte.'}</p> : null}
+      {erreur ? <p className="finance-alert" role="alert"><span><strong>Erreur. </strong>{erreur}</span></p> : null}
+
+      {suggestion.candidates.length > 0 ? <fetcher.Form method="post" className="finance-form">
+        <input type="hidden" name="id" value={line.id} />
+        <fieldset>
+          <legend>C’est un mouvement déjà saisi</legend>
+          {suggestion.candidates.map((candidate) => <label key={candidate.id} className="finance-inline">
+            <input type="radio" name="transactionId" value={candidate.id} defaultChecked={candidate.id === (suggestion.linkTo ?? suggestion.candidates[0].id)} required />
+            <span><time dateTime={candidate.occurredOn}>{dateCourte(candidate.occurredOn)}</time> · <Currency cents={candidate.amountCents} signe /> · {candidate.categoryName ?? 'Transfert'}{candidate.note ? ` · ${candidate.note}` : ''}{candidate.exact ? ' · identique' : ''}</span>
+          </label>)}
+          <label className="finance-inline"><input type="checkbox" name="adopt" value="1" defaultChecked /> Aligner montant et date sur le relevé</label>
+        </fieldset>
+        <button className="finance-button" name="intent" value="linkImportLine">Rattacher</button>
+      </fetcher.Form> : null}
+
+      <fetcher.Form method="post" className="finance-form">
+        <input type="hidden" name="id" value={line.id} />
+        <fieldset>
+          <legend>{suggestion.candidates.length > 0 ? 'Sinon, l’ajouter au journal' : 'Ajouter au journal'}</legend>
+          <label>Nature<select name="kind" value={nature} onChange={(evenement) => setNature(evenement.target.value as typeof nature)}>
+            <option value="expense">Dépense</option><option value="income">Revenu</option><option value="transfer">Transfert</option>
+          </select></label>
+          {nature === 'transfer' ? <>
+            <label>Autre compte<select name="counterpartAccountId" defaultValue={decision?.kind === 'transfer' ? decision.counterpartAccountId : ''}>
+              <option value="">—</option>{autresComptes.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
+            </select></label>
+            <label>ou nouveau compte<input name="newAccountName" maxLength={100} placeholder="Nom du compte" /></label>
+            <label>Type du nouveau compte<select name="newAccountType" defaultValue="checking"><option value="checking">Courant</option><option value="savings">Épargne</option><option value="cash">Espèces</option></select></label>
+            <label>Sens<select name="direction" defaultValue={decision?.kind === 'transfer' ? decision.direction : line.amountCents < 0 ? 'out' : 'in'}>
+              <option value="out">Sortant de {accountName}</option><option value="in">Entrant sur {accountName}</option>
+            </select></label>
+          </> : <>
+            <label>Catégorie<select name="categoryId" defaultValue={decision && decision.kind !== 'transfer' && decision.kind === nature ? decision.categoryId : actives[0]?.id ?? ''}>
+              <option value="">—</option>{actives.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+            </select></label>
+            <label>ou nouvelle catégorie<input name="newCategoryName" maxLength={100} placeholder="Nom de la catégorie" /></label>
+            {nature === 'expense' ? <CommitmentSelect commitments={data.commitments} selected={decision?.kind === 'expense' ? decision.recurringCommitmentId : null} /> : null}
+          </>}
           <label>Montant (€)<input name="amount" inputMode="decimal" defaultValue={decimalMoney(Math.abs(line.amountCents))} required /></label>
           <label>Date<input name="occurredOn" type="date" defaultValue={line.occurredOn} required /></label>
           <label>Note<input name="note" maxLength={240} defaultValue={line.label} /></label>
-          <button className="finance-button" name="intent" value="acceptImportLine">Valider</button>
+        </fieldset>
+        <div className="finance-modal__pied">
+          <button className="finance-button" name="intent" value="acceptImportLine">Ajouter</button>
           <button className="finance-button finance-button--quiet" name="intent" value="rejectImportLine" formNoValidate>Ignorer</button>
-        </Form>
-      </li>;
-    })}</ul>
-  </section>;
+        </div>
+      </fetcher.Form>
+    </div>
+  </div>;
 }
 
 /**
@@ -1150,6 +1268,19 @@ function useRaccourciSaisie(actif: boolean) {
 }
 
 const SELECTEUR_FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
+/**
+ * Piège de focus : sans lui, Tab sort de la modale et laisse tabuler la page
+ * qui est derrière, pendant que le fond continue de la masquer.
+ */
+function pieger(evenement: React.KeyboardEvent, panneau: HTMLElement | null) {
+  if (evenement.key !== 'Tab') return;
+  const focusables = panneau?.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE);
+  if (!focusables || focusables.length === 0) return;
+  const premier = focusables[0];
+  const dernier = focusables[focusables.length - 1];
+  if (evenement.shiftKey && document.activeElement === premier) { evenement.preventDefault(); dernier.focus(); }
+  else if (!evenement.shiftKey && document.activeElement === dernier) { evenement.preventDefault(); premier.focus(); }
+}
 
 /**
  * La modale de saisie rapide.
@@ -1207,15 +1338,7 @@ function ModaleSaisie({ data, accounts, categories, onFermer }: {
       formulaire.current?.requestSubmit();
       return;
     }
-    if (evenement.key !== 'Tab') return;
-    // Piège de focus : sans lui, Tab sort de la modale et laisse tabuler la page
-    // qui est derrière, pendant que le fond continue de la masquer.
-    const focusables = panneau.current?.querySelectorAll<HTMLElement>(SELECTEUR_FOCUSABLE);
-    if (!focusables || focusables.length === 0) return;
-    const premier = focusables[0];
-    const dernier = focusables[focusables.length - 1];
-    if (evenement.shiftKey && document.activeElement === premier) { evenement.preventDefault(); dernier.focus(); }
-    else if (!evenement.shiftKey && document.activeElement === dernier) { evenement.preventDefault(); premier.focus(); }
+    pieger(evenement, panneau.current);
   };
 
   /**

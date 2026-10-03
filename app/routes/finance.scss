@@ -808,6 +808,21 @@ details > .finance-form, details > .finance-delete { margin-top: 12px; }
 .finance-modal__tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .finance-modal__tete h2 { font-size: var(--text-dense-lg); font-weight: 600; }
 .finance-modal__pied { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 2px; }
+/* Ce que l'app propose pour une ligne importée. « Reconnue » est la seule
+   proposition qui part dans la validation groupée : elle se distingue par
+   son texte d'abord, la couleur ne fait que le doubler. */
+.finance-tag {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  font-size: var(--text-dense-xs);
+  color: var(--color-foreground-muted);
+  white-space: nowrap;
+}
+.finance-tag--ok { border-color: var(--color-accent); color: var(--color-foreground); }
+.finance-modal__panel fieldset { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
+.finance-modal__panel legend { margin-bottom: 4px; font-weight: 600; }
 .finance-modal__compte { color: var(--color-foreground-muted); font-size: var(--text-dense-sm); }
 
 /* Une touche citée dans un texte — même grammaire que celle des boutons. */

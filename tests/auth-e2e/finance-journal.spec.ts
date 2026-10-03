@@ -171,6 +171,19 @@ test('un relevé PDF déposé remplit la file de validation, et un second envoi 
   await page.getByRole('link', { name: 'Transactions', exact: true }).click();
   const fichier = { name: 'releve-synthetique.pdf', mimeType: 'application/pdf', buffer: Buffer.from(syntheticPdf()) };
 
+  // Le compte a été ouvert ce mois-ci (valeur par défaut) : un relevé plus
+  // ancien est refusé d'emblée, avec la correction à faire.
+  await page.getByLabel('Relevé (PDF)').setInputFiles(fichier);
+  await page.getByRole('button', { name: 'Lire le relevé' }).click();
+  await expect(page.getByRole('alert')).toContainText('avance cette date dans la section Comptes');
+
+  await page.getByRole('link', { name: 'Comptes', exact: true }).click();
+  const comptes = page.locator('[data-view="table"]').first();
+  await comptes.getByRole('row', { name: /Compte courant/ }).getByRole('button', { name: 'Modifier' }).click();
+  await comptes.locator('.finance-table__edition input[name="openingDate"]').fill('2026-08-31');
+  await comptes.locator('.finance-table__edition').getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByRole('link', { name: 'Transactions', exact: true }).click();
+
   await page.getByLabel('Relevé (PDF)').setInputFiles(fichier);
   await page.getByRole('button', { name: 'Lire le relevé' }).click();
   await expect(page.getByRole('heading', { name: '6 écritures à valider' })).toBeVisible();
@@ -182,4 +195,21 @@ test('un relevé PDF déposé remplit la file de validation, et un second envoi 
   await page.getByLabel('Relevé (PDF)').setInputFiles(fichier);
   await page.getByRole('button', { name: 'Lire le relevé' }).click();
   await expect(page.getByRole('alert')).toContainText('Ce relevé a déjà été importé pour ce compte.');
+
+  // ── Traiter une ligne : texte lu en tête, Échap ferme, Ajouter referme ───
+  await page.goto('/finance/transactions');
+  const modale = page.getByRole('dialog');
+  await page.getByRole('button', { name: 'Traiter' }).first().click();
+  await expect(modale).toContainText('lu : « 02/09/2026 »');
+  await expect(modale.getByRole('button', { name: /Fermer/ })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(modale).toBeHidden();
+
+  await page.getByRole('button', { name: 'Traiter' }).first().click();
+  await modale.getByLabel('ou nouvelle catégorie').fill('Salaire synthétique');
+  await modale.getByRole('button', { name: 'Ajouter' }).click();
+  await expect(modale).toBeHidden();
+  await expect(page.getByRole('heading', { name: '5 écritures à valider' })).toBeVisible();
+  await page.getByRole('link', { name: 'Catégories', exact: true }).click();
+  await expect(page.locator('[data-view="table"] tbody td:first-child').getByText('Salaire synthétique', { exact: true })).toBeVisible();
 });

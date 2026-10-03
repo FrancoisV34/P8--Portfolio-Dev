@@ -6,7 +6,7 @@ import { openDatabase } from '../../app/.server/db/connection';
 import { migrateDatabase } from '../../app/.server/db/migrate';
 import { accountsRepository } from '../../app/.server/repositories/accounts';
 import { budgetRepository } from '../../app/.server/repositories/budget';
-import { importsRepository, type CreateImportBatch } from '../../app/.server/repositories/imports';
+import { importsRepository, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
 
 let directory: string;
 let connection: ReturnType<typeof openDatabase>;
@@ -123,6 +123,13 @@ describe('file des relevés importés', () => {
     expect(countTransactions()).toBe(0);
   });
 
+  it('refuse un relevé qui commence avant l’ouverture du compte, en disant quoi corriger', () => {
+    const { imports, checking } = setup();
+    const early = { ...statement(checking.id).lines[0], occurredOn: '2025-12-31' };
+    expect(() => imports.createBatch(statement(checking.id, { lines: [statement(checking.id).lines[1], early] }))).toThrow(OPENED_TOO_LATE);
+    expect(imports.countPending()).toBe(0);
+  });
+
   it('refuse de réimporter le même fichier pour le même compte', () => {
     const { imports, checking, savings } = setup();
     imports.createBatch(statement(checking.id));
@@ -191,5 +198,135 @@ describe('file des relevés importés', () => {
     const [first] = imports.listPending();
     expect(() => connection.sqlite.prepare("update finance_import_lines set status = 'accepted' where id = ?").run(first.line.id)).toThrow();
     expect(() => connection.sqlite.prepare("update finance_import_lines set amount_cents = 0 where id = ?").run(first.line.id)).toThrow();
+  });
+});
+
+describe('rapprochement et reconnaissance', () => {
+  const spotify = (fact: string, amountCents = -1_214, occurredOn = '2026-09-25') => ({
+    rawDate: occurredOn.split('-').reverse().join('/'), rawLabel: `CB Spotify France FACT ${fact}`, rawAmount: '-12,14', occurredOn, label: `CB Spotify France FACT ${fact}`, amountCents,
+  });
+
+  it('reconnaît un libellé d’un mois sur l’autre malgré la date de facture et les références', () => {
+    expect(recognitionKey('CB Spotify France FACT 240926')).toBe(recognitionKey('CB  spotify france FACT 241026'));
+    expect(recognitionKey('PRLV Free Telecom')).toBe('PRLV FREE TELECOM');
+    expect(recognitionKey('VIR SEPA LUNDIMATIN-090621-092026033934-78')).toBe(recognitionKey('VIR SEPA LUNDIMATIN-090621-102026044012-78'));
+    expect(recognitionKey('CB gomining.com')).not.toBe(recognitionKey('CB APPLE.COM/BILL'));
+  });
+
+  it('propose de rattacher une ligne au mouvement saisi à la main, et aligne celui-ci sur le relevé', () => {
+    const { imports, budget, checking, groceries } = setup();
+    const manual = budget.createTransaction({ accountId: checking.id, categoryId: groceries.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-09-01', note: 'saisie manuelle' });
+    imports.createBatch(statement(checking.id));
+    const [line] = imports.listPending();
+    expect(line.suggestion).toMatchObject({ recognized: 'link', linkTo: manual.id, candidates: [expect.objectContaining({ id: manual.id, exact: true, categoryName: 'Courses' })] });
+
+    imports.linkLine({ id: line.line.id, transactionId: manual.id, adopt: true });
+    expect(countTransactions()).toBe(1);
+    // Le relevé fait foi pour la date ; la catégorie et la note saisies restent.
+    expect(budget.listTransactions('2026-09')[0].transaction).toMatchObject({ id: manual.id, occurredOn: '2026-09-03', amountCents: -4_210, note: 'saisie manuelle', categoryId: groceries.id });
+    expect(connection.sqlite.prepare('select status, transaction_id from finance_import_lines where id = ?').get(line.line.id)).toEqual({ status: 'accepted', transaction_id: manual.id });
+  });
+
+  it('corrige le montant à l’adoption, ou le laisse tel quel sans adoption', () => {
+    const { imports, budget, checking, groceries } = setup();
+    const manual = budget.createTransaction({ accountId: checking.id, categoryId: groceries.id, kind: 'expense', amountCents: 4_000, occurredOn: '2026-09-03', note: '' });
+    imports.createBatch(statement(checking.id));
+    const [line] = imports.listPending();
+    // Montant différent : candidat proposé, mais pas « reconnu ».
+    expect(line.suggestion).toMatchObject({ recognized: null, candidates: [expect.objectContaining({ id: manual.id, exact: false })] });
+    imports.linkLine({ id: line.line.id, transactionId: manual.id, adopt: false });
+    expect(budget.listTransactions('2026-09')[0].transaction.amountCents).toBe(-4_000);
+  });
+
+  it('refuse un rattachement à un autre compte, au sens opposé, ou à un mouvement déjà rapproché', () => {
+    const { imports, budget, checking, savings, groceries, salary } = setup();
+    const elsewhere = budget.createTransaction({ accountId: savings.id, categoryId: groceries.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-09-03', note: '' });
+    const income = budget.createTransaction({ accountId: checking.id, categoryId: salary.id, kind: 'income', amountCents: 4_210, occurredOn: '2026-09-03', note: '' });
+    const manual = budget.createTransaction({ accountId: checking.id, categoryId: groceries.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-09-03', note: '' });
+    const coffee = statement(checking.id).lines[0];
+    imports.createBatch(statement(checking.id, { lines: [coffee, coffee] }));
+    const [first, second] = imports.listPending();
+    expect(first.suggestion.candidates.map(({ id }) => id)).toEqual([manual.id]);
+    expect(() => imports.linkLine({ id: first.line.id, transactionId: elsewhere.id, adopt: false })).toThrow('Mouvement introuvable.');
+    expect(() => imports.linkLine({ id: first.line.id, transactionId: income.id, adopt: false })).toThrow('Mouvement introuvable.');
+    imports.linkLine({ id: first.line.id, transactionId: manual.id, adopt: false });
+    expect(() => imports.linkLine({ id: second.line.id, transactionId: manual.id, adopt: false })).toThrow('déjà rapproché');
+    // Une fois rapproché, le mouvement n'est plus proposé aux autres lignes.
+    expect(imports.listPending()[0].suggestion.candidates).toEqual([]);
+    // Un autre propriétaire ne peut rien rattacher.
+    expect(() => setup('other-test').imports.linkLine({ id: second.line.id, transactionId: manual.id, adopt: false })).toThrow('Ligne introuvable.');
+  });
+
+  it('reconnaît la décision du mois précédent et ne la propose en lot qu’au même montant', () => {
+    const { imports, checking, groceries } = setup();
+    imports.createBatch(statement(checking.id, { lines: [spotify('240926')] }));
+    imports.acceptLine({ id: imports.listPending()[0].line.id, kind: 'expense', categoryId: groceries.id, amountCents: 1_214, occurredOn: '2026-09-25', note: '' });
+
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [spotify('241026', -1_214, '2026-10-25'), spotify('251026', -1_314, '2026-10-26')] }));
+    const [same, higher] = imports.listPending();
+    expect(same.suggestion).toMatchObject({ recognized: 'create', known: { sameAmount: true, decision: { kind: 'expense', categoryId: groceries.id } } });
+    // Spotify augmente : la ligne est reconnue, mais sort du lot pour être regardée.
+    expect(higher.suggestion).toMatchObject({ recognized: null, known: { sameAmount: false } });
+  });
+
+  it('valide en un clic les seules lignes encore reconnues, et laisse les autres dans la file', () => {
+    const { imports, budget, checking, groceries } = setup();
+    imports.createBatch(statement(checking.id, { lines: [spotify('240926')] }));
+    imports.acceptLine({ id: imports.listPending()[0].line.id, kind: 'expense', categoryId: groceries.id, amountCents: 1_214, occurredOn: '2026-09-25', note: '' });
+    const manual = budget.createTransaction({ accountId: checking.id, categoryId: groceries.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-10-02', note: '' });
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [
+      spotify('241026', -1_214, '2026-10-25'),
+      { ...statement(checking.id).lines[0], occurredOn: '2026-10-03' },
+      { ...spotify('251026', -999, '2026-10-26'), label: 'CB INCONNU', rawLabel: 'CB INCONNU' },
+    ] }));
+    const pending = imports.listPending();
+    expect(pending.map(({ suggestion }) => suggestion.recognized)).toEqual(['create', 'link', null]);
+
+    // L'identifiant d'une ligne non reconnue, glissé dans l'envoi, est ignoré.
+    expect(imports.acceptRecognized(pending.map(({ line }) => line.id))).toEqual({ accepted: 2, skipped: 1 });
+    expect(imports.listPending().map(({ line }) => line.label)).toEqual(['CB INCONNU']);
+    const october = budget.listTransactions('2026-10').map(({ transaction }) => transaction);
+    expect(october).toHaveLength(2);
+    expect(october.find((transaction) => transaction.id === manual.id)?.occurredOn).toBe('2026-10-03');
+    expect(() => imports.acceptRecognized([])).toThrow();
+  });
+
+  it('ne propose plus une catégorie désactivée depuis', () => {
+    const { imports, budget, checking, groceries } = setup();
+    imports.createBatch(statement(checking.id, { lines: [spotify('240926')] }));
+    imports.acceptLine({ id: imports.listPending()[0].line.id, kind: 'expense', categoryId: groceries.id, amountCents: 1_214, occurredOn: '2026-09-25', note: '' });
+    budget.updateCategory({ id: groceries.id, name: 'Courses', kind: 'expense', isActive: false });
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [spotify('241026', -1_214, '2026-10-25')] }));
+    expect(imports.listPending()[0].suggestion).toMatchObject({ known: null, recognized: null });
+  });
+
+  it('crée à la validation la catégorie ou le compte de destination qui manquait', () => {
+    const { imports, budget, checking, groceries } = setup();
+    const coffee = statement(checking.id).lines[0];
+    imports.createBatch(statement(checking.id, { lines: [coffee, { ...coffee, amountCents: -130_000, label: 'VIR SEPA VERS AUTRE BANQUE' }, coffee] }));
+    const [first, second, third] = imports.listPending();
+
+    imports.acceptLine({ id: first.line.id, kind: 'expense', newCategoryName: 'Abonnements', amountCents: 4_210, occurredOn: '2026-09-03', note: '' });
+    // Le même nom réutilise la catégorie au lieu d'échouer sur le doublon.
+    imports.acceptLine({ id: third.line.id, kind: 'expense', newCategoryName: 'Abonnements', amountCents: 4_210, occurredOn: '2026-09-03', note: '' });
+    expect(budget.listCategories().filter(({ name }) => name === 'Abonnements')).toHaveLength(1);
+
+    imports.acceptLine({ id: second.line.id, kind: 'transfer', newCounterpartAccount: { name: 'Compte autre banque', type: 'checking' }, direction: 'out', amountCents: 130_000, occurredOn: '2026-09-03', note: '' });
+    const legs = budget.listTransactions('2026-09').filter(({ transaction }) => transaction.kind === 'transfer');
+    expect(legs.map(({ accountName, transaction }) => [accountName, transaction.amountCents]).sort()).toEqual([['Compte autre banque', 130_000], ['Compte courant', -130_000]]);
+
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [coffee] }));
+    const [next] = imports.listPending();
+    expect(() => imports.acceptLine({ id: next.line.id, kind: 'expense', categoryId: groceries.id, newCategoryName: 'Autre', amountCents: 4_210, occurredOn: '2026-09-03', note: '' })).toThrow('pas les deux');
+    expect(() => imports.acceptLine({ id: next.line.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-09-03', note: '' })).toThrow('pas les deux');
+  });
+
+  it('n’ouvre aucun compte si la validation échoue ensuite', () => {
+    const { imports, checking } = setup();
+    imports.createBatch(statement(checking.id));
+    const [first] = imports.listPending();
+    // Date avant l'ouverture du compte relevé : le transfert est refusé, et le compte créé avec lui disparaît.
+    expect(() => imports.acceptLine({ id: first.line.id, kind: 'transfer', newCounterpartAccount: { name: 'Fantôme', type: 'savings' }, direction: 'out', amountCents: 4_210, occurredOn: '2025-12-31', note: '' })).toThrow();
+    expect(connection.sqlite.prepare("select count(*) as n from finance_accounts where name = 'Fantôme'").get()).toEqual({ n: 0 });
   });
 });

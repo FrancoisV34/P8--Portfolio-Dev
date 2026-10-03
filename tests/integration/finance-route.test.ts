@@ -344,4 +344,41 @@ describe('route finance privée', () => {
     expect(streamed.headers.get('content-length')).toBeNull();
     await expect(action({ request: streamed })).resolves.toEqual({ error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' });
   });
+  it('rattache, valide en lot et crée la catégorie manquante par POST, avec des refus lisibles', async () => {
+    const connection = openDatabase({ path: database, environment: 'test' });
+    const owner = connection.sqlite.prepare('select id from user where email = ?').get('owner-route@example.test') as { id: string };
+    const entity = connection.sqlite.prepare('select id from finance_economic_entities where owner_id = ? limit 1').get(owner.id) as { id: string };
+    const { accountsRepository } = await import('../../app/.server/repositories/accounts');
+    const { budgetRepository } = await import('../../app/.server/repositories/budget');
+    const account = accountsRepository(connection.db, owner.id).createAccount({ entityId: entity.id, name: 'Compte rapprochement', type: 'checking', openingBalanceCents: 0, openingDate: '2026-01-01' });
+    const budget = budgetRepository(connection.db, owner.id);
+    const category = budget.createCategory({ name: 'Rapprochement', kind: 'expense' });
+    const manual = budget.createTransaction({ accountId: account.id, categoryId: category.id, kind: 'expense', amountCents: 500, occurredOn: '2026-09-02', note: 'à la main' });
+    const imports = importsRepository(connection.db, owner.id);
+    const line = (label: string, amountCents: number) => ({ rawDate: '03/09/2026', rawLabel: label, rawAmount: '-', occurredOn: '2026-09-03', label, amountCents });
+    imports.createBatch({ accountId: account.id, sourceKind: 'pdf', sourceName: 'rapprochement.pdf', sourceSha256: 'f'.repeat(64), lines: [line('CB DEJA SAISIE', -500), line('CB NOUVELLE', -700), line('CB AUSSI DEJA SAISIE', -500)] });
+    const mine = () => imports.listPending().filter(({ batch }) => batch.accountId === account.id);
+    const [saisie, nouvelle, autre] = mine();
+    connection.close();
+
+    const post = (entries: Record<string, string | string[]>) => {
+      const form = new FormData();
+      for (const [key, value] of Object.entries(entries)) for (const item of [value].flat()) form.append(key, item);
+      return action({ request: request('POST', form) });
+    };
+    // Validation groupée : seule la ligne rattachable au mouvement manuel est prise.
+    await expect(post({ intent: 'acceptRecognizedImportLines', ids: [saisie.line.id, nouvelle.line.id] })).resolves.toMatchObject({ status: 302 });
+    // Le mouvement manuel est déjà pris : le rattacher une seconde fois s'explique.
+    await expect(post({ intent: 'linkImportLine', id: autre.line.id, transactionId: manual.id, adopt: '1' })).resolves.toEqual({ error: 'Ce mouvement est déjà rapproché d’une autre ligne.' });
+    // Le nom saisi l'emporte sur la liste, et crée la catégorie.
+    await expect(post({ intent: 'acceptImportLine', id: nouvelle.line.id, kind: 'expense', categoryId: category.id, newCategoryName: '  Nouvelle catégorie  ', amount: '7,00', occurredOn: '2026-09-03', note: '' })).resolves.toMatchObject({ status: 302 });
+
+    const check = openDatabase({ path: database, environment: 'test' });
+    try {
+      const rows = check.sqlite.prepare('select t.amount_cents as amount, t.occurred_on as day, c.name as category from finance_transactions t join finance_categories c on c.id = t.category_id where t.account_id = ? order by t.amount_cents').all(account.id);
+      expect(rows).toEqual([{ amount: -700, day: '2026-09-03', category: 'Nouvelle catégorie' }, { amount: -500, day: '2026-09-03', category: 'Rapprochement' }]);
+      const left = importsRepository(check.db, owner.id).listPending().filter(({ batch }) => batch.accountId === account.id);
+      expect(left.map(({ line: { label } }) => label)).toEqual(['CB AUSSI DEJA SAISIE']);
+    } finally { check.close(); }
+  });
 });
