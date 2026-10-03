@@ -820,6 +820,8 @@ details > .finance-form, details > .finance-delete { margin-top: 12px; }
   color: var(--color-foreground-muted);
   white-space: nowrap;
 }
+.finance-import-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.finance-import-actions form { display: contents; }
 .finance-tag--ok { border-color: var(--color-accent); color: var(--color-foreground); }
 .finance-modal__panel fieldset { display: grid; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; }
 .finance-modal__panel legend { margin-bottom: 4px; font-weight: 600; }

@@ -7,7 +7,7 @@ import { migrateDatabase } from '../../app/.server/db/migrate';
 import { accountsRepository } from '../../app/.server/repositories/accounts';
 import { budgetRepository } from '../../app/.server/repositories/budget';
 import { planningRepository } from '../../app/.server/repositories/planning';
-import { DIRECTION_MISMATCH, importsRepository, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
+import { DIRECTION_MISMATCH, importsRepository, NEEDS_REVIEW, OPENED_TOO_LATE, recognitionKey, type CreateImportBatch } from '../../app/.server/repositories/imports';
 
 let directory: string;
 let connection: ReturnType<typeof openDatabase>;
@@ -407,3 +407,67 @@ describe('rapprochement et reconnaissance', () => {
     });
   });
 });
+
+describe('validation rapide d’une ligne connue', () => {
+  const achat = (amountCents: number, occurredOn: string, fact: string) => ({
+    rawDate: occurredOn, rawLabel: `CB AMAZON PAYMENTS FACT ${fact}`, rawAmount: String(amountCents), occurredOn, label: `CB AMAZON PAYMENTS FACT ${fact}`, amountCents,
+  });
+  function amazonConnu() {
+    const context = setup();
+    context.imports.createBatch(statement(context.checking.id, { lines: [achat(-3_879, '2026-09-04', '020926')] }));
+    context.imports.acceptLine({ id: context.imports.listPending()[0].line.id, kind: 'expense', categoryId: context.groceries.id, amountCents: 3_879, occurredOn: '2026-09-04', note: '' });
+    return context;
+  }
+
+  it('valide d’un clic une ligne connue dont le montant a changé, avec la catégorie connue', () => {
+    const { imports, budget, checking, groceries } = amazonConnu();
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [achat(-2_098, '2026-10-04', '021026')] }));
+    const [ligne] = imports.listPending();
+    // Hors du lot (montant différent), mais validable sur sa ligne.
+    expect(ligne.suggestion).toMatchObject({ recognized: null, quick: 'create', known: { sameAmount: false, decision: { categoryId: groceries.id } } });
+    imports.acceptSuggested(ligne.line.id);
+    expect(budget.listTransactions('2026-10').map(({ transaction }) => [transaction.amountCents, transaction.categoryId])).toEqual([[-2_098, groceries.id]]);
+    expect(imports.countPending()).toBe(0);
+  });
+
+  it('ne prend pas un remboursement pour un achat, même au même libellé', () => {
+    const { imports, budget, checking } = amazonConnu();
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [achat(2_098, '2026-10-06', '051026')] }));
+    const [remboursement] = imports.listPending();
+    expect(remboursement.suggestion).toMatchObject({ known: null, quick: null, recognized: null });
+    expect(() => imports.acceptSuggested(remboursement.line.id)).toThrow(NEEDS_REVIEW);
+    expect(budget.listTransactions('2026-10')).toEqual([]);
+  });
+
+  it('renvoie vers « Traiter » quand un mouvement du même montant est déjà au journal', () => {
+    const { imports, budget, checking, groceries } = amazonConnu();
+    // Saisi à la main, mais à cinq jours de la date bancaire : trop loin pour être sûr.
+    budget.createTransaction({ accountId: checking.id, categoryId: groceries.id, kind: 'expense', amountCents: 2_098, occurredOn: '2026-10-09', note: '' });
+    imports.createBatch(statement(checking.id, { sourceSha256: sha('b'), lines: [achat(-2_098, '2026-10-04', '021026')] }));
+    const [ligne] = imports.listPending();
+    expect(ligne.suggestion.quick).toBeNull();
+    expect(() => imports.acceptSuggested(ligne.line.id)).toThrow(NEEDS_REVIEW);
+    expect(budget.listTransactions('2026-10')).toHaveLength(1);
+  });
+
+  it('rattache d’un clic une ligne déjà saisie à la main', () => {
+    const { imports, budget, checking, groceries } = setup();
+    const manuel = budget.createTransaction({ accountId: checking.id, categoryId: groceries.id, kind: 'expense', amountCents: 4_210, occurredOn: '2026-09-02', note: '' });
+    imports.createBatch(statement(checking.id));
+    const [ligne] = imports.listPending();
+    expect(ligne.suggestion.quick).toBe('link');
+    expect(imports.acceptSuggested(ligne.line.id)).toBe(manuel.id);
+    expect(budget.listTransactions('2026-09')).toHaveLength(1);
+  });
+
+  it('refuse une ligne inconnue, déjà décidée, ou d’un autre propriétaire', () => {
+    const { imports, checking } = setup();
+    imports.createBatch(statement(checking.id));
+    const [ligne] = imports.listPending();
+    expect(() => imports.acceptSuggested(ligne.line.id)).toThrow(NEEDS_REVIEW);
+    expect(() => setup('other-test').imports.acceptSuggested(ligne.line.id)).toThrow('Ligne introuvable.');
+    imports.rejectLine(ligne.line.id);
+    expect(() => imports.acceptSuggested(ligne.line.id)).toThrow('Ligne introuvable.');
+  });
+});
+

@@ -9,7 +9,7 @@ import { budgetRepository } from '../.server/repositories/budget.ts';
 import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
-import { DIRECTION_MISMATCH, importsRepository, OPENED_TOO_LATE, TRANSFER_MISMATCH } from '../.server/repositories/imports.ts';
+import { DIRECTION_MISMATCH, importsRepository, NEEDS_REVIEW, OPENED_TOO_LATE, TRANSFER_MISMATCH } from '../.server/repositories/imports.ts';
 import { MAX_PDF_BYTES, StatementError } from '../.server/imports/pdf-rows.server.ts';
 import { importStatement } from '../.server/imports/statement-upload.server.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
@@ -177,7 +177,7 @@ async function boundedFormData(request: Request) {
   return new Response(new Blob(chunks as BlobPart[]), { headers: { 'content-type': request.headers.get('content-type') ?? '' } }).formData();
 }
 const SAFE_ERRORS = new Set([
-  OPENED_TOO_LATE, TRANSFER_MISMATCH, DIRECTION_MISMATCH, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
+  OPENED_TOO_LATE, TRANSFER_MISMATCH, DIRECTION_MISMATCH, NEEDS_REVIEW, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
   'Choisir un existant ou en créer un, pas les deux.',
 ]);
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
@@ -323,6 +323,7 @@ export async function action({ request }: { request: Request }) {
         break;
       }
       case 'linkImportLine': imports.linkLine({ id: field(data, 'id', 64), transactionId: field(data, 'transactionId', 64), adopt: data.get('adopt') === '1' }); break;
+      case 'acceptSuggestedImportLine': imports.acceptSuggested(field(data, 'id', 64)); break;
       case 'acceptRecognizedImportLines': imports.acceptRecognized(fields(data, 'ids', 64, 200)); break;
       case 'importStatement': await importStatement(data, imports); break;
       case 'rejectImportLine': imports.rejectLine(field(data, 'id', 64)); break;
@@ -871,25 +872,27 @@ type CandidatImport = LigneImport['suggestion']['candidates'][number];
 const libelleVirement = (candidat: CandidatImport) => `virement ${candidat.amountCents > 0 ? 'depuis' : 'vers'} ${candidat.counterpartAccountName}`;
 
 /**
- * Ce que l'app propose pour une ligne, en clair. La pastille « reconnue » est
- * la seule qui envoie la ligne dans la validation groupée.
+ * Ce que l'app propose pour une ligne, en pastilles : la cible (catégorie ou
+ * virement), puis « montant identique » ou « montant différent ». Une pastille
+ * marquée `ok` n'est qu'un repère visuel : c'est `suggestion.quick` et
+ * `suggestion.recognized`, calculés côté serveur, qui ouvrent les validations.
  */
-function proposition({ suggestion, duplicate }: LigneImport, accounts: Data['accounts'], categories: Data['categories']) {
+function proposition({ suggestion, duplicate }: LigneImport, accounts: Data['accounts'], categories: Data['categories']): { texte: string; ok: boolean }[] {
   const decision = suggestion.known?.decision;
-  if (suggestion.recognized === 'link') {
+  if (suggestion.quick === 'link') {
     const cible = suggestion.candidates.find((candidate) => candidate.id === suggestion.linkTo);
-    return { reconnue: true, texte: cible?.counterpartAccountName ? `Reconnue · ${libelleVirement(cible)}` : 'Reconnue · déjà au journal' };
+    return [{ texte: cible?.counterpartAccountName ? libelleVirement(cible) : 'déjà au journal', ok: true }, { texte: 'montant identique', ok: true }];
   }
-  if (suggestion.recognized === 'create' && decision) {
+  if (decision) {
     const cible = decision.kind === 'transfer'
-      ? `transfert ${decision.direction === 'out' ? 'vers' : 'depuis'} ${accounts.find((account) => account.id === decision.counterpartAccountId)?.name ?? 'un compte'}`
+      ? `virement ${decision.direction === 'out' ? 'vers' : 'depuis'} ${accounts.find((account) => account.id === decision.counterpartAccountId)?.name ?? 'un compte'}`
       : categories.find((category) => category.id === decision.categoryId)?.name ?? 'catégorie connue';
-    return { reconnue: true, texte: `Reconnue · ${cible}` };
+    const pastilles = [{ texte: cible, ok: true }, suggestion.known!.sameAmount ? { texte: 'montant identique', ok: true } : { texte: 'montant différent', ok: false }];
+    return suggestion.quick ? pastilles : [...pastilles, { texte: 'à vérifier', ok: false }];
   }
-  if (suggestion.known && !suggestion.known.sameAmount) return { reconnue: false, texte: 'Montant différent de la dernière fois' };
-  if (suggestion.candidates.length > 0) return { reconnue: false, texte: 'Déjà saisie ? À vérifier' };
-  if (duplicate) return { reconnue: false, texte: 'Doublon possible' };
-  return { reconnue: false, texte: 'Nouvelle' };
+  if (suggestion.candidates.length > 0) return [{ texte: 'Déjà saisie ? À vérifier', ok: false }];
+  if (duplicate) return [{ texte: 'Doublon possible', ok: false }];
+  return [{ texte: 'Nouvelle', ok: false }];
 }
 
 /**
@@ -918,13 +921,21 @@ function ImportsAValider({ data, accounts, categories }: { data: Data; accounts:
     </Form> : null}
     <ul className="finance-records">{pending.map((item) => {
       const { line } = item;
-      const { reconnue, texte } = proposition(item, accounts, categories);
       return <li key={line.id}>
         <div>
           <strong>{line.label || 'Sans libellé'}</strong>
-          <p><time dateTime={line.occurredOn}>{dateCourte(line.occurredOn)}</time> · <Currency cents={line.amountCents} signe /> · <span className={`finance-tag${reconnue ? ' finance-tag--ok' : ''}`}>{texte}</span></p>
+          <p><time dateTime={line.occurredOn}>{dateCourte(line.occurredOn)}</time> · <Currency cents={line.amountCents} signe />{proposition(item, accounts, categories).map(({ texte, ok }) => <Fragment key={texte}> <span className={`finance-tag${ok ? ' finance-tag--ok' : ''}`}>{texte}</span></Fragment>)}</p>
         </div>
-        <button type="button" className="finance-button finance-button--quiet finance-button--mini" onClick={() => setOuverte(line.id)} aria-haspopup="dialog">Traiter</button>
+        <div className="finance-import-actions">
+          {/* Valider applique la proposition affichée, recalculée par le serveur ;
+              une ligne sans proposition sûre ne montre que « Traiter ». */}
+          {item.suggestion.quick ? <Form method="post">
+            <input type="hidden" name="id" value={line.id} />
+            <button className="finance-button finance-button--mini" name="intent" value="acceptSuggestedImportLine" aria-label={`Valider ${line.label}`}>Valider</button>
+            <button className="finance-button finance-button--quiet finance-button--mini" name="intent" value="rejectImportLine" aria-label={`Ignorer ${line.label}`}>Ignorer</button>
+          </Form> : null}
+          <button type="button" className="finance-button finance-button--quiet finance-button--mini" onClick={() => setOuverte(line.id)} aria-haspopup="dialog">Traiter</button>
+        </div>
       </li>;
     })}</ul>
     {courante ? <ModaleImport key={courante.line.id} item={courante} data={data} accounts={accounts} categories={categories} onFermer={() => setOuverte(null)} /> : null}

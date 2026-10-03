@@ -69,8 +69,16 @@ export type ImportSuggestion = {
   candidates: ImportCandidate[];
   known: { decision: KnownDecision; sameAmount: boolean } | null;
   recognized: 'link' | 'create' | null;
+  /**
+   * Validable d'un clic sur sa propre ligne : comme `recognized`, mais une
+   * décision connue suffit même si le montant a changé (l'abonnement qui
+   * augmente, l'achat Amazon du mois). Jamais quand un mouvement du même
+   * montant est déjà au journal : ce serait peut-être un doublon.
+   */
+  quick: 'link' | 'create' | null;
   linkTo: string | null;
 };
+export const NEEDS_REVIEW = 'Cette ligne demande une vérification : ouvre-la avec « Traiter ».';
 
 /**
  * Libellé comparable d'un relevé à l'autre : casse, accents et espaces ne
@@ -209,12 +217,28 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
   function suggestionFor(line: typeof importLines.$inferSelect, accountId: string, duplicate: ImportDuplicate, history: ReturnType<typeof historyFor>): ImportSuggestion {
     const candidates = candidatesFor(line, accountId);
     const previous = history.get(recognitionKey(line.label));
-    const known = previous ? { decision: previous.decision, sameAmount: previous.amountCents === line.amountCents } : null;
+    // ⚠️ Même libellé, sens opposé : le remboursement d'un achat n'est pas un
+    // achat. Une décision connue ne vaut que si elle respecte le signe.
+    const known = previous && fitsSign(previous.decision, line.amountCents)
+      ? { decision: previous.decision, sameAmount: previous.amountCents === line.amountCents } : null;
     const exact = candidates.filter((candidate) => candidate.exact);
-    if (exact.length === 1 && duplicate !== 'imported') return { candidates, known, recognized: 'link', linkTo: exact[0].id };
+    if (exact.length === 1 && duplicate !== 'imported') return { candidates, known, recognized: 'link', quick: 'link', linkTo: exact[0].id };
     const sameAmountNearby = candidates.some((candidate) => candidate.amountCents === line.amountCents);
-    if (exact.length === 0 && !sameAmountNearby && known?.sameAmount && duplicate === null) return { candidates, known, recognized: 'create', linkTo: null };
-    return { candidates, known, recognized: null, linkTo: null };
+    const quick = exact.length === 0 && !sameAmountNearby && known && duplicate === null ? 'create' : null;
+    return { candidates, known, recognized: quick && known?.sameAmount ? 'create' : null, quick, linkTo: null };
+  }
+  function fitsSign(decision: KnownDecision, amountCents: number) {
+    if (decision.kind === 'transfer') return decision.direction === (amountCents < 0 ? 'out' : 'in');
+    return decision.kind === 'expense' ? amountCents < 0 : amountCents > 0;
+  }
+  /** Applique la proposition de l'app à une ligne : rattacher, ou créer comme la dernière fois. */
+  function applySuggestion(this: { linkLine: (input: LinkImportLine) => string; acceptLine: (input: AcceptImportLine) => string }, id: string, line: typeof importLines.$inferSelect, suggestion: ImportSuggestion, mode: 'recognized' | 'quick') {
+    const action = suggestion[mode];
+    if (action === 'link') return this.linkLine({ id, transactionId: suggestion.linkTo!, adopt: true });
+    if (action !== 'create') throw new Error(NEEDS_REVIEW);
+    const decision = suggestion.known!.decision;
+    const common = { id, amountCents: Math.abs(line.amountCents), occurredOn: line.occurredOn, note: line.label };
+    return this.acceptLine(decision.kind === 'transfer' ? { ...common, ...decision } : { ...common, ...decision });
   }
 
   return {
@@ -373,14 +397,9 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
           if (!found) continue;
           if (!histories.has(found.accountId)) histories.set(found.accountId, historyFor(found.accountId));
           const suggestion = suggestionFor(found.line, found.accountId, this.duplicateOf(found.line, found.accountId), histories.get(found.accountId)!);
+          if (!suggestion.recognized) continue;
           try {
-            if (suggestion.recognized === 'link') {
-              this.linkLine({ id, transactionId: suggestion.linkTo!, adopt: true });
-            } else if (suggestion.recognized === 'create') {
-              const decision = suggestion.known!.decision;
-              const common = { id, amountCents: Math.abs(found.line.amountCents), occurredOn: found.line.occurredOn, note: found.line.label };
-              this.acceptLine(decision.kind === 'transfer' ? { ...common, ...decision } : { ...common, ...decision });
-            } else continue;
+            applySuggestion.call(this, id, found.line, suggestion, 'recognized');
           } catch {
             // Une ligne refusée (engagement échu, compte fermé…) reste dans la
             // file sans faire échouer les autres : son point de sauvegarde
@@ -390,6 +409,20 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
           accepted++;
         }
         return { accepted, skipped: list.length - accepted };
+      });
+    },
+    /**
+     * « Valider » sur la ligne même, sans ouvrir la modale : la proposition est
+     * recalculée ici, et une ligne qui n'en a plus (doublon possible apparu,
+     * catégorie désactivée) est refusée au lieu d'être devinée.
+     */
+    acceptSuggested(id: string) {
+      z.uuid().parse(id);
+      return db.transaction(() => {
+        const found = pendingLine(id);
+        if (!found) throw new Error('Ligne introuvable.');
+        const suggestion = suggestionFor(found.line, found.accountId, this.duplicateOf(found.line, found.accountId), historyFor(found.accountId));
+        return applySuggestion.call(this, id, found.line, suggestion, 'quick');
       });
     },
     rejectLine(id: string) {
