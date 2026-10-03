@@ -359,4 +359,39 @@ describe('rapprochement et reconnaissance', () => {
     expect(() => imports.acceptLine({ id: first.line.id, kind: 'transfer', newCounterpartAccount: { name: 'Fantôme', type: 'savings' }, direction: 'out', amountCents: 4_210, occurredOn: '2025-12-31', note: '' })).toThrow();
     expect(connection.sqlite.prepare("select count(*) as n from finance_accounts where name = 'Fantôme'").get()).toEqual({ n: 0 });
   });
+
+  describe('virement entre deux de mes comptes', () => {
+    const sortie = { rawDate: '04/09/2026', rawLabel: 'VIR SEPA VERS LIVRET', rawAmount: '- 1 300,00', occurredOn: '2026-09-04', label: 'VIR SEPA VERS LIVRET', amountCents: -130_000 };
+    const entree = (amountCents = 130_000, occurredOn = '2026-09-05') => ({ rawDate: '05/09/2026', rawLabel: 'VIR SEPA RECU', rawAmount: '+ 1 300,00', occurredOn, label: 'VIR SEPA RECU', amountCents });
+
+    function virementSaisiDepuisLeCompte1() {
+      const context = setup();
+      context.imports.createBatch(statement(context.checking.id, { lines: [sortie] }));
+      context.imports.acceptLine({ id: context.imports.listPending()[0].line.id, kind: 'transfer', counterpartAccountId: context.savings.id, direction: 'out', amountCents: 130_000, occurredOn: '2026-09-04', note: '' });
+      return context;
+    }
+
+    it('rattache la ligne reçue sur le compte 2 au virement déjà créé, sans le dédoubler', () => {
+      const { imports, budget, savings, checking } = virementSaisiDepuisLeCompte1();
+      imports.createBatch(statement(savings.id, { sourceSha256: sha('b'), lines: [entree()] }));
+      const [ligne] = imports.listPending();
+      expect(ligne.suggestion).toMatchObject({ recognized: 'link', candidates: [expect.objectContaining({ kind: 'transfer', amountCents: 130_000, counterpartAccountName: 'Compte courant' })] });
+      // Depuis la modale, « Aligner » reste coché : la banque du compte 2 a crédité un jour plus tard.
+      imports.linkLine({ id: ligne.line.id, transactionId: ligne.suggestion.linkTo!, adopt: true });
+      const jambes = budget.listTransactions('2026-09').map(({ transaction }) => transaction);
+      expect(jambes).toHaveLength(2);
+      expect(jambes.map(({ accountId, amountCents }) => [accountId === checking.id ? 'compte 1' : 'compte 2', amountCents]).sort()).toEqual([['compte 1', -130_000], ['compte 2', 130_000]]);
+    });
+
+    it('refuse de relier un virement dont les deux montants ne collent pas', () => {
+      const { imports, savings } = virementSaisiDepuisLeCompte1();
+      imports.createBatch(statement(savings.id, { sourceSha256: sha('b'), lines: [entree(129_900)] }));
+      const [ligne] = imports.listPending();
+      // Le virement n'est même pas proposé : il ne peut pas être le même.
+      expect(ligne.suggestion.candidates).toEqual([]);
+      const jambe = connection.sqlite.prepare("select id from finance_transactions where account_id = ? and kind = 'transfer'").get(savings.id) as { id: string };
+      expect(() => imports.linkLine({ id: ligne.line.id, transactionId: jambe.id, adopt: false })).toThrow('Les deux montants du virement ne correspondent pas');
+      expect(() => imports.linkLine({ id: ligne.line.id, transactionId: jambe.id, adopt: true })).toThrow('Les deux montants du virement ne correspondent pas');
+    });
+  });
 });

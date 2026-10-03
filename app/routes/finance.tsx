@@ -9,7 +9,7 @@ import { budgetRepository } from '../.server/repositories/budget.ts';
 import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
-import { importsRepository, OPENED_TOO_LATE } from '../.server/repositories/imports.ts';
+import { importsRepository, OPENED_TOO_LATE, TRANSFER_MISMATCH } from '../.server/repositories/imports.ts';
 import { MAX_PDF_BYTES, StatementError } from '../.server/imports/pdf-rows.server.ts';
 import { importStatement } from '../.server/imports/statement-upload.server.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
@@ -177,8 +177,8 @@ async function boundedFormData(request: Request) {
   return new Response(new Blob(chunks as BlobPart[]), { headers: { 'content-type': request.headers.get('content-type') ?? '' } }).formData();
 }
 const SAFE_ERRORS = new Set([
-  OPENED_TOO_LATE, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
-  'Un transfert se corrige depuis le journal.', 'Choisir un existant ou en créer un, pas les deux.',
+  OPENED_TOO_LATE, TRANSFER_MISMATCH, 'Ce relevé a déjà été importé pour ce compte.', 'Ce mouvement est déjà rapproché d’une autre ligne.',
+  'Choisir un existant ou en créer un, pas les deux.',
 ]);
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
 
@@ -865,6 +865,9 @@ function ImportReleve({ accounts }: { accounts: Data['accounts'] }) {
 }
 
 type LigneImport = Data['imports']['pending'][number];
+type CandidatImport = LigneImport['suggestion']['candidates'][number];
+// La moitié reçue d'un virement vient « de » l'autre compte ; la moitié émise y « va ».
+const libelleVirement = (candidat: CandidatImport) => `virement ${candidat.amountCents > 0 ? 'depuis' : 'vers'} ${candidat.counterpartAccountName}`;
 
 /**
  * Ce que l'app propose pour une ligne, en clair. La pastille « reconnue » est
@@ -872,7 +875,10 @@ type LigneImport = Data['imports']['pending'][number];
  */
 function proposition({ suggestion, duplicate }: LigneImport, accounts: Data['accounts'], categories: Data['categories']) {
   const decision = suggestion.known?.decision;
-  if (suggestion.recognized === 'link') return { reconnue: true, texte: 'Reconnue · déjà au journal' };
+  if (suggestion.recognized === 'link') {
+    const cible = suggestion.candidates.find((candidate) => candidate.id === suggestion.linkTo);
+    return { reconnue: true, texte: cible?.counterpartAccountName ? `Reconnue · ${libelleVirement(cible)}` : 'Reconnue · déjà au journal' };
+  }
   if (suggestion.recognized === 'create' && decision) {
     const cible = decision.kind === 'transfer'
       ? `transfert ${decision.direction === 'out' ? 'vers' : 'depuis'} ${accounts.find((account) => account.id === decision.counterpartAccountId)?.name ?? 'un compte'}`
@@ -972,9 +978,9 @@ function ModaleImport({ item, data, accounts, categories, onFermer }: {
           <legend>C’est un mouvement déjà saisi</legend>
           {suggestion.candidates.map((candidate) => <label key={candidate.id} className="finance-inline">
             <input type="radio" name="transactionId" value={candidate.id} defaultChecked={candidate.id === (suggestion.linkTo ?? suggestion.candidates[0].id)} required />
-            <span><time dateTime={candidate.occurredOn}>{dateCourte(candidate.occurredOn)}</time> · <Currency cents={candidate.amountCents} signe /> · {candidate.categoryName ?? 'Transfert'}{candidate.note ? ` · ${candidate.note}` : ''}{candidate.exact ? ' · identique' : ''}</span>
+            <span><time dateTime={candidate.occurredOn}>{dateCourte(candidate.occurredOn)}</time> · <Currency cents={candidate.amountCents} signe /> · {candidate.counterpartAccountName ? libelleVirement(candidate) : candidate.categoryName ?? 'Transfert'}{candidate.note ? ` · ${candidate.note}` : ''}{candidate.exact ? ' · identique' : ''}</span>
           </label>)}
-          <label className="finance-inline"><input type="checkbox" name="adopt" value="1" defaultChecked /> Aligner montant et date sur le relevé</label>
+          <label className="finance-inline"><input type="checkbox" name="adopt" value="1" defaultChecked /> Aligner montant et date sur le relevé (sauf virement entre tes comptes : les deux montants doivent déjà coller)</label>
         </fieldset>
         <button className="finance-button" name="intent" value="linkImportLine">Rattacher</button>
       </fetcher.Form> : null}

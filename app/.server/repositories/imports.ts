@@ -45,11 +45,14 @@ const linkInput = z.object({ id: z.uuid(), transactionId: z.uuid(), adopt: z.boo
 
 export type CreateImportBatch = z.input<typeof batchInput>;
 export type AcceptImportLine = z.input<typeof acceptInput>;
+export const TRANSFER_MISMATCH = 'Les deux montants du virement ne correspondent pas : ce n’est pas la même opération.';
 export const OPENED_TOO_LATE = 'Le relevé commence avant la date d’ouverture de ce compte : avance cette date dans la section Comptes, puis réimporte.';
 export type LinkImportLine = z.input<typeof linkInput>;
 export type ImportDuplicate = 'imported' | 'journal' | null;
 export type ImportCandidate = {
   id: string; occurredOn: string; amountCents: number; kind: 'income' | 'expense' | 'transfer'; note: string; categoryName: string | null;
+  /** Pour un virement : l'autre compte, celui d'où vient ou où va l'argent. */
+  counterpartAccountName: string | null;
   /** Même montant, à trois jours près : très probablement la même opération. */
   exact: boolean;
 };
@@ -131,7 +134,11 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
       .where(and(eq(importLines.ownerId, ownerId), eq(importLines.transactionId, transactionId))).limit(1).get());
   }
 
-  /** Mouvements du même compte, de même sens, à une semaine près, pas encore rapprochés. */
+  /**
+   * Mouvements du même compte, de même sens, à une semaine près, pas encore
+   * rapprochés. Un virement entre deux comptes n'est proposé qu'au centime
+   * près : c'est l'autre moitié d'une opération déjà connue, pas une estimation.
+   */
   function candidatesFor(line: typeof importLines.$inferSelect, accountId: string): ImportCandidate[] {
     const rows = db.select({ transaction: transactions, categoryName: categories.name }).from(transactions)
       .leftJoin(categories, eq(transactions.categoryId, categories.id))
@@ -144,13 +151,19 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
     const distance = (transaction: typeof transactions.$inferSelect) =>
       [Math.abs(transaction.amountCents - line.amountCents), daysBetween(transaction.occurredOn, line.occurredOn)] as const;
     return rows
+      .filter(({ transaction }) => transaction.kind !== 'transfer' || transaction.amountCents === line.amountCents)
       .sort((a, b) => { const [ecartA, joursA] = distance(a.transaction); const [ecartB, joursB] = distance(b.transaction); return ecartA - ecartB || joursA - joursB; })
       .slice(0, CANDIDATE_LIMIT)
       .map(({ transaction, categoryName }) => ({
         id: transaction.id, occurredOn: transaction.occurredOn, amountCents: transaction.amountCents, kind: transaction.kind,
-        note: transaction.note, categoryName,
+        note: transaction.note, categoryName, counterpartAccountName: transaction.kind === 'transfer' ? counterpartName(transaction) : null,
         exact: transaction.amountCents === line.amountCents && daysBetween(transaction.occurredOn, line.occurredOn) <= EXACT_MATCH_DAYS,
       }));
+  }
+  function counterpartName(transaction: typeof transactions.$inferSelect) {
+    return db.select({ name: accounts.name }).from(transactions).innerJoin(accounts, eq(transactions.accountId, accounts.id)).where(and(
+      eq(transactions.ownerId, ownerId), eq(transactions.transferGroupId, transaction.transferGroupId!), ne(transactions.id, transaction.id),
+    )).get()?.name ?? null;
   }
 
   /**
@@ -324,8 +337,12 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
         const target = db.select().from(transactions).where(and(eq(transactions.id, values.transactionId), eq(transactions.ownerId, ownerId))).get();
         if (!target || target.accountId !== found.accountId || Math.sign(target.amountCents) !== Math.sign(found.line.amountCents)) throw new Error('Mouvement introuvable.');
         if (isLinked(target.id)) throw new Error('Ce mouvement est déjà rapproché d’une autre ligne.');
-        if (values.adopt && (target.amountCents !== found.line.amountCents || target.occurredOn !== found.line.occurredOn)) {
-          if (target.kind === 'transfer') throw new Error('Un transfert se corrige depuis le journal.');
+        if (target.kind === 'transfer') {
+          // Les deux relevés doivent montrer la même somme. La date, elle, n'est
+          // pas réalignée : deux banques créditent et débitent à un jour près,
+          // et les deux moitiés du virement partagent la même date au journal.
+          if (target.amountCents !== found.line.amountCents) throw new Error(TRANSFER_MISMATCH);
+        } else if (values.adopt && (target.amountCents !== found.line.amountCents || target.occurredOn !== found.line.occurredOn)) {
           budget.updateTransaction({
             id: target.id, accountId: target.accountId, categoryId: target.categoryId!, kind: target.kind,
             amountCents: Math.abs(found.line.amountCents), occurredOn: found.line.occurredOn, note: target.note, recurringCommitmentId: target.recurringCommitmentId,
@@ -353,10 +370,7 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
           const suggestion = suggestionFor(found.line, found.accountId, this.duplicateOf(found.line, found.accountId), histories.get(found.accountId)!);
           try {
             if (suggestion.recognized === 'link') {
-              // Un transfert ne se réaligne pas d'ici : à montant identique, la
-              // date de la saisie est gardée.
-              const target = suggestion.candidates.find((candidate) => candidate.id === suggestion.linkTo)!;
-              this.linkLine({ id, transactionId: target.id, adopt: target.kind !== 'transfer' });
+              this.linkLine({ id, transactionId: suggestion.linkTo!, adopt: true });
             } else if (suggestion.recognized === 'create') {
               const decision = suggestion.known!.decision;
               const common = { id, amountCents: Math.abs(found.line.amountCents), occurredOn: found.line.occurredOn, note: found.line.label };
