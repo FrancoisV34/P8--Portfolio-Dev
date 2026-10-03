@@ -44,7 +44,7 @@ test('la modale N enchaîne les saisies, le journal se trie et se parcourt au cl
   await connexion(page);
   await decor(page);
   await page.getByRole('link', { name: 'Transactions', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Journal — 2026-09' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Journal — \d{4}-\d{2}$/ })).toBeVisible();
 
   // ── `N` ouvre la modale, et le focus part sur Montant ───────────────────
   await page.locator('body').press('n');
@@ -115,7 +115,7 @@ test('la modale N enchaîne les saisies, le journal se trie et se parcourt au cl
 test('sous 680 px le tableau cède la place aux lignes dépliables', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 780 });
   await connexion(page);
-  await page.goto('/finance/transactions?period=2026-09');
+  await page.goto('/finance/transactions');
 
   await expect(page.locator('[data-view="table"]')).toBeHidden();
   const cartes = page.locator('[data-view="cards"]');
@@ -157,7 +157,7 @@ test('sous 680 px les tableaux denses deviennent des cartes, sans défilement la
   await page.setViewportSize({ width: 375, height: 780 });
   await connexion(page);
   for (const section of ['accounts', 'categories', 'budget']) {
-    await page.goto(`/finance/${section}?period=2026-09`);
+    await page.goto(`/finance/${section}`);
     for (const vue of await page.locator('[data-view="table"]').all()) await expect(vue).toBeHidden();
     await expect(page.locator('[data-view="cards"]').first()).toBeVisible();
     const debordement = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

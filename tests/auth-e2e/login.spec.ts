@@ -30,7 +30,7 @@ test('le compte propriétaire peut se connecter et se déconnecter', async ({ pa
   await page.getByRole('link', { name: 'Comptes', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Entité économique' })).toBeVisible();
   await page.getByRole('link', { name: 'Transactions', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Journal — 2026-09' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /^Journal — \d{4}-\d{2}$/ })).toBeVisible();
 
   await page.getByRole('button', { name: 'Se déconnecter' }).click();
   await expect(page).toHaveURL('/');

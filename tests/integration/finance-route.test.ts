@@ -292,7 +292,9 @@ describe('route finance privée', () => {
     reject.set('id', second.line.id);
     await expect(action({ request: request('POST', reject) })).resolves.toMatchObject({ status: 302 });
 
-    const after = await loader({ request: request(), params: { '*': 'transactions' } }) as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
+    // Le journal affiche le mois courant par défaut : on demande celui des lignes.
+    const september = new Request(`${origin}/finance?period=2026-09`, { headers: { cookie, origin } });
+    const after = await loader({ request: september, params: { '*': 'transactions' } }) as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
     expect(after.imports.count).toBe(0);
     expect(after.transactions.filter(({ transaction }) => transaction.accountId === account.id).map(({ transaction }) => transaction.amountCents)).toEqual([-1_243]);
   });
