@@ -10,6 +10,8 @@ import { cfoRepository } from '../.server/repositories/cfo.ts';
 import { gominingRepository } from '../.server/repositories/gomining.ts';
 import { goalsRepository } from '../.server/repositories/goals.ts';
 import { importsRepository } from '../.server/repositories/imports.ts';
+import { MAX_PDF_BYTES, StatementError } from '../.server/imports/pdf-rows.server.ts';
+import { importStatement } from '../.server/imports/statement-upload.server.ts';
 import { planningRepository } from '../.server/repositories/planning.ts';
 import { regulatoryRepository } from '../.server/repositories/regulatory.ts';
 import { regulatorySourceRepository } from '../.server/repositories/regulatory-sources.ts';
@@ -153,6 +155,27 @@ function gominingBudgetPlansFor(period: string, scenarios: Array<{ scenario: { i
   return scenarios.flatMap(({ scenario, projection }) => { const month = monthDistance(scenario.startPeriod, period); const contributionCents = projection.months[month - 1]?.contributionCents ?? 0; return scenario.budgetCategoryId && contributionCents > 0 ? [{ scenarioId: scenario.id, name: scenario.name, categoryId: scenario.budgetCategoryId, contributionCents }] : []; });
 }
 function back(request: Request) { const url = new URL(request.url); return redirect(`${url.pathname.replace(/\.data$/, '')}${url.search}`); }
+// Le plus gros corps légitime est un relevé PDF ; une marge couvre l'enveloppe multipart.
+const MAX_BODY_BYTES = MAX_PDF_BYTES + 64 * 1024;
+/**
+ * Lit le formulaire sans jamais garder en mémoire plus de MAX_BODY_BYTES :
+ * `request.formData()` seul accepterait un corps de taille quelconque.
+ */
+async function boundedFormData(request: Request) {
+  if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) return null;
+  if (!request.body) return request.formData();
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > MAX_BODY_BYTES) { await reader.cancel(); return null; }
+    chunks.push(value);
+  }
+  return new Response(new Blob(chunks as BlobPart[]), { headers: { 'content-type': request.headers.get('content-type') ?? '' } }).formData();
+}
 function failure() { return { error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' }; }
 
 export async function loader({ request, params }: { request: Request; params: Record<string, string | undefined> }) {
@@ -231,7 +254,7 @@ export async function action({ request }: { request: Request }) {
   const session = await requireOwner(request);
   requireSameOrigin(request);
   // Un corps illisible se traite comme une saisie refusée, pas comme une panne.
-  const data = await request.formData().catch(() => null);
+  const data = await boundedFormData(request).catch(() => null);
   if (!data) return failure();
   // La modale de saisie rapide enchaîne les mouvements sans quitter la page :
   // une redirection la refermerait à chaque enregistrement. Elle demande donc
@@ -282,6 +305,15 @@ export async function action({ request }: { request: Request }) {
         else imports.acceptLine({ ...decision, kind: kind as 'income' | 'expense', categoryId: field(data, 'categoryId', 64), recurringCommitmentId: optionalField(data, 'recurringCommitmentId', 64) });
         break;
       }
+      case 'importStatement':
+        try { await importStatement(data, imports); } catch (error) {
+          // Seuls ces deux refus disent quelque chose d'utile ; tout le reste
+          // garde la réponse générique.
+          if (error instanceof StatementError) return { error: error.message };
+          if (error instanceof Error && error.message === 'Ce relevé a déjà été importé pour ce compte.') return { error: error.message };
+          throw error;
+        }
+        break;
       case 'rejectImportLine': imports.rejectLine(field(data, 'id', 64)); break;
       case 'setSafetyReserve': planning.setSafetyReserve({ targetAmountCents: amount(data, 'targetAmount'), accountIds: fields(data, 'accountIds', 64) }); break;
       case 'deleteSafetyReserve': if (field(data, 'confirmDelete', 10) !== 'delete') throw new Error('invalid'); planning.deleteSafetyReserve(); break;
@@ -798,7 +830,25 @@ function CategorySelect({ categories, selected }: { categories: Data['categories
 function CommitmentSelect({ commitments, selected }: { commitments: Data['commitments']; selected?: string | null }) { return <label>Engagement payé (facultatif)<select name="recurringCommitmentId" defaultValue={selected ?? ''}><option value="">Aucun</option>{commitments.map(({ commitment, categoryName }) => <option key={commitment.id} value={commitment.id}>{commitment.name} — {categoryName}</option>)}</select></label>; }
 function Delete({ intent, id, text }: { intent: 'deleteTransaction' | 'deleteBudget' | 'deleteSafetyReserve' | 'deleteCommitment' | 'deleteGoMiningScenario'; id?: string; text: string }) { return <Form method="post" className="finance-delete"><input type="hidden" name="intent" value={intent} />{id ? <input type="hidden" name="id" value={id} /> : null}<label><input type="checkbox" name="confirmDelete" value="delete" required /> {text}</label><button>Supprimer</button></Form>; }
 
-function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid">{data.imports.count > 0 ? <ImportsAValider data={data} accounts={accounts} categories={categories} /> : null}<section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2><Journal data={data} accounts={accounts} categories={categories} /></section></section>; }
+function Transactions({ data, accounts, categories }: { data: Data; accounts: Data['accounts']; categories: Data['categories'] }) { const date = `${data.period}-01`; const ready = accounts.length > 0 && categories.length > 0; return <section className="finance-content finance-grid">{data.imports.count > 0 ? <ImportsAValider data={data} accounts={accounts} categories={categories} /> : null}<ImportReleve accounts={accounts} /><section className="finance-card"><h2>Revenu ou dépense</h2>{!ready ? <p>Il faut un compte actif et une catégorie active pour saisir une transaction.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransaction" /><label>Nature<select name="kind" defaultValue="expense"><option value="expense">Dépense</option><option value="income">Revenu</option></select></label><label>Compte<AccountSelect accounts={accounts} name="accountId" /></label><CategorySelect categories={categories} /><CommitmentSelect commitments={data.commitments} /><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Ajouter au journal</button></Form>}</section><section className="finance-card"><h2>Transfert entre comptes</h2>{accounts.length < 2 ? <p>Ajoute deux comptes actifs pour enregistrer un transfert.</p> : <Form method="post" className="finance-form"><input type="hidden" name="intent" value="createTransfer" /><label>Depuis<AccountSelect accounts={accounts} name="fromAccountId" /></label><label>Vers<AccountSelect accounts={accounts} name="toAccountId" /></label><label>Montant (€)<input name="amount" inputMode="decimal" placeholder="0,00" required /></label><label>Date<input name="occurredOn" type="date" defaultValue={date} required /></label><label>Note facultative<input name="note" maxLength={240} /></label><button className="finance-button">Enregistrer le transfert</button></Form>}</section><section className="finance-card finance-card--wide"><h2>Journal — {data.period}</h2><Journal data={data} accounts={accounts} categories={categories} /></section></section>; }
+
+/**
+ * Dépôt d'un relevé PDF. Les lignes lues rejoignent la file de validation ;
+ * le journal ne change pas tant que chacune n'a pas été validée.
+ */
+function ImportReleve({ accounts }: { accounts: Data['accounts'] }) {
+  const actifs = accounts.filter((account) => account.isActive);
+  if (actifs.length === 0) return null;
+  return <section className="finance-card">
+    <h2>Importer un relevé</h2>
+    <p className="finance-help">Relevé de comptes mensuel Caisse d’Épargne, au format PDF reçu de la banque. Le fichier est lu sur le serveur puis oublié : seules les opérations lues sont gardées, en attente de ta validation.</p>
+    <Form method="post" encType="multipart/form-data" className="finance-form">
+      <label>Compte<select name="accountId" required>{actifs.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}</select></label>
+      <label>Relevé (PDF)<input name="statement" type="file" accept="application/pdf,.pdf" required /></label>
+      <button className="finance-button" name="intent" value="importStatement">Lire le relevé</button>
+    </Form>
+  </section>;
+}
 
 /**
  * Les lignes lues dans un relevé, à valider une par une.

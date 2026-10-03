@@ -6,6 +6,7 @@ import { openDatabase } from '../../app/.server/db/connection';
 import { migrateDatabase } from '../../app/.server/db/migrate';
 import { cfoRepository } from '../../app/.server/repositories/cfo';
 import { importsRepository } from '../../app/.server/repositories/imports';
+import { syntheticPdf } from '../fixtures/synthetic-statement';
 
 const directory = mkdtempSync(join(tmpdir(), 'portfolio-finance-route-test-'));
 const database = join(directory, 'finance.sqlite');
@@ -297,5 +298,50 @@ describe('route finance privée', () => {
     const after = await loader({ request: september, params: { '*': 'transactions' } }) as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
     expect(after.imports.count).toBe(0);
     expect(after.transactions.filter(({ transaction }) => transaction.accountId === account.id).map(({ transaction }) => transaction.amountCents)).toEqual([-1_243]);
+  });
+  it('lit un relevé PDF déposé vers la file de validation, une seule fois, sans rien écrire au journal', async () => {
+    const connection = openDatabase({ path: database, environment: 'test' });
+    const owner = connection.sqlite.prepare('select id from user where email = ?').get('owner-route@example.test') as { id: string };
+    const entity = connection.sqlite.prepare('select id from finance_economic_entities where owner_id = ? limit 1').get(owner.id) as { id: string };
+    const { accountsRepository } = await import('../../app/.server/repositories/accounts');
+    const account = accountsRepository(connection.db, owner.id).createAccount({ entityId: entity.id, name: 'Compte PDF', type: 'checking', openingBalanceCents: 0, openingDate: '2026-01-01' });
+    connection.close();
+
+    const upload = () => {
+      const form = new FormData();
+      form.set('intent', 'importStatement');
+      form.set('accountId', account.id);
+      form.set('statement', new File([syntheticPdf()], 'releve/../septembre.pdf', { type: 'application/pdf' }));
+      return action({ request: request('POST', form) });
+    };
+    await expect(upload()).resolves.toMatchObject({ status: 302 });
+    const loaded = await loader({ request: new Request(`${origin}/finance?period=2026-09`, { headers: { cookie, origin } }), params: { '*': 'transactions' } }) as Exclude<Awaited<ReturnType<typeof loader>>, Response>;
+    const lus = loaded.imports.pending.filter(({ batch }) => batch.accountId === account.id);
+    expect(lus.map(({ line }) => line.amountCents)).toEqual([200_050, -200, -1_240, -3_000, -2_000, -100_000]);
+    expect(lus[0].batch.sourceName).toBe('releve..septembre.pdf');
+    expect(loaded.transactions.filter(({ transaction }) => transaction.accountId === account.id)).toEqual([]);
+
+    await expect(upload()).resolves.toEqual({ error: 'Ce relevé a déjà été importé pour ce compte.' });
+
+    const notPdf = new FormData();
+    notPdf.set('intent', 'importStatement');
+    notPdf.set('accountId', account.id);
+    notPdf.set('statement', new File(['date;libelle'], 'releve.csv'));
+    await expect(action({ request: request('POST', notPdf) })).resolves.toEqual({ error: 'Ce fichier n’est pas un PDF.' });
+
+    // Un corps trop gros est refusé avant d'être lu en entier.
+    const huge = new FormData();
+    huge.set('intent', 'importStatement');
+    huge.set('accountId', account.id);
+    // Sans la borne du corps, ce fichier atteindrait le lecteur et recevrait le
+    // refus « 5 Mo » : la réponse générique prouve qu'il a été arrêté avant.
+    huge.set('statement', new File(['%PDF-', new Uint8Array(6 * 1024 * 1024)], 'gros.pdf'));
+    // Corps sérialisé d'avance, sans Content-Length : c'est la lecture en flux
+    // qui doit s'arrêter, pas un simple contrôle d'en-tête.
+    const envelope = new Response(huge);
+    const body = new Uint8Array(await envelope.arrayBuffer());
+    const streamed = new Request(`${origin}/finance`, { method: 'POST', body, headers: { cookie, origin, 'content-type': envelope.headers.get('content-type')! } });
+    expect(streamed.headers.get('content-length')).toBeNull();
+    await expect(action({ request: streamed })).resolves.toEqual({ error: 'La saisie ne peut pas être enregistrée. Vérifie les champs et réessaie.' });
   });
 });

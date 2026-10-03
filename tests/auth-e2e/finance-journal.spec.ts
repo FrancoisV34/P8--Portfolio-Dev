@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { syntheticPdf } from '../fixtures/synthetic-statement';
 
 /**
  * Le journal et la saisie rapide, dans le vrai châssis.
@@ -163,4 +164,22 @@ test('sous 680 px les tableaux denses deviennent des cartes, sans défilement la
     const debordement = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(debordement, section).toBeLessThanOrEqual(0);
   }
+});
+
+test('un relevé PDF déposé remplit la file de validation, et un second envoi est refusé', async ({ page }) => {
+  await connexion(page);
+  await page.getByRole('link', { name: 'Transactions', exact: true }).click();
+  const fichier = { name: 'releve-synthetique.pdf', mimeType: 'application/pdf', buffer: Buffer.from(syntheticPdf()) };
+
+  await page.getByLabel('Relevé (PDF)').setInputFiles(fichier);
+  await page.getByRole('button', { name: 'Lire le relevé' }).click();
+  await expect(page.getByRole('heading', { name: '6 écritures à valider' })).toBeVisible();
+
+  // Rien n'entre au journal tant qu'aucune ligne n'est validée.
+  await page.goto('/finance/transactions?period=2026-09');
+  await expect(page.locator('[data-view="table"] tbody tr')).toHaveCount(0);
+
+  await page.getByLabel('Relevé (PDF)').setInputFiles(fichier);
+  await page.getByRole('button', { name: 'Lire le relevé' }).click();
+  await expect(page.getByRole('alert')).toContainText('Ce relevé a déjà été importé pour ce compte.');
 });
