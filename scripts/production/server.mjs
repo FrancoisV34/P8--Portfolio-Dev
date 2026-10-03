@@ -7,8 +7,15 @@ import process from 'node:process';
 import { URL } from 'node:url';
 import * as build from '../../build/server/index.js';
 import { securityHeaders } from '../../app/.server/security/headers.server.ts';
+import { privateLoginPath } from '../../app/.server/security/private-path.server.ts';
 
 const console = new Console({ stdout: process.stdout, stderr: process.stderr });
+
+// Vérifié au démarrage plutôt qu'à la première requête : une configuration qui
+// exposerait l'entrée privée doit arrêter la Machine, pas servir des erreurs.
+// Le message ne cite jamais l'adresse elle-même.
+privateLoginPath();
+
 const app = express();
 app.disable('x-powered-by');
 // Fly place l'application derrière un seul proxy TLS. Cette confiance bornée

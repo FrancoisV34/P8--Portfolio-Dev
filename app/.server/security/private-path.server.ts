@@ -5,8 +5,15 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 // mot de passe et la vérification du propriétaire restent la vraie protection.
 const shape = /^\/[A-Za-z0-9][A-Za-z0-9._~-]{1,63}$/;
 
-export function privateLoginPath(value = process.env.PRIVATE_LOGIN_PATH) {
-  const path = value?.trim() || '/co';
+export function privateLoginPath(value = process.env.PRIVATE_LOGIN_PATH, mode = process.env.NODE_ENV) {
+  // Sans variable, le repli `/co` convient au développement. En production il
+  // remettrait l'entrée par défaut en place sans rien signaler, par exemple si
+  // le secret Fly venait à manquer : mieux vaut refuser de servir.
+  const configured = value?.trim();
+  if (!configured && mode === 'production') {
+    throw new Error('PRIVATE_LOGIN_PATH est obligatoire en production : aucune adresse de connexion privée n’est configurée.');
+  }
+  const path = configured || '/co';
   if (!shape.test(path)) {
     throw new Error('PRIVATE_LOGIN_PATH doit être un segment unique comme /b3f1a9c2, sans sous-dossier ni caractère spécial.');
   }

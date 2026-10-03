@@ -32,7 +32,7 @@ HOST=127.0.0.1 PORT=3000 SITE_URL=http://localhost:3000 npm start
 
 Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`.
 
-L’entrée du compte privé n’est pas une adresse publique : `PRIVATE_LOGIN_PATH` la choisit à l’exécution (`/co` par défaut). Toute autre adresse — `/login`, `/co` quand un autre chemin est configuré, `/finance` sans session — renvoie la même page « introuvable », au même octet près. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire, et la déconnexion ramène sur le portfolio plutôt que sur la page de connexion.
+L’entrée du compte privé n’est pas une adresse publique : `PRIVATE_LOGIN_PATH` la choisit à l’exécution (`/co` par défaut en développement seulement : en production, le serveur refuse de démarrer sans cette variable plutôt que de rouvrir l’adresse par défaut). Toute autre adresse — `/login`, `/co` quand un autre chemin est configuré, `/finance` sans session — renvoie la même page « introuvable », au même octet près. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire, et la déconnexion ramène sur le portfolio plutôt que sur la page de connexion.
 
 Le serveur de production ajoute les en-têtes de sécurité sur chaque réponse : politique de contenu liée à un nonce par requête, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, isolement d’origine et HSTS en HTTPS. Ils sont définis dans `app/.server/security/headers.server.ts` et vérifiés par `tests/unit/security-headers.test.ts` et `tests/auth-e2e/security-headers.spec.ts`.
 

@@ -7,6 +7,13 @@ describe('adresse de la connexion privée', () => {
     expect(privateLoginPath('  /b3f1a9c2-prive  ')).toBe('/b3f1a9c2-prive');
   });
 
+  it('refuse le repli /co en production, où l’adresse doit être configurée', () => {
+    for (const value of [undefined, '', '   ']) {
+      expect(() => privateLoginPath(value, 'production'), String(value)).toThrow(/PRIVATE_LOGIN_PATH/);
+    }
+    expect(privateLoginPath('/b3f1a9c2', 'production')).toBe('/b3f1a9c2');
+  });
+
   it('refuse un chemin qui ne serait pas un segment simple', () => {
     for (const value of ['co', '/', '/a', '/deux/segments', '/avec espace', '/../etc', '/x?y']) {
       expect(() => privateLoginPath(value), value).toThrow();
