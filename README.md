@@ -30,7 +30,11 @@ npm run build
 HOST=127.0.0.1 PORT=3000 SITE_URL=http://localhost:3000 npm start
 ```
 
-Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`.
+Routes publiques : `/`, `/cv`, `/robots.txt`, `/sitemap.xml` et `/healthz`, plus `/blog`, `/blog/:slug` et `/blog/rss.xml` dès qu’un article est publié.
+
+### Écrire un article
+
+Les articles sont des fichiers Markdown dans `content/blog/`, lus au build. Copier `content/blog/modele-d-article.md` sous un nom en minuscules, chiffres et tirets (il devient l’adresse : `/blog/mon-article`), remplir l’en-tête, puis passer `published: true`. Un brouillon (`published: false`) n’apparaît que sous `npm run dev`, jamais dans un build. Le HTML brut est affiché sans être interprété et seuls les liens web, courriel ou internes sont actifs. Publier un article, c’est un commit puis `fly deploy` ; `npm run check` refuse un en-tête mal formé.
 
 L’entrée du compte privé n’est pas une adresse publique : `PRIVATE_LOGIN_PATH` la choisit à l’exécution (`/co` par défaut en développement seulement : en production, le serveur refuse de démarrer sans cette variable plutôt que de rouvrir l’adresse par défaut). Toute autre adresse — `/login`, `/co` quand un autre chemin est configuré, `/finance` sans session — renvoie la même page « introuvable », au même octet près. `/finance/*` et `/api/finance/*` refusent toute requête sans session propriétaire, et la déconnexion ramène sur le portfolio plutôt que sur la page de connexion.
 
@@ -144,6 +148,7 @@ Après modification du schéma TypeScript, `npm run db:generate -- --name=descri
 - `app/Components/`, `app/Style/`, `app/Data/` : contenu public et styles portés.
 - `app/.server/` et `app/lib/*.server.ts` : base, repositories et code serveur.
 - `app/lib/finance/` : unités monétaires et dates, sans dépendance à React.
+- `content/blog/` : articles du blog, en Markdown.
 - `drizzle/` : migrations et snapshots du schéma.
 - `tests/` : vérifications unitaires et navigateur.
 - `src/` : anciens composants inactifs conservés comme référence pendant la refonte.

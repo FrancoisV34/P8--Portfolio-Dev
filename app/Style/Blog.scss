@@ -1,0 +1,236 @@
+@use './tokens';
+
+// Le blog reprend la page CV : fond clair, colonne de lecture, accent graphite.
+// Le visuel public est conservé tel quel (décision du 15 septembre 2026) ;
+// le blog s'y range au lieu d'en inventer un autre.
+
+body:has(.blog) {
+  background-color: var(--bg-light);
+}
+
+.blog {
+  min-height: 100vh;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 140px 40px 96px;
+  color: oklch(0.10 0 0);
+
+  @media (max-width: 768px) {
+    padding: 100px 20px 64px;
+  }
+}
+
+.blog__header {
+  margin-bottom: 48px;
+
+  .blog-card__meta {
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 16px;
+  }
+
+  > p:not(.blog-card__meta) {
+    font-size: 1.0625rem;
+    line-height: 1.6;
+    color: oklch(0.45 0 0);
+  }
+}
+
+.blog__rss {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-on-light);
+}
+
+.blog__list {
+  display: grid;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+}
+
+.blog-card {
+  padding: 24px;
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  background-color: oklch(0.99 0 0);
+  transition: border-color var(--dur-base) var(--ease-out);
+
+  &:hover,
+  &:focus-within {
+    border-color: var(--accent-on-light);
+  }
+
+  h2 {
+    font-size: 1.375rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin: 6px 0 10px;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    a:hover,
+    a:focus-visible {
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+  }
+
+  > p:not(.blog-card__meta) {
+    line-height: 1.6;
+    color: oklch(0.40 0 0);
+  }
+}
+
+.blog-card__meta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  // 0.45 sur fond 0.99 : contraste au-dessus de 4,5:1 pour ce petit texte.
+  color: oklch(0.45 0 0);
+}
+
+.blog__draft {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 100px;
+  background-color: oklch(0.90 0.06 80);
+  color: oklch(0.30 0.05 80);
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.blog__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 2px 10px;
+    border: 1px solid var(--border-light);
+    border-radius: 100px;
+    font-size: 13px;
+    color: oklch(0.40 0 0);
+  }
+}
+
+.blog-article__back {
+  display: inline-block;
+  margin-bottom: 32px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-on-light);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+// Le corps de l'article : une colonne de lecture confortable, rien de plus.
+.blog-article__body {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: oklch(0.20 0 0);
+
+  > * + * {
+    margin-top: 1.1em;
+  }
+
+  h2 {
+    margin-top: 2.2em;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+
+  h3 {
+    margin-top: 1.8em;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  a {
+    color: var(--accent-on-light);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  ul,
+  ol {
+    padding-left: 1.4em;
+  }
+
+  li + li {
+    margin-top: 0.4em;
+  }
+
+  blockquote {
+    padding: 4px 0 4px 20px;
+    border-left: 3px solid var(--accent-on-light);
+    color: oklch(0.35 0 0);
+  }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background-color: var(--surface-light);
+  }
+
+  pre {
+    overflow-x: auto;
+    padding: 18px 20px;
+    border-radius: 12px;
+    background-color: oklch(0.14 0 0);
+    color: oklch(0.92 0 0);
+    font-size: 0.875rem;
+    line-height: 1.6;
+
+    code {
+      padding: 0;
+      background: none;
+      font-size: inherit;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--border-light);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  th,
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-light);
+    text-align: left;
+  }
+}

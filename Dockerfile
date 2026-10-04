@@ -10,6 +10,8 @@ FROM dependencies AS build
 COPY app ./app
 COPY public ./public
 COPY drizzle ./drizzle
+# Les articles du blog sont lus au build et embarqués dans le serveur.
+COPY content ./content
 COPY scripts ./scripts
 COPY react-router.config.ts tsconfig.json vite.config.ts ./
 RUN npm run build && npm prune --omit=dev

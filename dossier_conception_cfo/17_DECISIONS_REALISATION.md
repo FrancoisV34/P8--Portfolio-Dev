@@ -71,7 +71,7 @@ Les options de cette file sont préparées pour les échanges futurs ; elles ne 
 | D31 | Validé : clôture mensuelle | Correction après clôture | Verrouiller le journal ; créer une nouvelle révision immuable ; ne conserver qu'un total | Préserve un bilan explicable sans empêcher de corriger une erreur de saisie |
 | D32 | En attente | Format d'import CSV bancaire | À cadrer sur le premier export réel anonymisé | Détermine les colonnes, les règles de mapping et les contrôles de doublons |
 | D08 | Validé le 15 septembre 2026 | Visuel public | Conserver l'existant sans changement visuel | L17 est écarté du périmètre actuel ; les maquettes exploratoires ne modifient pas le site public |
-| D09 | Avant le blog de L17 | Contenu du blog | Fichiers Markdown/MDX ; CMS ; réalisation du blog différée après la première version financière | Rédaction, maintenance et calendrier du blog |
+| D09 | Validé le 4 octobre 2026 | Contenu du blog | **Fichiers Markdown dans `content/blog/`**, lus au build ; ni CMS, ni commentaires, ni votes ; partage par LinkedIn (Open Graph) et RSS | Aucune entrée en écriture ajoutée au serveur qui héberge les finances ; un article = un commit |
 | D10 | Avant déploiement | Paramètres d'exploitation | Organisation Fly.io, domaine, budget avant remise, sauvegardes, dimensionnement et interruptions tolérées | Configuration concrète, coût et procédure de reprise |
 
 D10 sera découpé en petites questions lorsque les mesures techniques seront disponibles. Aucune donnée secrète n'est demandée dans ce journal.

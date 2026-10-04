@@ -104,6 +104,7 @@
     &__link { font-size: 12px; }
     &__link--emphasis { padding: 6px 8px; }
     &__brand svg { width: 28px; height: 28px; }
+    &__link--optional { display: none; }
   }
 
   @media (max-width: 360px) {

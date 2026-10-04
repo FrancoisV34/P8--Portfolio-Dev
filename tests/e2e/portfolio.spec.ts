@@ -90,3 +90,14 @@ test('aucune route financière ne permet de lire ou écrire avant installation d
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Espace privé indisponible');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
 });
+
+test('sans article publié, le blog reste invisible : ni page, ni lien, ni flux, ni sitemap', async ({ page, request }) => {
+  // content/blog ne contient qu'un modèle en brouillon : un build ne doit rien en montrer.
+  for (const path of ['/blog', '/blog/modele-d-article', '/blog/rss.xml']) {
+    expect((await request.get(path)).status(), path).toBe(404);
+  }
+  const sitemap = await (await request.get('/sitemap.xml')).text();
+  expect(sitemap).not.toContain('/blog');
+  await page.goto('/');
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Blog' })).toHaveCount(0);
+});

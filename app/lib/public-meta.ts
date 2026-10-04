@@ -2,16 +2,21 @@ import schemas from '../Data/structured-data.json';
 
 const oldOrigin = 'https://francoisv34.github.io/P8--Portfolio-Dev';
 
-export function publicMeta(origin: string, path: '/' | '/cv', title: string, description: string) {
+export function publicMeta(origin: string, path: string, title: string, description: string, article?: { publishedTime: string; tags: string[] }) {
   const url = `${origin}${path}`;
   const image = `${origin}/moi.jpeg`;
+  // Un article partagé sur LinkedIn s'affiche comme un article, daté et étiqueté.
+  const type = article
+    ? [{ property: 'og:type', content: 'article' }, { property: 'article:published_time', content: article.publishedTime },
+      { property: 'article:author', content: 'François Vittecoq' }, ...article.tags.map((tag) => ({ property: 'article:tag', content: tag }))]
+    : [{ property: 'og:type', content: 'profile' }];
   return [
     { title },
     { name: 'description', content: description },
     { name: 'author', content: 'François Vittecoq' },
     { name: 'robots', content: 'index, follow, max-image-preview:large' },
     { tagName: 'link' as const, rel: 'canonical', href: url },
-    { property: 'og:type', content: 'profile' },
+    ...type,
     { property: 'og:locale', content: 'fr_FR' },
     { property: 'og:site_name', content: 'Portfolio François Vittecoq' },
     { property: 'og:title', content: title },

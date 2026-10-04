@@ -25,7 +25,7 @@ motifs dans `app/routes/finance.tsx`, comparaison avec `git show 022c3d7^`,
 | `L09`, `L10`, `L11` | GoMining, patrimoine et dettes, business SaaS | codés |
 | `L12`, `L13` | Objectifs et projets, registre réglementaire daté | codés |
 | `L14`, `L15`, `L16` | Moteur CFO, simulations, comparateur Micro/SASU | codés |
-| `L17` | Portfolio finalisé et **blog** | 🔴 **aucune route blog n'existe** |
+| `L17` | Portfolio finalisé et **blog** | blog codé le 4 octobre 2026 (D09 : Markdown dans `content/blog/`) ; invisible tant qu'aucun article n'est publié. Visuel public conservé (D08) |
 | `L18` | Mise en service | en ligne — François déploie par `fly deploy`. Restauration d'une sauvegarde de production testée le 3 octobre 2026 |
 | `L19` | Intelligence avancée (Monte Carlo, assistant) | non commencé — **reporté par décision**, pas en retard |
 
@@ -148,8 +148,8 @@ mutation et le test.**
 
 Réécrit le 3 octobre 2026.
 
-1. **`L17` — le blog.** Aucune route n'existe ; c'est le seul lot du périmètre
-   d'origine qui n'a rien.
+1. **Écrire et publier le premier article** : le blog est prêt, seul le
+   contenu manque.
 2. **Serveur en utilisateur non-root.** Le conteneur tourne en root ; le
    lecteur PDF en est déjà isolé. À faire avec une procédure d'administration
    adaptée (voir `SECURITY.md`).

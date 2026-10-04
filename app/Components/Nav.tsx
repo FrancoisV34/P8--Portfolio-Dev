@@ -3,14 +3,16 @@ import { Link, useLocation } from 'react-router';
 import FVMono from './FVMono';
 import '../Style/Nav.scss';
 
+// `optional` : masqué sous 400 px quand le lien Blog s'ajoute, pour que la
+// barre tienne sur 320 px. La section reste atteignable en faisant défiler.
 const LINKS = [
   { label: 'Projets', id: 'projets' },
   { label: 'Compétences', id: 'competences' },
-  { label: 'Parcours', id: 'parcours' },
+  { label: 'Parcours', id: 'parcours', optional: true },
   { label: 'Contact', id: 'contact' },
 ];
 
-export default function Nav() {
+export default function Nav({ blog = false }: { blog?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [pastHero, setPastHero] = useState(false);
   const location = useLocation();
@@ -45,11 +47,12 @@ export default function Nav() {
           <Link
             key={link.id}
             to={`/#${link.id}`}
-            className="site-nav__link"
+            className={`site-nav__link${blog && link.optional ? ' site-nav__link--optional' : ''}`}
           >
             {link.label}
           </Link>
         ))}
+        {blog ? <Link to="/blog" className="site-nav__link">Blog</Link> : null}
         <Link to="/cv" className="site-nav__link site-nav__link--emphasis">
           CV
         </Link>
