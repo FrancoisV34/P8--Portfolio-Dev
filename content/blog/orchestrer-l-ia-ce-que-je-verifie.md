@@ -3,7 +3,7 @@ title: Orchestrer l'IA : ce que Claude Code fait, et ce que je vérifie
 date: 2026-10-04
 summary: Un agent de code écrit vite et bien. Mon travail s'est déplacé : poser les règles, demander les bonnes revues, exiger des preuves, et garder les décisions. Trois failles trouvées sur un vrai projet, et comment.
 tags: Claude Code, Agents IA, Sécurité, Tests
-published: false
+published: true
 ---
 
 Je me présente comme développeur **et** orchestrateur IA, à parts égales. La formule intrigue souvent : si un agent comme Claude Code écrit le code, que reste-t-il au développeur ?
