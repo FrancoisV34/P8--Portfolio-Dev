@@ -91,13 +91,18 @@ test('aucune route financière ne permet de lire ou écrire avant installation d
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
 });
 
-test('sans article publié, le blog reste invisible : ni page, ni lien, ni flux, ni sitemap', async ({ page, request }) => {
-  // content/blog ne contient qu'un modèle en brouillon : un build ne doit rien en montrer.
-  for (const path of ['/blog', '/blog/modele-d-article', '/blog/rss.xml']) {
-    expect((await request.get(path)).status(), path).toBe(404);
+test('un build ne montre que les articles publiés : le brouillon reste invisible partout', async ({ page, request }) => {
+  const published = '/blog/orchestrer-l-ia-ce-que-je-verifie';
+  const draft = '/blog/modele-d-article';
+  for (const path of ['/blog', published, '/blog/rss.xml']) {
+    expect((await request.get(path)).status(), path).toBe(200);
   }
-  const sitemap = await (await request.get('/sitemap.xml')).text();
-  expect(sitemap).not.toContain('/blog');
+  expect((await request.get(draft)).status()).toBe(404);
+  for (const document of ['/sitemap.xml', '/blog/rss.xml']) {
+    const text = await (await request.get(document)).text();
+    expect(text, document).toContain(published);
+    expect(text, document).not.toContain(draft);
+  }
   await page.goto('/');
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Blog' })).toHaveCount(0);
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Blog' })).toHaveCount(1);
 });
