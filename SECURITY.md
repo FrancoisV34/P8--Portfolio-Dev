@@ -75,6 +75,7 @@ fixtures. `npm audit` ne signale aucune vulnérabilité.
 | Même origine exigée sur les mutations **et sur la connexion** | `app/.server/security/same-origin.server.ts` | `tests/unit/same-origin.test.ts`, `tests/integration/auth.test.ts` |
 | Limitation des essais de mot de passe | `app/.server/security/login-throttle.server.ts` | `tests/unit/login-throttle.test.ts`, `tests/integration/auth.test.ts` |
 | En-têtes de sécurité sur chaque réponse | `app/.server/security/headers.server.ts`, `scripts/production/server.mjs` | `tests/unit/security-headers.test.ts`, `tests/auth-e2e/security-headers.spec.ts` |
+| Une seule adresse publique : un autre nom d'hôte reçoit un 308 vers `SITE_URL`, destination jamais tirée du `Host` ; `/healthz` exclu | `app/.server/security/canonical-host.server.ts`, `scripts/production/server.mjs` | `tests/unit/canonical-host.test.ts`, `tests/auth-e2e/canonical-host.spec.ts` |
 | Adresse de connexion non publique, réponse identique ailleurs | `app/.server/security/private-path.server.ts` | `tests/unit/private-path.test.ts`, `tests/auth-e2e/login.spec.ts` |
 | Cookie de session `HttpOnly`, `SameSite=Strict`, `Secure` en HTTPS | `app/.server/auth/auth.server.ts` | `tests/auth-e2e/login.spec.ts` |
 | Relevés importés : rien n'entre au journal sans validation explicite, ligne par ligne et atomique | `app/.server/repositories/imports.ts` | `tests/integration/imports.test.ts`, `tests/integration/finance-route.test.ts` |

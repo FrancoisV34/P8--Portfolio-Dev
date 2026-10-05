@@ -6,7 +6,9 @@ import { join, posix } from 'node:path';
 import process from 'node:process';
 import { URL } from 'node:url';
 import * as build from '../../build/server/index.js';
+import { canonicalRedirect } from '../../app/.server/security/canonical-host.server.ts';
 import { securityHeaders } from '../../app/.server/security/headers.server.ts';
+import { siteOrigin } from '../../app/lib/site.server.ts';
 import { privateLoginPath } from '../../app/.server/security/private-path.server.ts';
 
 const console = new Console({ stdout: process.stdout, stderr: process.stderr });
@@ -31,6 +33,18 @@ app.use((req, res, next) => {
   res.set(securityHeaders({ nonce, secure: req.secure }));
   next();
 });
+
+// Sans SITE_URL, l'origine par défaut viserait le serveur de développement :
+// la redirection ne s'applique qu'à une origine explicitement configurée.
+if (process.env.SITE_URL) {
+  const origin = siteOrigin();
+  app.use((req, res, next) => {
+    const location = canonicalRedirect(req.headers.host, req.originalUrl, origin);
+    // 308 conserve la méthode : un POST reste un POST sur la bonne adresse.
+    if (location) res.redirect(308, location);
+    else next();
+  });
+}
 
 const publicPath = new URL(build.publicPath, 'http://localhost').pathname;
 app.use(posix.join(publicPath, 'assets'), express.static(join(build.assetsBuildDirectory, 'assets'), {
