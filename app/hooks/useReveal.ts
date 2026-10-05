@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-export default function useReveal(threshold = 0.15) {
+export default function useReveal(threshold = 0.15, rootMargin = '0px') {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -14,7 +14,7 @@ export default function useReveal(threshold = 0.15) {
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold });
+    }, { threshold, rootMargin });
     // Le contenu SSR reste visible sans JS ; seules les sections hors écran s'animent.
     elements.forEach((element) => {
       if (element.getBoundingClientRect().top >= window.innerHeight) {
@@ -26,7 +26,7 @@ export default function useReveal(threshold = 0.15) {
       observer.disconnect();
       elements.forEach((element) => element.classList.remove('is-pending'));
     };
-  }, [threshold]);
+  }, [threshold, rootMargin]);
 
   return ref;
 }
