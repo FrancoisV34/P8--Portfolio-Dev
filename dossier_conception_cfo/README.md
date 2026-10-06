@@ -48,6 +48,7 @@ Objectif : intégrer dans une application existante un module de pilotage financ
 - [17_DECISIONS_REALISATION.md](17_DECISIONS_REALISATION.md) — journal des choix interactifs de réalisation
 - [20_AUTHENTIFICATION_COMPTE_UNIQUE.md](20_AUTHENTIFICATION_COMPTE_UNIQUE.md) — accès propriétaire local, activation et tests
 - [21_ETAT_IMPLEMENTATION.md](21_ETAT_IMPLEMENTATION.md) — **ce qui est réellement codé**, mesuré et daté ; à lire avant d'estimer un reste à faire
+- [22_DOMAINE_ET_SEO.md](22_DOMAINE_ET_SEO.md) — domaine `francoisvittecoq.com` décidé, procédure de bascule prête, référencement reporté
 - [../SECURITY.md](../SECURITY.md) — règles de sécurité et checklist OWASP applicables à chaque lot
 - schema.sql
 - types.ts
