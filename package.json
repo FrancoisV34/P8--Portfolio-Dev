@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "node --env-file-if-exists=.env ./node_modules/@react-router/dev/bin.cjs dev --host 127.0.0.1",
-    "build": "react-router build",
+    "build": "react-router build && node scripts/assets/deplacer-cartes.ts",
     "start": "node --env-file-if-exists=.env ./scripts/production/server.mjs",
     "typecheck": "react-router typegen && tsc --noEmit",
     "lint": "eslint .",
@@ -17,7 +17,7 @@
     "test:e2e": "playwright test",
     "test:auth": "npm run build && playwright test --config playwright.auth.config.ts",
     "test:dev": "playwright test --config playwright.dev.config.ts",
-    "check": "npm run typecheck && npm run lint && npm test",
+    "check": "npm run vigie:verifier && npm run typecheck && npm run lint && npm test",
     "db:generate": "node --env-file-if-exists=.env ./node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=.env ./scripts/db/migrate.ts",
     "db:check": "node --env-file-if-exists=.env ./scripts/db/check.ts",
@@ -25,12 +25,17 @@
     "db:restore": "node --env-file-if-exists=.env ./scripts/db/restore.ts",
     "auth:bootstrap": "node --env-file-if-exists=.env ./scripts/auth/bootstrap.ts",
     "auth:status": "node --env-file-if-exists=.env ./scripts/auth/status.ts",
-    "auth:reset-password": "node --env-file-if-exists=.env ./scripts/auth/reset-password.ts"
+    "auth:reset-password": "node --env-file-if-exists=.env ./scripts/auth/reset-password.ts",
+    "deploy": "node scripts/deploy.mjs",
+    "vigie:verifier": "node app/.server/vigie/verifier-vigie.mjs"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.3",
+    "@jridgewell/trace-mapping": "0.3.31",
     "@react-router/express": "8.3.1",
     "@react-router/node": "8.3.1",
+    "@sentry/browser": "11.6.0",
+    "@sentry/node": "11.6.0",
     "better-auth": "^1.7.3",
     "better-sqlite3": "12.11.1",
     "decimal.js": "10.6.0",

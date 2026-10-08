@@ -1,0 +1,25 @@
+{
+  "brique": "ts",
+  "version": "dev",
+  "commit": "80d9f5fbf48f1f2209b8fd34aa9782eecdcd5535",
+  "fichiers": {
+    "base.ts": "e6f9edce546d547c04ed4d72ab587c50d55ba89a765fe0d0353bc8299a3accaf",
+    "consultation.ts": "5dcac1b1987176f926d7e9fb0f5b5a058cd3e00e75c896098e48254575499672",
+    "empreinte.ts": "2ac329565348df4c25997247c1cf6717009023a415edb034d21de904e3d75891",
+    "enveloppe.ts": "a48eaab0d564016a046659b152b6cfb6a008027eabc48721c795b73097814d8f",
+    "evenement.ts": "cd99b2b1f2c6bd6ef3829c43f05763d05dd21b866ffcdde04b84b5b986423fcf",
+    "http.ts": "7920ca12453f749a6a1fe5882d083447ee1f9495e5a4403ccdef0994c9de598d",
+    "index.ts": "68ad6bfb2dff71a072c29d1556a0e219f9fa15ea2859635c4f4a7fd5e9da19bc",
+    "json.ts": "416a23188f3325df4b62f2b72618d833fdef8ec3077c80f7a5308bb3b74da91b",
+    "lecture.ts": "b5ba74eab63630846144133c0c16f8c3f0fe58a5091e3199d486453a3e70b0a2",
+    "navigateur.ts": "4bf9502206d53128a71bc3bd87455907714ba70e11d20270c23d28cbd566d4f7",
+    "nettoyage.ts": "912a5ddb30352f072d2484ab87917148ca14dad4375ddab35cfa446afbb2e55d",
+    "quota.ts": "23d69d9abe3fd66273aaba22ac18c91b57818afa49eca72f3281391351cf5d60",
+    "stockage.ts": "33c6dc77b7d770ffd0f838ca04ad54e6547303ba81bccca24c27a7e62528a570",
+    "symbolisation.ts": "29fe6f80a3da1caf346128a31ff15a5033d979fe738c2b1b6c10bc0fce0e26fd",
+    "transport.ts": "dfac7422ef78d13feec352b59482a3fa41231b31d58001da13c1d5468bf8516a",
+    "vigie.ts": "c6ee055cd90226640ebb4af8fdb0ea385aef24c3744c5b950a02557e8ed32223",
+    "0001_vigie.sql": "f3c9e6ba312a0c8a52d43be652bc561cd492d05b113bfaaa8a2e78c6e86a5ee4",
+    "verifier-vigie.mjs": "7c938513ee2c5adb465c12c9824f6d648ebf308aca81f435d2c1ed1270a44308"
+  }
+}

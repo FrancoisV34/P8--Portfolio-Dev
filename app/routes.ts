@@ -15,6 +15,9 @@ export default [
   route('robots.txt', 'routes/robots.ts'),
   route('sitemap.xml', 'routes/sitemap.ts'),
   route('healthz', 'routes/health.ts'),
+  // Vigie (suivi d'erreurs) : tunnel du SDK navigateur, puis API des agents et dashboard.
+  route('_vigie/enveloppe', 'routes/vigie-enveloppe.ts'),
+  route('_vigie/*', 'routes/vigie.ts'),
   // Dernier recours : la connexion privée ne figure pas dans la table des
   // routes. Elle se reconnaît à l'exécution (PRIVATE_LOGIN_PATH) et toute
   // autre adresse inconnue reçoit la même page « introuvable ».
