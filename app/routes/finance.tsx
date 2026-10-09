@@ -26,7 +26,7 @@ import { simulationBuckets, type SimulationInput, type SimulationProfileKind } f
 import { projectDebtSchedule } from '../lib/finance/debt.ts';
 import { financialCalendar } from '../lib/finance/calendar.ts';
 import { projectMonthlyGoMining } from '../lib/gomining/monthly.ts';
-import { euroCents, eurosDecimal, formatEuros, parseEuros, sumEuroCents } from '../lib/finance/units.ts';
+import { euroCents, eurosDecimal, formatEuros, parseEuros, signedEuros, sumEuroCents } from '../lib/finance/units.ts';
 import { TableauDense } from '../Components/finance/TableauDense.tsx';
 import { Trend } from '../Components/finance/Trend.tsx';
 import './finance.scss';
@@ -420,15 +420,12 @@ const preciseMoney = (milliCents: number) => `${(milliCents / 100_000).toFixed(5
  * ⚠️ Et la couleur ne vient JAMAIS seule — le signe la double toujours. C'est
  * ce qui garde l'écran lisible en niveaux de gris et pour qui ne distingue pas
  * le rouge du vert. `signe={false}` pour les contextes où un montant n'a pas
- * de polarité (un prévu, une cible).
+ * de polarité (un prévu, une cible) : un montant négatif y garde quand même
+ * son moins, sans couleur — un solde à découvert ne s'affiche jamais en positif.
  */
 const classeMontant = (cents: number) => cents > 0 ? 'amount-positive' : cents < 0 ? 'amount-negative' : 'amount-neutral';
-const Currency = ({ cents, signe = false }: { cents: number; signe?: boolean }) => {
-  const texte = money(Math.abs(cents));
-  if (!signe) return <span className="tnum">{texte}</span>;
-  const marque = cents > 0 ? '+' : cents < 0 ? '\u2212' : '';
-  return <span className={`tnum ${classeMontant(cents)}`}>{marque}{texte}</span>;
-};
+const Currency = ({ cents, signe = false }: { cents: number; signe?: boolean }) =>
+  <span className={signe ? `tnum ${classeMontant(cents)}` : 'tnum'}>{signedEuros(euroCents(cents), signe)}</span>;
 /**
  * « 4 sept. » — la date dense du journal.
  *
