@@ -1,9 +1,9 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
+import { privatePathShape as shape } from '../../lib/private-path-shape.ts';
 
 // L'adresse de connexion n'est pas un secret cryptographique : elle réduit le
 // bruit des robots et empêche qu'une URL publique désigne l'espace privé. Le
 // mot de passe et la vérification du propriétaire restent la vraie protection.
-const shape = /^\/[A-Za-z0-9][A-Za-z0-9._~-]{1,63}$/;
 
 export function privateLoginPath(value = process.env.PRIVATE_LOGIN_PATH, mode = process.env.NODE_ENV) {
   // Sans variable, le repli `/co` convient au développement. En production il

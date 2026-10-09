@@ -92,6 +92,32 @@
   &__copy {
     font-size: 12px;
     color: oklch(0.35 0 0);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  // Rien ne signale l'entrée discrète : ni curseur, ni sélection au triple-clic,
+  // ni zoom au double tapotement sur mobile.
+  &__mark {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+  }
+
+  &__entry input {
+    width: 12ch;
+    padding: 2px 0;
+    border: 0;
+    border-bottom: 1px solid oklch(0.25 0 0);
+    background: transparent;
+    color: oklch(0.6 0 0);
+    font: 12px var(--font-mono);
+
+    &:focus {
+      outline: none;
+      border-bottom-color: oklch(0.45 0 0);
+    }
   }
 
   &__cv {

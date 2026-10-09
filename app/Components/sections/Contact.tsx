@@ -1,5 +1,6 @@
 import useReveal from '../../hooks/useReveal';
 import FVMono from '../FVMono';
+import HiddenEntry from '../HiddenEntry';
 import '../../Style/Contact.scss';
 
 const LINKS = [
@@ -57,9 +58,7 @@ export default function Contact() {
 
         <div className="contact-footer__bar">
           <FVMono size={28} light={false} />
-          <span className="contact-footer__copy">
-            © {new Date().getFullYear()} François Vittecoq
-          </span>
+          <HiddenEntry>© {new Date().getFullYear()} François Vittecoq</HiddenEntry>
           <a
             href={"/CVVittecoq.pdf"}
             className="contact-footer__cv"
