@@ -4,7 +4,7 @@
  * Ne fait pas confiance au SDK : tout l'événement est parcouru, quel que soit le champ.
  * Règles (les cas de `spec/nettoyage/` en sont la référence, rejoués par `py/` et `ts/`) :
  * - champ au nom sensible (mot de passe, jeton, cookie…) → valeur masquée ;
- * - corps de requête, cookies et variables locales des frames → supprimés ;
+ * - corps de requête, cookies, variables locales et lignes de source des frames → supprimés ;
  * - utilisateur → seuls l'identifiant et l'adresse IP tronquée sont gardés ;
  * - dans tout texte : e-mails, cartes, IBAN, jetons JWT / Bearer / Basic, identifiants dans une
  *   URL et paramètres d'URL sensibles → masqués.
@@ -261,6 +261,11 @@ function nettoyerValeur(valeur: Json, profondeur = 0): Json {
   return valeur;
 }
 
+/** Variables locales et lignes de code source jointes par le SDK : elles peuvent contenir
+ * n'importe quoi (un secret écrit en dur dans le code, une valeur de l'utilisateur). L'agent lit le
+ * code dans le dépôt, à partir du fichier et de la ligne, qui restent. */
+const CHAMPS_DE_FRAME_RETIRES = ["vars", "pre_context", "context_line", "post_context"];
+
 function retirerVariablesDesFrames(valeur: Json, profondeur: number): void {
   if (profondeur > PROFONDEUR_MAX) {
     return;
@@ -271,7 +276,9 @@ function retirerVariablesDesFrames(valeur: Json, profondeur: number): void {
     if (Array.isArray(valeur["frames"])) {
       for (const frame of valeur["frames"]) {
         if (estObjet(frame)) {
-          delete frame["vars"];
+          for (const champ of CHAMPS_DE_FRAME_RETIRES) {
+            delete frame[champ];
+          }
         }
       }
     }
