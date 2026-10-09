@@ -32,6 +32,9 @@ COPY --from=build /app/app/.server ./app/.server
 # Les scripts d'administration exécutés dans la Machine (bootstrap / reset)
 # utilisent cette validation d'origine partagée avec le serveur.
 COPY --from=build /app/app/lib/site.server.ts ./app/lib/site.server.ts
+# Forme de l'adresse de connexion privée, partagée avec l'entrée discrète du
+# pied de page et lue au démarrage par le serveur.
+COPY --from=build /app/app/lib/private-path-shape.ts ./app/lib/private-path-shape.ts
 
 # La base est créée sur /data, volume Fly persistant fourni au runtime.
 # Aucun fichier .env, SQLite, sauvegarde ou dossier de conception n'entre dans l'image.
