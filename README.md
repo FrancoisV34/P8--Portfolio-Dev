@@ -101,14 +101,24 @@ Avant une mise à jour de déploiement, exécuter les vérifications locales :
 
 ```sh
 npm run check
+npm run test:auth
+npx playwright test
 npm run build
 ```
+
+`npm run check` vérifie aussi que l'image Docker contient chaque module chargé
+par le serveur et les scripts d'administration (`tests/unit/docker-runtime.test.ts`).
 
 Puis, après connexion locale à `flyctl`, déployer la nouvelle version :
 
 ```sh
 fly deploy
 ```
+
+« good state » à la fin de `fly deploy` ne suffit pas : attendre que
+`fly status` affiche la nouvelle version **started** et que `fly checks list`
+soit **passing**, puis vérifier `/healthz` et `/`. Juste après le redémarrage,
+l'ancienne version peut encore répondre, ou un 502/503 apparaître brièvement.
 
 Ne jamais inscrire les valeurs suivantes dans `fly.toml`, Git, le terminal
 partagé ou un fichier `.env` envoyé à Fly. Elles sont configurées avec les

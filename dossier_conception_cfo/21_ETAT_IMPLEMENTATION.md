@@ -3,7 +3,7 @@
 Relevé du **18 septembre 2026**, sur la branche `refacto`, à `d528575`.
 Mis à jour le **23 septembre 2026** : voir les deux encarts datés ci-dessous
 (sections 1 et 2). Mis à jour le **3 octobre 2026** : encart de la section 1,
-section 4 réécrite.
+section 4 réécrite ; le **10 octobre 2026** : section 4, point 1.
 
 Ce document ne remplace ni la [roadmap](13_ROADMAP.md), qui dit ce qu'il faut
 faire, ni le [journal des décisions](17_DECISIONS_REALISATION.md), qui dit ce
@@ -148,8 +148,7 @@ mutation et le test.**
 
 Réécrit le 3 octobre 2026.
 
-1. **Écrire et publier le premier article** : le blog est prêt, seul le
-   contenu manque.
+1. ~~Écrire et publier le premier article~~ : publié et déployé le 5 octobre 2026.
 2. **Serveur en utilisateur non-root.** Le conteneur tourne en root ; le
    lecteur PDF en est déjà isolé. À faire avec une procédure d'administration
    adaptée (voir `SECURITY.md`).
