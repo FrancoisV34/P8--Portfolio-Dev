@@ -136,11 +136,17 @@ gardes du rapprochement ont été vérifiées par mutation (5 sur 5 détectées)
 
 **Risques résiduels acceptés**
 
-- Le conteneur tourne en root. Passer le serveur sous `node` est souhaitable,
-  mais les scripts d'administration lancés par `fly ssh console` créeraient
-  alors des fichiers WAL appartenant à root que le serveur ne pourrait plus
-  écrire : à faire avec une procédure d'administration adaptée. Le lecteur PDF,
-  seule surface qui traite un fichier hostile, est déjà isolé sous `nobody`.
+- Le conteneur tourne en root. **Maintenu par décision le 10 octobre 2026.**
+  Un serveur sous `node` ne protégerait pas mieux les données : il doit de
+  toute façon lire et écrire la base. Le gain se limiterait à la Machine Fly,
+  une VM isolée dédiée à cette seule application. À l'inverse, c'est parce que
+  le serveur est root que le lecteur PDF, seule surface qui traite un fichier
+  hostile, descend sous `nobody` et ne peut pas lire la base (`0600` root).
+  Passer le serveur sous `node` sans autre changement ferait tourner le lecteur
+  sous `node`, avec accès à la base. La seule variante qui garde les deux
+  protections (un service de lecture PDF distinct sous `nobody`, joint par un
+  socket local, et des commandes d'administration lancées sous `node`) n'a pas
+  été jugée utile à ce stade.
 - La mémoire hors tas (tampons décompressés) du lecteur n'a pas de plafond dur ;
   le noyau le sacrifie en premier (`oom_score_adj`), avant le serveur.
 - `GET /api/auth/get-session` révèle qu'un système d'authentification existe.

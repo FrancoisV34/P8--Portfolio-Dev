@@ -149,9 +149,8 @@ mutation et le test.**
 Réécrit le 3 octobre 2026.
 
 1. ~~Écrire et publier le premier article~~ : publié et déployé le 5 octobre 2026.
-2. **Serveur en utilisateur non-root.** Le conteneur tourne en root ; le
-   lecteur PDF en est déjà isolé. À faire avec une procédure d'administration
-   adaptée (voir `SECURITY.md`).
+2. ~~Serveur en utilisateur non-root~~ : écarté le 10 octobre 2026, voir les
+   risques résiduels de `SECURITY.md` (le root permet d'isoler le lecteur PDF).
 3. **Les quatre sections partielles** : Patrimoine, Business, CFO et GoMining.
 4. **Voir la courbe des 120 mois** de Simulations.
 5. **Lecteur CSV et relevés multi-comptes**, si l'usage le demande : le PDF
