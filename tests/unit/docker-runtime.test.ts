@@ -57,7 +57,7 @@ describe('image de production', () => {
     const copies = cheminsCopies();
     const entrees = [
       'scripts/production/server.mjs',
-      ...['scripts/db', 'scripts/auth'].flatMap((dossier) =>
+      ...['scripts/db', 'scripts/auth', 'scripts/imports'].flatMap((dossier) =>
         readdirSync(join(racine, dossier)).filter((nom) => nom.endsWith('.ts')).map((nom) => `${dossier}/${nom}`)),
     ].map((chemin) => join(racine, chemin));
 

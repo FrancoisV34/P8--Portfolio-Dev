@@ -152,6 +152,24 @@ protège pas d'une indisponibilité du Mac : une copie hors appareil ou
 automatisée pourra être ajoutée ultérieurement. Aucun stockage externe ou
 secret de sauvegarde n’est créé par cette configuration.
 
+### Faire valider les relevés par l'agent (D34)
+
+Sur demande de François, l'agent de développement traite la file des relevés
+par un script au périmètre fermé, exécuté dans la Machine. Les règles et les
+risques acceptés sont dans [SECURITY.md](SECURITY.md), revue du 10 octobre 2026.
+
+```sh
+fly ssh console -C "node scripts/imports/agent.ts list"      # lignes en attente
+fly ssh console -C "node scripts/imports/agent.ts context"   # catégories, comptes, classements passés
+fly ssh console -C "node scripts/imports/agent.ts apply accept:<ligne>:<catégorie> suggested:<ligne>"
+fly ssh console -C "node scripts/imports/agent.ts apply --confirm …"   # écrit, et rend un identifiant de lot
+fly ssh console -C "node scripts/imports/agent.ts runs"
+fly ssh console -C "node scripts/imports/agent.ts undo <lot>"
+```
+
+Sans `--confirm`, rien n'est écrit. Ce que l'agent ne sait pas classer sans
+ambiguïté reste dans la file pour François.
+
 Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les évolutions de modèle suivent cette même procédure. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
 
 ## Organisation

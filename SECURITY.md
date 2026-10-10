@@ -153,6 +153,46 @@ gardes du rapprochement ont été vérifiées par mutation (5 sur 5 détectées)
 - La limitation par adresse e-mail permet de bloquer 5 minutes la connexion du
   propriétaire si l'on connaît son adresse et l'adresse privée.
 
+## Revue du 10 octobre 2026 — validation des relevés par l'agent
+
+Décision D34 : François délègue à l'agent de développement (Claude Code, dans
+une session qu'il ouvre lui-même) la catégorisation et la validation
+mécaniques des lignes de relevé. Revue menée contre l'OWASP Top 10 for Agentic
+Applications 2026 avant la première utilisation sur les données réelles.
+
+**Ce qui est construit.** Un script d'administration,
+`scripts/imports/agent.ts`, lancé dans la Machine par `fly ssh console -C`.
+Aucun endpoint, aucun jeton, aucun serveur MCP : l'accès est celui de `flyctl`
+sur le Mac de François, déjà nécessaire pour déployer.
+
+| Risque | Contrôle | Test |
+|---|---|---|
+| Outil trop large, détournement d'outil | Cinq commandes (`list`, `context`, `runs`, `apply`, `undo`), toute autre forme refusée. L'agent ne choisit ni montant, ni date, ni note : ils viennent du relevé. Il ne crée ni catégorie ni compte, n'écarte aucune ligne, ne modifie aucun mouvement qu'il n'a pas lui-même validé. | `tests/integration/imports-agent.test.ts` |
+| Contournement des règles de l'app | Tout passe par `importsRepository` : mêmes contrôles que le clic de François, aucune requête SQL propre à l'agent en écriture sur le journal. | idem |
+| Injection par la ligne de commande | Une décision est un mot fait d'un verbe et d'identifiants UUID, validé par expression régulière ; aucun texte libre n'entre. 200 décisions au plus par lot. | idem |
+| Injection par un libellé bancaire | Un libellé est une donnée lue par l'agent, jamais une instruction. Même s'il était suivi, il ne pourrait obtenir qu'une mauvaise catégorie sur une ligne existante : l'outil ne sait rien faire d'autre. | périmètre ci-dessus |
+| Double comptage | L'agent s'arrête devant tout mouvement du même montant déjà au journal et laisse la ligne à François. | idem |
+| Décision contraire à l'historique | Si François a déjà classé ce libellé, l'agent ne peut qu'appliquer cette décision (`suggested`). | idem |
+| Action irréversible, absence de trace | Sans `--confirm`, le lot est joué puis annulé. Chaque décision écrite est tracée (`finance_import_agent_decisions`) sous un identifiant de lot ; `undo` supprime ce que le lot a créé, détache ce qu'il a rattaché et rend sa date au mouvement. | idem |
+| Autre propriétaire | Le propriétaire vient de `FINANCE_OWNER_EMAIL`, jamais d'un argument ; les identifiants d'un autre propriétaire sont introuvables. | idem |
+| Fuite par les erreurs | Le script n'affiche que les refus rédigés par l'app ; une erreur de validation ou SQLite devient « Commande refusée. ». | essai manuel du 10 octobre |
+
+**Risques résiduels acceptés par François**
+
+- **Les lignes lues sortent du serveur.** `list` et `context` affichent dates,
+  libellés, montants des lignes en attente et noms des catégories et comptes ;
+  ce texte entre dans la conversation de l'agent, donc chez Anthropic. Le reste
+  de la base (soldes, patrimoine, business, sessions, secrets) n'est accessible
+  par aucune commande du script. `context` ne contient aucun montant.
+- **Une mauvaise catégorie reste possible.** L'agent peut se tromper sur un
+  libellé inconnu ; la correction se fait dans le journal, ou par `undo` du lot.
+- **L'accès `fly ssh` est root dans la Machine** : le périmètre ci-dessus est
+  celui du script, pas celui du terminal. L'agent s'en tient au script ; toute
+  autre commande sur la Machine reste soumise à l'accord de François.
+- Annuler un virement créé par l'agent supprime ses deux moitiés ; si l'autre
+  moitié avait entre-temps été rapprochée d'un autre relevé, cette ligne reste
+  validée sans mouvement, comme après une suppression au journal.
+
 ## Vérifications régulières
 
 - À chaque changement : `npm run check`, puis la vérification ciblée de la fonctionnalité.

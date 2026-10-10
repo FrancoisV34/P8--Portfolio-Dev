@@ -35,6 +35,10 @@ COPY --from=build /app/app/lib/site.server.ts ./app/lib/site.server.ts
 # Forme de l'adresse de connexion privée, partagée avec l'entrée discrète du
 # pied de page et lue au démarrage par le serveur.
 COPY --from=build /app/app/lib/private-path-shape.ts ./app/lib/private-path-shape.ts
+# Le script de l'agent (`scripts/imports/agent.ts`) charge les dépôts
+# financiers hors du build, et avec eux leurs unités et leurs dates.
+COPY --from=build /app/app/lib/finance/units.ts ./app/lib/finance/units.ts
+COPY --from=build /app/app/lib/finance/dates.ts ./app/lib/finance/dates.ts
 
 # La base est créée sur /data, volume Fly persistant fourni au runtime.
 # Aucun fichier .env, SQLite, sauvegarde ou dossier de conception n'entre dans l'image.
