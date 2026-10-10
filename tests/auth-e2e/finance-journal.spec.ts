@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { syntheticPdf } from '../fixtures/synthetic-statement';
+import { attendreChassis } from './chassis';
 
 /**
  * Le journal et la saisie rapide, dans le vrai châssis.
@@ -15,6 +16,7 @@ async function connexion(page: Page) {
   await page.getByLabel('Mot de passe').fill('mot-de-passe-test-123');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await expect(page).toHaveURL('/finance');
+  await attendreChassis(page);
 }
 
 async function decor(page: Page) {
