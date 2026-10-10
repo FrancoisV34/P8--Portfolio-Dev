@@ -603,20 +603,49 @@ button:focus-visible {
   color: var(--color-foreground-muted);
   font-size: var(--text-dense-sm);
 }
-.finance-chart svg { display: block; width: 100%; height: auto; }
-/* Sans cette propriété, le trait épaissit avec la largeur : le SVG est
-   responsive par viewBox. */
-.finance-chart svg path,
-.finance-chart svg line { vector-effect: non-scaling-stroke; }
+.finance-chart__plot { position: relative; height: 200px; }
+.finance-chart__plot svg { display: block; width: 100%; height: 100%; overflow: visible; }
+/* Le tracé s'étire en largeur (`preserveAspectRatio="none"`) : sans cette
+   propriété, le trait s'épaissirait ou s'affinerait avec lui. */
+.finance-chart__plot path,
+.finance-chart__plot line { vector-effect: non-scaling-stroke; }
 .finance-chart__grid { stroke: var(--color-chart-grid); stroke-width: 1; }
+.finance-chart__zero { stroke: var(--color-foreground-muted); stroke-width: 1; stroke-dasharray: 4 4; }
 .finance-chart__line { fill: none; stroke: var(--color-chart-series-1); stroke-width: var(--chart-stroke); stroke-linecap: round; }
-.finance-chart__dot { fill: var(--color-chart-plot-bg); stroke: var(--color-chart-series-1); stroke-width: var(--chart-stroke); }
+/* Points et étiquettes sont du HTML posé sur le tracé : leur taille ne dépend
+   pas de la largeur du graphique. */
+.finance-chart__dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: var(--chart-stroke) solid var(--color-chart-series-1);
+  border-radius: 50%;
+  background: var(--color-chart-plot-bg);
+  transform: translate(-50%, -50%);
+}
 .finance-chart__label {
-  fill: var(--color-foreground-muted);
+  position: absolute;
+  color: var(--color-foreground-muted);
   font-family: var(--font-mono);
   font-size: var(--text-dense-xs);
+  line-height: 1;
+  white-space: nowrap;
 }
-.finance-chart__label--last { fill: var(--color-foreground); font-weight: 600; }
+.finance-chart__label--last { color: var(--color-foreground); font-weight: 600; }
+.finance-chart__label--valeur { --decalage-x: -50%; transform: translate(var(--decalage-x), calc(-100% - 10px)); }
+.finance-chart__label--dessous { transform: translate(var(--decalage-x), 10px); }
+.finance-chart__dates { position: relative; height: 14px; margin-top: 4px; }
+.finance-chart__label--date { --decalage-x: -50%; top: 0; transform: translateX(var(--decalage-x)); }
+.finance-chart__label--debut { --decalage-x: 0%; }
+.finance-chart__label--fin { --decalage-x: -100%; }
+.finance-chart__label--zero { transform: translate(6px, -50%); }
+@media (max-width: 480px) {
+  .finance-chart__plot { height: 160px; }
+  /* Sur un écran étroit, seuls le début et la fin restent étiquetés : les
+     extrêmes intermédiaires se chevaucheraient. Leurs valeurs restent sous
+     « Voir les valeurs ». */
+  .finance-chart__label--secondaire { display: none; }
+}
 .finance-chart__legend {
   display: flex;
   flex-wrap: wrap;
