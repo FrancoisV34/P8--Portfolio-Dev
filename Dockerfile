@@ -14,12 +14,18 @@ COPY drizzle ./drizzle
 COPY content ./content
 COPY scripts ./scripts
 COPY react-router.config.ts tsconfig.json vite.config.ts ./
+# Release Vigie (hash court du commit), passée par `npm run deploy` : le dépôt n'entre pas dans
+# l'image. Vite l'inscrit dans le JavaScript du navigateur.
+ARG RELEASE=""
+ENV VITE_RELEASE=$RELEASE
 RUN npm run build && npm prune --omit=dev
 
 FROM node:24-bookworm-slim AS runtime
 
 WORKDIR /app
-ENV NODE_ENV=production \
+ARG RELEASE=""
+ENV RELEASE=$RELEASE \
+    NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000
 
