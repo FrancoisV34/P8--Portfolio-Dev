@@ -29,7 +29,7 @@ test('Vite refuse les fichiers privés, leurs variantes raw et les URLs /@fs/', 
 });
 
 test('le portfolio et ses fichiers publics restent accessibles en développement', async ({ request }) => {
-  for (const path of ['/', '/cv', '/CVVittecoq.pdf', '/icons/Kasa-home.png']) {
+  for (const path of ['/', '/cv', '/CVVittecoq.pdf', '/icons/posalio.jpg']) {
     expect((await request.get(path)).status(), path).toBe(200);
   }
 });
