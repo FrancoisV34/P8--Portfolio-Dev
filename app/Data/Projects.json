@@ -11,9 +11,9 @@
   },
   {
     "id": 2,
-    "title": "Site Factory",
-    "image": "/icons/site-factory.jpg",
-    "imageAlt": "L'éditeur de Site Factory sur un site d'exemple fictif",
+    "title": "Fabrique de sites vitrines",
+    "image": "/icons/sites-vitrines.jpg",
+    "imageAlt": "L'éditeur de la fabrique de sites sur un site d'exemple fictif",
     "description": "Une fabrique de sites vitrines pour artisans et commerçants. Un éditeur règle l'univers, les couleurs, la typographie et les sections, avec un aperçu direct. La même configuration produit un site statique exportable, ou un site Pro rendu sur Cloudflare Workers avec sa base D1. Chaque site devient un dépôt indépendant, que la fabrique peut ensuite mettre à jour.",
     "technos": ["TypeScript", "Preact", "Astro", "Cloudflare Workers", "Vitest"]
   },
