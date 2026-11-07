@@ -318,6 +318,29 @@ export function importsRepository(db: FinanceDatabase, ownerId: string) {
       )).limit(1).get();
       return journal ? 'journal' : null;
     },
+    /**
+     * Une ligne en attente et ce que l'app en dit, recalculé à l'instant. Sert
+     * au script de l'agent, qui ne décide jamais sur une proposition périmée.
+     */
+    describePending(id: string) {
+      z.uuid().parse(id);
+      const found = pendingLine(id);
+      if (!found) return null;
+      const duplicate = this.duplicateOf(found.line, found.accountId);
+      return { ...found, duplicate, suggestion: suggestionFor(found.line, found.accountId, duplicate, historyFor(found.accountId)) };
+    },
+    /**
+     * Remet en attente une ligne validée, pour l'annulation d'un lot de
+     * l'agent. Le mouvement désigné doit être celui de la ligne : on ne rouvre
+     * pas une ligne que François a rapprochée autrement entre-temps.
+     */
+    reopenLine(id: string, transactionId: string) {
+      z.uuid().parse(id);
+      const reopened = db.update(importLines).set({ status: 'pending', transactionId: null, decidedAt: null }).where(and(
+        eq(importLines.id, id), eq(importLines.ownerId, ownerId), eq(importLines.status, 'accepted'), eq(importLines.transactionId, transactionId),
+      )).run();
+      if (reopened.changes !== 1) throw new Error('Ligne introuvable.');
+    },
     countPending() {
       return db.select({ value: count() }).from(importLines).where(and(eq(importLines.ownerId, ownerId), eq(importLines.status, 'pending'))).get()?.value ?? 0;
     },

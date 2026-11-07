@@ -7,6 +7,7 @@ type Project = {
   image?: string;
   imageAlt?: string;
   link?: string;
+  linkLabel?: string;
   technos?: (string | { name: string })[];
 };
 
@@ -75,7 +76,7 @@ export default function ProjectSection({ project, index, id }: { project: Projec
               rel="noopener noreferrer"
               className="project-section__cta"
             >
-              Voir sur GitHub
+              {project.linkLabel || 'Voir sur GitHub'}
               <svg
                 width="14"
                 height="14"

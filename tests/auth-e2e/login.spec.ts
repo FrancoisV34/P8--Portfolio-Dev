@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { attendreChassis } from './chassis';
 
 test('le compte propriétaire peut se connecter et se déconnecter', async ({ page, request }) => {
   // Sans session, l'espace privé et les anciennes adresses de connexion
@@ -26,6 +27,7 @@ test('le compte propriétaire peut se connecter et se déconnecter', async ({ pa
   await expect(page).toHaveURL('/co');
   await expect(page.getByRole('heading', { name: 'Finance privée' })).toBeVisible();
   await page.goto('/finance');
+  await attendreChassis(page);
 
   await page.getByRole('link', { name: 'Comptes', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Entité économique' })).toBeVisible();

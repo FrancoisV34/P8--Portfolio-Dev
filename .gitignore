@@ -61,3 +61,6 @@ test-results/
 *.db-*
 /tests/dev/private-fixture-*/
 /tests/auth-e2e/*.sqlite*
+
+# Permissions locales de Claude Code : propres à chaque poste, jamais partagées.
+.claude/settings.local.json

@@ -29,6 +29,8 @@ export interface Issue {
 
 export interface Evenement {
   event_id: string;
+  /** `echantillon` (occurrences 1 à 5, puis puissances de 10) ou `derniere` (la plus récente). */
+  role: string;
   recu_le: string;
   release: string | null;
   environnement: string | null;
@@ -148,7 +150,7 @@ export async function lireIssue(
     return null;
   }
   const lignes = await base.lire(
-    `SELECT event_id, recu_le, release_vue, environnement, provenance, contenu FROM vigie_event
+    `SELECT event_id, role, recu_le, release_vue, environnement, provenance, contenu FROM vigie_event
      WHERE issue_id = ? ORDER BY recu_le DESC, id DESC LIMIT ${EVENEMENTS_DETAIL}`,
     [id],
   );
@@ -158,6 +160,7 @@ export async function lireIssue(
   );
   const evenements = lignes.map((e) => ({
     event_id: String(e["event_id"]),
+    role: String(e["role"]),
     recu_le: String(e["recu_le"]),
     release: (e["release_vue"] as string | null) ?? null,
     environnement: (e["environnement"] as string | null) ?? null,
@@ -167,7 +170,19 @@ export async function lireIssue(
   return { issue: enIssue(ligne), evenements, utilisateursTouches: Number(comptage?.["n"] ?? 0) };
 }
 
-export async function resume(base: Base, maintenant: number): Promise<Record<string, number | string | null>> {
+export interface Resume {
+  a_traiter: number;
+  nouvelles_24h: number;
+  actives_24h: number;
+  total: number;
+  derniere_release: string | null;
+  /** Octets des détails stockés, et budget de l'application (ADR-0011). */
+  stockage: { octets: number; budget: number | null };
+  /** Ce que les garde-fous ont absorbé aujourd'hui (UTC) : refus, débordements, évictions… */
+  compteurs_du_jour: Record<string, number>;
+}
+
+export async function resume(base: Base, maintenant: number): Promise<Resume> {
   const hier = new Date(maintenant - 24 * 3600 * 1000).toISOString();
   const [ligne] = await base.lire(
     `SELECT
@@ -176,15 +191,23 @@ export async function resume(base: Base, maintenant: number): Promise<Record<str
        (SELECT count(*) FROM vigie_issue WHERE derniere_apparition >= ?) AS actives_24h,
        (SELECT count(*) FROM vigie_issue) AS total,
        (SELECT derniere_release FROM vigie_issue WHERE derniere_release IS NOT NULL
-          ORDER BY derniere_apparition DESC LIMIT 1) AS derniere_release`,
+          ORDER BY derniere_apparition DESC LIMIT 1) AS derniere_release,
+       (SELECT nombre FROM vigie_etat WHERE cle = 'octets') AS octets,
+       (SELECT nombre FROM vigie_etat WHERE cle = 'budget') AS budget`,
     [hier, hier],
   );
+  const compteurs = await base.lire("SELECT motif, compte FROM vigie_compteur WHERE jour = ? ORDER BY motif", [
+    new Date(maintenant).toISOString().slice(0, 10),
+  ]);
+  const budget = ligne?.["budget"];
   return {
     a_traiter: Number(ligne?.["a_traiter"] ?? 0),
     nouvelles_24h: Number(ligne?.["nouvelles_24h"] ?? 0),
     actives_24h: Number(ligne?.["actives_24h"] ?? 0),
     total: Number(ligne?.["total"] ?? 0),
     derniere_release: (ligne?.["derniere_release"] as string | null | undefined) ?? null,
+    stockage: { octets: Number(ligne?.["octets"] ?? 0), budget: budget === null || budget === undefined ? null : Number(budget) },
+    compteurs_du_jour: Object.fromEntries(compteurs.map((c) => [String(c["motif"]), Number(c["compte"])])),
   };
 }
 

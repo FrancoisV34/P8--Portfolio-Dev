@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bitcoinDecimal, bitcoinEuroValue, euroCents, eurosDecimal, formatEuros, parseBitcoin, parseEuros, sumEuroCents } from '../../app/lib/finance/units';
+import { bitcoinDecimal, bitcoinEuroValue, euroCents, eurosDecimal, formatEuros, parseBitcoin, parseEuros, signedEuros, sumEuroCents } from '../../app/lib/finance/units';
 
 describe('montants financiers exacts', () => {
   it('accepte les saisies françaises, le point décimal et un découvert', () => {
@@ -37,5 +37,13 @@ describe('montants financiers exacts', () => {
     expect(bitcoinEuroValue(parseBitcoin('0.0000001'), '50000')).toEqual({ cents: 1, remainderCents: '-0.5' });
     expect(bitcoinEuroValue(parseBitcoin('-0.0000001'), '50000')).toEqual({ cents: -1, remainderCents: '0.5' });
     expect(() => bitcoinEuroValue(parseBitcoin('1'), '0')).toThrow();
+  });
+
+  it('n’affiche jamais un solde négatif comme positif', () => {
+    expect(signedEuros(euroCents(-3220))).toBe('\u221232,20\u00a0€');
+    expect(signedEuros(euroCents(-3220), true)).toBe('\u221232,20\u00a0€');
+    expect(signedEuros(euroCents(3220))).toBe('32,20\u00a0€');
+    expect(signedEuros(euroCents(3220), true)).toBe('+32,20\u00a0€');
+    expect(signedEuros(euroCents(0), true)).toBe('0,00\u00a0€');
   });
 });

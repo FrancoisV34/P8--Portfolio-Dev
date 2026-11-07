@@ -26,7 +26,7 @@ import { simulationBuckets, type SimulationInput, type SimulationProfileKind } f
 import { projectDebtSchedule } from '../lib/finance/debt.ts';
 import { financialCalendar } from '../lib/finance/calendar.ts';
 import { projectMonthlyGoMining } from '../lib/gomining/monthly.ts';
-import { euroCents, eurosDecimal, formatEuros, parseEuros, sumEuroCents } from '../lib/finance/units.ts';
+import { euroCents, eurosDecimal, formatEuros, parseEuros, signedEuros, sumEuroCents } from '../lib/finance/units.ts';
 import { TableauDense } from '../Components/finance/TableauDense.tsx';
 import { Trend } from '../Components/finance/Trend.tsx';
 import './finance.scss';
@@ -420,15 +420,12 @@ const preciseMoney = (milliCents: number) => `${(milliCents / 100_000).toFixed(5
  * ⚠️ Et la couleur ne vient JAMAIS seule — le signe la double toujours. C'est
  * ce qui garde l'écran lisible en niveaux de gris et pour qui ne distingue pas
  * le rouge du vert. `signe={false}` pour les contextes où un montant n'a pas
- * de polarité (un prévu, une cible).
+ * de polarité (un prévu, une cible) : un montant négatif y garde quand même
+ * son moins, sans couleur — un solde à découvert ne s'affiche jamais en positif.
  */
 const classeMontant = (cents: number) => cents > 0 ? 'amount-positive' : cents < 0 ? 'amount-negative' : 'amount-neutral';
-const Currency = ({ cents, signe = false }: { cents: number; signe?: boolean }) => {
-  const texte = money(Math.abs(cents));
-  if (!signe) return <span className="tnum">{texte}</span>;
-  const marque = cents > 0 ? '+' : cents < 0 ? '\u2212' : '';
-  return <span className={`tnum ${classeMontant(cents)}`}>{marque}{texte}</span>;
-};
+const Currency = ({ cents, signe = false }: { cents: number; signe?: boolean }) =>
+  <span className={signe ? `tnum ${classeMontant(cents)}` : 'tnum'}>{signedEuros(euroCents(cents), signe)}</span>;
 /**
  * « 4 sept. » — la date dense du journal.
  *
@@ -1635,7 +1632,7 @@ function SimulationRunDetails({ run }: { run: Data['simulations']['runs'][number
     legende="Patrimoine net projeté"
     note={`${run.result.months.length} mois projetés. Résultat d’hypothèses, jamais une prévision garantie.`}
     series={run.result.months.map((row) => ({ label: `M${row.month}`, cents: row.netWealthCents, at: row.month }))}
-  /><strong>{run.createdAt.slice(0, 16).replace('T', ' ')} UTC · révision {run.assumption?.revision ?? 'archivée'}</strong><p>Patrimoine net final : {money(run.result.finalNetWealthCents)} · cash minimum : {money(run.result.minimumHouseholdCashCents)} · dette finale : {money(run.result.finalDebtCents)}.</p><p>Intérêts : {money(run.result.totalInterestCents)} · taux de liberté : {run.result.freedomRateBasisPoints === null ? 'non calculable' : formatPercent(run.result.freedomRateBasisPoints)}.</p><details><summary>Hypothèses et jalons</summary><p>Horizon {run.input.months} mois · placements {formatPercent(run.input.profile.annualPlacementReturnBasisPoints)} annuel · business {formatPercent(run.input.profile.businessMonthlyGrowthBasisPoints)} mensuel · dépenses foyer {formatPercent(run.input.profile.householdExpenseAnnualInflationBasisPoints)} annuel. Fiscalité non modélisée.</p><div className="finance-table-wrap"><table className="finance-table"><caption>Jalons simulés</caption><thead><tr><th>Mois</th><th>Cash foyer</th><th>Placements</th><th>Business</th><th>Dette</th><th>Patrimoine net</th></tr></thead><tbody>{milestones.map((row) => <tr key={row.month}><td>{row.month}</td><td>{money(row.householdCashCents)}</td><td>{money(row.placementCents)}</td><td>{money(row.businessCashCents)}</td><td>{money(row.debtCents)}</td><td>{money(row.netWealthCents)}</td></tr>)}</tbody></table></div>{run.result.goals.length > 0 ? <p>Objectifs simulés : {run.result.goals.map((goal) => `${money(goal.projectedProgressCents)} / ${money(goal.targetCents)}`).join(' · ')}.</p> : null}</details></div>; }
+  /><strong>{run.createdAt.slice(0, 16).replace('T', ' ')} UTC · révision {run.assumption?.revision ?? 'archivée'}</strong><p>Patrimoine net final : {money(run.result.finalNetWealthCents)} · cash minimum : {money(run.result.minimumHouseholdCashCents)} · dette finale : {money(run.result.finalDebtCents)}.</p><p>Intérêts de dette : {money(run.result.totalInterestCents)} · taux de liberté : {run.result.freedomRateBasisPoints === null ? 'non calculable' : formatPercent(run.result.freedomRateBasisPoints)}.</p><details><summary>Hypothèses et jalons</summary><p>Horizon {run.input.months} mois · placements {formatPercent(run.input.profile.annualPlacementReturnBasisPoints)} annuel · business {formatPercent(run.input.profile.businessMonthlyGrowthBasisPoints)} mensuel · dépenses foyer {formatPercent(run.input.profile.householdExpenseAnnualInflationBasisPoints)} annuel. Fiscalité non modélisée.</p><div className="finance-table-wrap"><table className="finance-table"><caption>Jalons simulés</caption><thead><tr><th>Mois</th><th>Cash foyer</th><th>Placements</th><th>Business</th><th>Dette</th><th>Patrimoine net</th></tr></thead><tbody>{milestones.map((row) => <tr key={row.month}><td>{row.month}</td><td>{money(row.householdCashCents)}</td><td>{money(row.placementCents)}</td><td>{money(row.businessCashCents)}</td><td>{money(row.debtCents)}</td><td>{money(row.netWealthCents)}</td></tr>)}</tbody></table></div>{run.result.goals.length > 0 ? <p>Objectifs simulés : {run.result.goals.map((goal) => `${money(goal.projectedProgressCents)} / ${money(goal.targetCents)}`).join(' · ')}.</p> : null}</details></div>; }
 
 function Cfo({ data }: { data: Data }) {
   const { context, history } = data.cfo;

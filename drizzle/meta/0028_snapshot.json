@@ -1,8 +1,8 @@
 {
-  "id": "89d25b47-bc5a-408d-b54c-7d866d05306a",
-  "prevId": "8c4c97e6-1988-4dd9-956a-6fc7b3af40c5",
   "version": "6",
   "dialect": "sqlite",
+  "id": "79b92b42-be54-46ef-92ab-32bf76828896",
+  "prevId": "8c4c97e6-1988-4dd9-956a-6fc7b3af40c5",
   "tables": {
     "account": {
       "name": "account",
@@ -120,15 +120,15 @@
         "account_user_id_user_id_fk": {
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -218,15 +218,15 @@
         "finance_account_reconciliations_account_id_finance_accounts_id_fk": {
           "name": "finance_account_reconciliations_account_id_finance_accounts_id_fk",
           "tableFrom": "finance_account_reconciliations",
+          "tableTo": "finance_accounts",
           "columnsFrom": [
             "account_id"
           ],
-          "tableTo": "finance_accounts",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -328,15 +328,15 @@
         "finance_accounts_entity_id_finance_economic_entities_id_fk": {
           "name": "finance_accounts_entity_id_finance_economic_entities_id_fk",
           "tableFrom": "finance_accounts",
+          "tableTo": "finance_economic_entities",
           "columnsFrom": [
             "entity_id"
           ],
-          "tableTo": "finance_economic_entities",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -450,15 +450,15 @@
         "finance_business_activities_entity_id_finance_economic_entities_id_fk": {
           "name": "finance_business_activities_entity_id_finance_economic_entities_id_fk",
           "tableFrom": "finance_business_activities",
+          "tableTo": "finance_economic_entities",
           "columnsFrom": [
             "entity_id"
           ],
-          "tableTo": "finance_economic_entities",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -557,15 +557,15 @@
         "finance_business_entity_monthly_cash_entity_id_finance_economic_entities_id_fk": {
           "name": "finance_business_entity_monthly_cash_entity_id_finance_economic_entities_id_fk",
           "tableFrom": "finance_business_entity_monthly_cash",
+          "tableTo": "finance_economic_entities",
           "columnsFrom": [
             "entity_id"
           ],
-          "tableTo": "finance_economic_entities",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -689,15 +689,15 @@
         "finance_business_monthly_metrics_activity_id_finance_business_activities_id_fk": {
           "name": "finance_business_monthly_metrics_activity_id_finance_business_activities_id_fk",
           "tableFrom": "finance_business_monthly_metrics",
+          "tableTo": "finance_business_activities",
           "columnsFrom": [
             "activity_id"
           ],
-          "tableTo": "finance_business_activities",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -819,15 +819,15 @@
         "finance_business_monthly_provisions_entity_id_finance_economic_entities_id_fk": {
           "name": "finance_business_monthly_provisions_entity_id_finance_economic_entities_id_fk",
           "tableFrom": "finance_business_monthly_provisions",
+          "tableTo": "finance_economic_entities",
           "columnsFrom": [
             "entity_id"
           ],
-          "tableTo": "finance_economic_entities",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -995,15 +995,15 @@
         "finance_cfo_comparisons_evaluation_id_finance_cfo_evaluations_id_fk": {
           "name": "finance_cfo_comparisons_evaluation_id_finance_cfo_evaluations_id_fk",
           "tableFrom": "finance_cfo_comparisons",
+          "tableTo": "finance_cfo_evaluations",
           "columnsFrom": [
             "evaluation_id"
           ],
-          "tableTo": "finance_cfo_evaluations",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1088,15 +1088,15 @@
         "finance_cfo_decisions_evaluation_id_finance_cfo_evaluations_id_fk": {
           "name": "finance_cfo_decisions_evaluation_id_finance_cfo_evaluations_id_fk",
           "tableFrom": "finance_cfo_decisions",
+          "tableTo": "finance_cfo_evaluations",
           "columnsFrom": [
             "evaluation_id"
           ],
-          "tableTo": "finance_cfo_evaluations",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1518,15 +1518,15 @@
         "finance_gomining_contribution_phases_scenario_id_finance_gomining_scenarios_id_fk": {
           "name": "finance_gomining_contribution_phases_scenario_id_finance_gomining_scenarios_id_fk",
           "tableFrom": "finance_gomining_contribution_phases",
+          "tableTo": "finance_gomining_scenarios",
           "columnsFrom": [
             "scenario_id"
           ],
-          "tableTo": "finance_gomining_scenarios",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1602,15 +1602,15 @@
         "finance_gomining_scenario_versions_scenario_id_finance_gomining_scenarios_id_fk": {
           "name": "finance_gomining_scenario_versions_scenario_id_finance_gomining_scenarios_id_fk",
           "tableFrom": "finance_gomining_scenario_versions",
+          "tableTo": "finance_gomining_scenarios",
           "columnsFrom": [
             "scenario_id"
           ],
-          "tableTo": "finance_gomining_scenarios",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1763,15 +1763,15 @@
         "finance_gomining_scenarios_budget_category_id_finance_categories_id_fk": {
           "name": "finance_gomining_scenarios_budget_category_id_finance_categories_id_fk",
           "tableFrom": "finance_gomining_scenarios",
+          "tableTo": "finance_categories",
           "columnsFrom": [
             "budget_category_id"
           ],
-          "tableTo": "finance_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1816,6 +1816,118 @@
         "finance_gomining_scenarios_period": {
           "name": "finance_gomining_scenarios_period",
           "value": "length(\"finance_gomining_scenarios\".\"start_period\") = 7 and \"finance_gomining_scenarios\".\"start_period\" glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]' and cast(substr(\"finance_gomining_scenarios\".\"start_period\", 1, 4) as integer) between 1 and 9999 and cast(substr(\"finance_gomining_scenarios\".\"start_period\", 6, 2) as integer) between 1 and 12"
+        }
+      }
+    },
+    "finance_import_agent_decisions": {
+      "name": "finance_import_agent_decisions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "line_id": {
+          "name": "line_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transaction_id": {
+          "name": "transaction_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "previous_occurred_on": {
+          "name": "previous_occurred_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "undone_at": {
+          "name": "undone_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "finance_import_agent_decisions_owner_run_idx": {
+          "name": "finance_import_agent_decisions_owner_run_idx",
+          "columns": [
+            "owner_id",
+            "run_id"
+          ],
+          "isUnique": false
+        },
+        "finance_import_agent_decisions_line_idx": {
+          "name": "finance_import_agent_decisions_line_idx",
+          "columns": [
+            "line_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "finance_import_agent_decisions_line_id_finance_import_lines_id_fk": {
+          "name": "finance_import_agent_decisions_line_id_finance_import_lines_id_fk",
+          "tableFrom": "finance_import_agent_decisions",
+          "tableTo": "finance_import_lines",
+          "columnsFrom": [
+            "line_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "finance_import_agent_decisions_action": {
+          "name": "finance_import_agent_decisions_action",
+          "value": "\"finance_import_agent_decisions\".\"action\" in ('create', 'link')"
+        },
+        "finance_import_agent_decisions_previous": {
+          "name": "finance_import_agent_decisions_previous",
+          "value": "\"finance_import_agent_decisions\".\"previous_occurred_on\" is null or (\"finance_import_agent_decisions\".\"action\" = 'link' and length(\"finance_import_agent_decisions\".\"previous_occurred_on\") = 10)"
         }
       }
     },
@@ -1894,15 +2006,15 @@
         "finance_import_batches_account_id_finance_accounts_id_fk": {
           "name": "finance_import_batches_account_id_finance_accounts_id_fk",
           "tableFrom": "finance_import_batches",
+          "tableTo": "finance_accounts",
           "columnsFrom": [
             "account_id"
           ],
-          "tableTo": "finance_accounts",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2062,28 +2174,28 @@
         "finance_import_lines_batch_id_finance_import_batches_id_fk": {
           "name": "finance_import_lines_batch_id_finance_import_batches_id_fk",
           "tableFrom": "finance_import_lines",
+          "tableTo": "finance_import_batches",
           "columnsFrom": [
             "batch_id"
           ],
-          "tableTo": "finance_import_batches",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "finance_import_lines_transaction_id_finance_transactions_id_fk": {
           "name": "finance_import_lines_transaction_id_finance_transactions_id_fk",
           "tableFrom": "finance_import_lines",
+          "tableTo": "finance_transactions",
           "columnsFrom": [
             "transaction_id"
           ],
-          "tableTo": "finance_transactions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "set null"
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2199,15 +2311,15 @@
         "finance_monthly_budgets_category_id_finance_categories_id_fk": {
           "name": "finance_monthly_budgets_category_id_finance_categories_id_fk",
           "tableFrom": "finance_monthly_budgets",
+          "tableTo": "finance_categories",
           "columnsFrom": [
             "category_id"
           ],
-          "tableTo": "finance_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2469,15 +2581,15 @@
         "finance_projects_goal_id_finance_goals_id_fk": {
           "name": "finance_projects_goal_id_finance_goals_id_fk",
           "tableFrom": "finance_projects",
+          "tableTo": "finance_goals",
           "columnsFrom": [
             "goal_id"
           ],
-          "tableTo": "finance_goals",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2605,15 +2717,15 @@
         "finance_recurring_commitments_category_id_finance_categories_id_fk": {
           "name": "finance_recurring_commitments_category_id_finance_categories_id_fk",
           "tableFrom": "finance_recurring_commitments",
+          "tableTo": "finance_categories",
           "columnsFrom": [
             "category_id"
           ],
-          "tableTo": "finance_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -2923,28 +3035,28 @@
         "finance_safety_reserve_accounts_reserve_id_finance_safety_reserves_id_fk": {
           "name": "finance_safety_reserve_accounts_reserve_id_finance_safety_reserves_id_fk",
           "tableFrom": "finance_safety_reserve_accounts",
+          "tableTo": "finance_safety_reserves",
           "columnsFrom": [
             "reserve_id"
           ],
-          "tableTo": "finance_safety_reserves",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         },
         "finance_safety_reserve_accounts_account_id_finance_accounts_id_fk": {
           "name": "finance_safety_reserve_accounts_account_id_finance_accounts_id_fk",
           "tableFrom": "finance_safety_reserve_accounts",
+          "tableTo": "finance_accounts",
           "columnsFrom": [
             "account_id"
           ],
-          "tableTo": "finance_accounts",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3056,15 +3168,15 @@
         "finance_security_events_owner_id_user_id_fk": {
           "name": "finance_security_events_owner_id_user_id_fk",
           "tableFrom": "finance_security_events",
+          "tableTo": "user",
           "columnsFrom": [
             "owner_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3160,15 +3272,15 @@
         "session_user_id_user_id_fk": {
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
+          "tableTo": "user",
           "columnsFrom": [
             "user_id"
           ],
-          "tableTo": "user",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "cascade"
+          "onDelete": "cascade",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3298,15 +3410,15 @@
         "finance_simulation_runs_assumption_id_finance_simulation_assumptions_id_fk": {
           "name": "finance_simulation_runs_assumption_id_finance_simulation_assumptions_id_fk",
           "tableFrom": "finance_simulation_runs",
+          "tableTo": "finance_simulation_assumptions",
           "columnsFrom": [
             "assumption_id"
           ],
-          "tableTo": "finance_simulation_assumptions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3510,41 +3622,41 @@
         "finance_transactions_account_id_finance_accounts_id_fk": {
           "name": "finance_transactions_account_id_finance_accounts_id_fk",
           "tableFrom": "finance_transactions",
+          "tableTo": "finance_accounts",
           "columnsFrom": [
             "account_id"
           ],
-          "tableTo": "finance_accounts",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "finance_transactions_category_id_finance_categories_id_fk": {
           "name": "finance_transactions_category_id_finance_categories_id_fk",
           "tableFrom": "finance_transactions",
+          "tableTo": "finance_categories",
           "columnsFrom": [
             "category_id"
           ],
-          "tableTo": "finance_categories",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         },
         "finance_transactions_recurring_commitment_id_finance_recurring_commitments_id_fk": {
           "name": "finance_transactions_recurring_commitment_id_finance_recurring_commitments_id_fk",
           "tableFrom": "finance_transactions",
+          "tableTo": "finance_recurring_commitments",
           "columnsFrom": [
             "recurring_commitment_id"
           ],
-          "tableTo": "finance_recurring_commitments",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3780,15 +3892,15 @@
         "finance_wealth_asset_valuations_asset_id_finance_wealth_assets_id_fk": {
           "name": "finance_wealth_asset_valuations_asset_id_finance_wealth_assets_id_fk",
           "tableFrom": "finance_wealth_asset_valuations",
+          "tableTo": "finance_wealth_assets",
           "columnsFrom": [
             "asset_id"
           ],
-          "tableTo": "finance_wealth_assets",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -3912,23 +4024,23 @@
           "columns": [
             "owner_id"
           ],
-          "where": "\"finance_wealth_assets\".\"source\" = 'gomining-observed-btc'",
-          "isUnique": true
+          "isUnique": true,
+          "where": "\"finance_wealth_assets\".\"source\" = 'gomining-observed-btc'"
         }
       },
       "foreignKeys": {
         "finance_wealth_assets_entity_id_finance_economic_entities_id_fk": {
           "name": "finance_wealth_assets_entity_id_finance_economic_entities_id_fk",
           "tableFrom": "finance_wealth_assets",
+          "tableTo": "finance_economic_entities",
           "columnsFrom": [
             "entity_id"
           ],
-          "tableTo": "finance_economic_entities",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4049,15 +4161,15 @@
         "finance_wealth_debt_balances_debt_id_finance_wealth_debts_id_fk": {
           "name": "finance_wealth_debt_balances_debt_id_finance_wealth_debts_id_fk",
           "tableFrom": "finance_wealth_debt_balances",
+          "tableTo": "finance_wealth_debts",
           "columnsFrom": [
             "debt_id"
           ],
-          "tableTo": "finance_wealth_debts",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4151,15 +4263,15 @@
         "finance_wealth_debts_entity_id_finance_economic_entities_id_fk": {
           "name": "finance_wealth_debts_entity_id_finance_economic_entities_id_fk",
           "tableFrom": "finance_wealth_debts",
+          "tableTo": "finance_economic_entities",
           "columnsFrom": [
             "entity_id"
           ],
-          "tableTo": "finance_economic_entities",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "restrict"
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -4175,9 +4287,9 @@
   "views": {},
   "enums": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
+    "tables": {},
+    "columns": {}
   },
   "internal": {
     "indexes": {}

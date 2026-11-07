@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/node';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { openDatabase } from '../../app/.server/db/connection';
 import { migrateDatabase } from '../../app/.server/db/migrate';
 import { VIGIE_CLE_NAVIGATEUR } from '../../app/lib/vigie';
@@ -65,7 +66,27 @@ const corpsEnveloppe = (evenement: object) =>
 describe('Vigie dans P8', () => {
   it('la migration crée les tables de Vigie', () => {
     const tables = lignes("select name from sqlite_master where type = 'table' and name like 'vigie_%' order by name");
-    expect(tables.map((t) => t.name)).toEqual(['vigie_event', 'vigie_issue']);
+    expect(tables.map((t) => t.name)).toEqual(['vigie_compteur', 'vigie_etat', 'vigie_event', 'vigie_fenetre', 'vigie_issue']);
+  });
+
+  it('Vigie 0.2 : un envoi de 1 Mo au tunnel est stocké réduit, sous 32 Ko, et compté dans le budget de 50 Mo', async () => {
+    const enorme = { event_id: 'nav-gros', platform: 'javascript', message: 'x'.repeat(900_000), extra: { remplissage: 'z'.repeat(50_000) } };
+    const corps = gzipSync(corpsEnveloppe(enorme));
+    expect(corps.length).toBeLessThan(200_000);
+    const reponse = await enveloppe({
+      request: new Request(`${origin}/_vigie/enveloppe`, {
+        method: 'POST',
+        body: corps,
+        headers: { origin, 'fly-client-ip': '203.0.113.43', 'content-encoding': 'gzip' },
+      }),
+    });
+    expect(reponse.status).toBe(200);
+    const [evenement] = lignes("select taille, contenu from vigie_event where event_id = 'nav-gros'");
+    expect(Number(evenement.taille)).toBeLessThanOrEqual(32_000);
+    expect(String(evenement.contenu)).not.toContain('remplissage');
+    expect(JSON.parse(String(evenement.contenu))._vigie).toMatchObject({ reduit: true });
+    const [budget] = lignes("select nombre from vigie_etat where cle = 'budget'");
+    expect(Number(budget.nombre)).toBe(50_000_000);
   });
 
   it('tunnel navigateur : refuse une autre origine, accepte la sienne et nettoie avant d’écrire', async () => {

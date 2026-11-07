@@ -25,6 +25,7 @@ import {
   resume,
   STATUTS,
   type Issue,
+  type Resume,
   type Statut,
 } from "./lecture.ts";
 
@@ -248,7 +249,7 @@ function pageListe(
   prefixe: string,
   issues: Issue[],
   suivant: string | null,
-  chiffres: Record<string, number | string | null>,
+  chiffres: Resume,
   statut: Statut | undefined,
   parametres: URLSearchParams,
 ): string {
@@ -279,11 +280,39 @@ function pageListe(
   return page(
     "Issues",
     prefixe,
-    `<p class="chiffres">${Number(chiffres["a_traiter"])} à traiter · ${Number(chiffres["nouvelles_24h"])} nouvelles en 24 h · dernière release : ${echapper(String(chiffres["derniere_release"] ?? "—"))}</p>
+    `<p class="chiffres">${chiffres.a_traiter} à traiter · ${chiffres.nouvelles_24h} nouvelles en 24 h · dernière release : ${echapper(chiffres.derniere_release ?? "—")}</p>
+${lignesGardeFous(chiffres)}
 <nav>${onglets}</nav>
 <table><thead><tr><th>Issue</th><th>Statut</th><th>Occurrences</th><th>Vue le (UTC)</th></tr></thead>
 <tbody>${lignes || '<tr><td colspan="4">Aucune issue.</td></tr>'}</tbody></table>${pagination}`,
   );
+}
+
+const LIBELLES_COMPTEURS: Record<string, string> = {
+  refus_quota_serveur: "refusés (quota serveur)",
+  refus_quota_navigateur: "refusés (quota navigateur)",
+  refus_taille: "refusés (trop gros)",
+  refus_cle: "refusés (clé)",
+  refus_origine: "refusés (origine)",
+  debordement_issues: "comptés en débordement",
+  evenements_reduits: "réduits",
+  evictions_budget: "détails évincés (budget)",
+  erreurs_internes: "erreurs internes",
+};
+
+function enMo(octets: number): string {
+  return (octets / 1_000_000).toLocaleString("fr-FR", { maximumFractionDigits: 1 });
+}
+
+/** Budget et garde-fous du jour : une attaque absorbée en silence se voit ici (ADR-0011, E7). */
+function lignesGardeFous(chiffres: Resume): string {
+  const { octets, budget } = chiffres.stockage;
+  const stockage = `Stockage : ${enMo(octets)}${budget === null ? "" : ` / ${enMo(budget)}`} Mo`;
+  const compteurs = Object.entries(chiffres.compteurs_du_jour)
+    .filter(([, nombre]) => nombre > 0)
+    .map(([motif, nombre]) => `${nombre.toLocaleString("fr-FR")} ${echapper(LIBELLES_COMPTEURS[motif] ?? motif)}`);
+  const aujourdhui = compteurs.length === 0 ? "aucun refus aujourd'hui" : `aujourd'hui : ${compteurs.join(" · ")}`;
+  return `<p class="chiffres">${echapper(stockage)} · ${aujourdhui}</p>`;
 }
 
 function pageDetail(prefixe: string, detail: NonNullable<Awaited<ReturnType<typeof lireIssue>>>): string {
@@ -296,7 +325,7 @@ function pageDetail(prefixe: string, detail: NonNullable<Awaited<ReturnType<type
     .join("\n");
   const evenements = detail.evenements
     .map(
-      (e) => `<details><summary>${echapper(e.recu_le.slice(0, 19).replace("T", " "))} · ${echapper(e.provenance)} · ${echapper(e.release ?? "sans release")}</summary>
+      (e) => `<details><summary>${echapper(e.recu_le.slice(0, 19).replace("T", " "))} · ${echapper(e.provenance)} · ${echapper(e.release ?? "sans release")}${e.role === "derniere" ? " · dernière occurrence" : ""}</summary>
 <pre>${echapper(JSON.stringify(e.contenu, null, 2))}</pre></details>`,
     )
     .join("\n");

@@ -101,14 +101,24 @@ Avant une mise à jour de déploiement, exécuter les vérifications locales :
 
 ```sh
 npm run check
+npm run test:auth
+npx playwright test
 npm run build
 ```
+
+`npm run check` vérifie aussi que l'image Docker contient chaque module chargé
+par le serveur et les scripts d'administration (`tests/unit/docker-runtime.test.ts`).
 
 Puis, après connexion locale à `flyctl`, déployer la nouvelle version :
 
 ```sh
 fly deploy
 ```
+
+« good state » à la fin de `fly deploy` ne suffit pas : attendre que
+`fly status` affiche la nouvelle version **started** et que `fly checks list`
+soit **passing**, puis vérifier `/healthz` et `/`. Juste après le redémarrage,
+l'ancienne version peut encore répondre, ou un 502/503 apparaître brièvement.
 
 Ne jamais inscrire les valeurs suivantes dans `fly.toml`, Git, le terminal
 partagé ou un fichier `.env` envoyé à Fly. Elles sont configurées avec les
@@ -141,6 +151,24 @@ restauration isolée dans une copie distincte. Cette sauvegarde manuelle ne
 protège pas d'une indisponibilité du Mac : une copie hors appareil ou
 automatisée pourra être ajoutée ultérieurement. Aucun stockage externe ou
 secret de sauvegarde n’est créé par cette configuration.
+
+### Faire valider les relevés par l'agent (D34)
+
+Sur demande de François, l'agent de développement traite la file des relevés
+par un script au périmètre fermé, exécuté dans la Machine. Les règles et les
+risques acceptés sont dans [SECURITY.md](SECURITY.md), revue du 10 octobre 2026.
+
+```sh
+fly ssh console -C "node scripts/imports/agent.ts list"      # lignes en attente
+fly ssh console -C "node scripts/imports/agent.ts context"   # catégories, comptes, classements passés
+fly ssh console -C "node scripts/imports/agent.ts apply accept:<ligne>:<catégorie> suggested:<ligne>"
+fly ssh console -C "node scripts/imports/agent.ts apply --confirm …"   # écrit, et rend un identifiant de lot
+fly ssh console -C "node scripts/imports/agent.ts runs"
+fly ssh console -C "node scripts/imports/agent.ts undo <lot>"
+```
+
+Sans `--confirm`, rien n'est écrit. Ce que l'agent ne sait pas classer sans
+ambiguïté reste dans la file pour François.
 
 Après modification du schéma TypeScript, `npm run db:generate -- --name=description` produit une migration à relire avant de l’appliquer. Les évolutions de modèle suivent cette même procédure. [Conventions et suivi SQLite](dossier_conception_cfo/19_FONDATIONS_SQLITE.md).
 

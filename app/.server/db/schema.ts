@@ -572,6 +572,28 @@ export const importLines = sqliteTable('finance_import_lines', {
   check('finance_import_lines_occurred_on', sql`length(${table.occurredOn}) = 10 and ${table.occurredOn} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' and date(${table.occurredOn}, '+0 days') = ${table.occurredOn}`),
 ]);
 
+// Trace des décisions prises par l'agent via le script d'administration
+// (`scripts/imports/agent.ts`), jamais par l'app. Un lot (`runId`) se relit et
+// s'annule en entier : `action` dit si le mouvement a été créé (l'annulation le
+// supprime) ou seulement rattaché (l'annulation le détache et lui rend sa date).
+export const importAgentDecisions = sqliteTable('finance_import_agent_decisions', {
+  id: text('id').primaryKey(),
+  ownerId: text('owner_id').notNull(),
+  runId: text('run_id').notNull(),
+  lineId: text('line_id').notNull().references(() => importLines.id, { onDelete: 'cascade' }),
+  action: text('action', { enum: ['create', 'link'] }).notNull(),
+  // Sans clé étrangère : la trace survit à la suppression du mouvement.
+  transactionId: text('transaction_id').notNull(),
+  previousOccurredOn: text('previous_occurred_on'),
+  createdAt: text('created_at').notNull(),
+  undoneAt: text('undone_at'),
+}, (table) => [
+  index('finance_import_agent_decisions_owner_run_idx').on(table.ownerId, table.runId),
+  index('finance_import_agent_decisions_line_idx').on(table.lineId),
+  check('finance_import_agent_decisions_action', sql`${table.action} in ('create', 'link')`),
+  check('finance_import_agent_decisions_previous', sql`${table.previousOccurredOn} is null or (${table.action} = 'link' and length(${table.previousOccurredOn}) = 10)`),
+]);
+
 // Une évaluation CFO est un constat versionné : elle conserve son contexte et
 // son résultat sans modifier les comptes, transactions ou placements sources.
 export const cfoEvaluations = sqliteTable('finance_cfo_evaluations', {

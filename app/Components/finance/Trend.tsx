@@ -48,11 +48,13 @@ const ECART_VALEUR = 72;
  * 10 k€, l'arrondi au millier coûte moins de 5 % et la lecture y gagne.
  */
 function formatCourt(cents: number) {
-  const euros = cents / 100;
-  const absolu = Math.abs(euros);
-  if (absolu >= 10_000) return `${Math.round(euros / 1000)} k€`;
-  if (absolu >= 1_000) return `${(euros / 1000).toFixed(1).replace('.', ',')} k€`;
-  return `${Math.round(euros)} €`;
+  // Le vrai moins (U+2212), comme partout dans l'espace privé : le trait
+  // d'union est plus court et se lit mal devant un chiffre.
+  const signe = cents < 0 ? '\u2212' : '';
+  const absolu = Math.abs(cents / 100);
+  if (absolu >= 10_000) return `${signe}${Math.round(absolu / 1000)} k€`;
+  if (absolu >= 1_000) return `${signe}${(absolu / 1000).toFixed(1).replace('.', ',')} k€`;
+  return `${signe}${Math.round(absolu)} €`;
 }
 
 /** Le repli : le chiffre et l'écart, jamais une courbe qu'on ne sait pas tracer. */
@@ -89,9 +91,12 @@ export function Trend({ series, legende, note }: { series: Serie[]; legende?: st
   const valeurs = ordonnee.map((point) => point.cents);
   const min = Math.min(...valeurs);
   const max = Math.max(...valeurs);
-  // Une amplitude nulle (trois relevés identiques) diviserait par zéro : on
-  // retombe sur une ligne médiane plutôt que sur un NaN silencieux.
+  const plate = max === min;
   const amplitude = max - min || 1;
+  const hauteurUtile = VUE.h - VUE.padY * 2;
+  // Une série plate (trois relevés identiques) n'a pas d'amplitude : on la
+  // trace au milieu plutôt que collée en bas, et sans diviser par zéro.
+  const ordonneeDe = (cents: number) => (plate ? VUE.h / 2 : VUE.padY + (1 - (cents - min) / amplitude) * hauteurUtile);
 
   const abscisses = date ? ordonnee.map((point) => point.at as number) : ordonnee.map((_, index) => index);
   const debut = abscisses[0];
@@ -99,8 +104,11 @@ export function Trend({ series, legende, note }: { series: Serie[]; legende?: st
 
   const points: Point[] = ordonnee.map((point, index) => ({
     x: VUE.padX + ((abscisses[index] - debut) / etendue) * (VUE.w - VUE.padX * 2),
-    y: VUE.padY + (1 - (point.cents - min) / amplitude) * (VUE.h - VUE.padY * 2),
+    y: ordonneeDe(point.cents),
   }));
+  // Le zéro n'est tracé que s'il est franchi : c'est là qu'un patrimoine
+  // devient une dette, et l'échelle seule ne le montre pas.
+  const zero = min < 0 && max > 0 ? ordonneeDe(0) : null;
 
   const chemin = monotonePath(points);
   // `monotonePath` refuse les abscisses non strictement croissantes — deux
@@ -130,34 +138,49 @@ export function Trend({ series, legende, note }: { series: Serie[]; legende?: st
     `${ordonnee[ordonnee.length - 1].label} ${formatCourt(ordonnee[ordonnee.length - 1].cents)}`,
   ].join(', ');
 
+  // ⚠️ Le tracé s'étire (`preserveAspectRatio="none"`), mais pas le texte : à
+  // 375 px de large, un SVG mis à l'échelle en entier réduisait les étiquettes à
+  // 4 px. Points et étiquettes sont donc du HTML posé en pourcentages au-dessus
+  // du tracé ; ils gardent leur taille quelle que soit la largeur.
+  const gauche = (x: number) => `${(x / VUE.w) * 100}%`;
+  const haut = (y: number) => `${(y / VUE.h) * 100}%`;
+  const ancre = (index: number) => (index === 0 ? 'debut' : index === ordonnee.length - 1 ? 'fin' : 'milieu');
+  const extremite = (index: number) => index === 0 || index === ordonnee.length - 1;
+  // Le plus bas s'étiquette SOUS son point : au-dessus, la courbe qui en repart
+  // vers le haut passait sur le texte.
+  const dessous = (index: number) => !plate && index === iMin && iMin !== iMax;
+
   return <figure className="finance-chart">
     {legende ? <figcaption>{legende}</figcaption> : null}
-    <svg viewBox={`0 0 ${VUE.w} ${VUE.h}`} role="img"
+    <div className="finance-chart__plot" role="img"
       aria-label={`${legende ?? 'Trajectoire'} sur ${ordonnee.length} relevés : ${resume}. Le détail chiffré suit sous « Voir les valeurs ».`}>
-      <line className="finance-chart__grid" x1={VUE.padX} y1={VUE.h - VUE.padY} x2={VUE.w - VUE.padX} y2={VUE.h - VUE.padY} />
-      <path className="finance-chart__line" d={chemin} />
+      <svg viewBox={`0 0 ${VUE.w} ${VUE.h}`} preserveAspectRatio="none" aria-hidden="true">
+        <line className="finance-chart__grid" x1={VUE.padX} y1={VUE.h - VUE.padY} x2={VUE.w - VUE.padX} y2={VUE.h - VUE.padY} />
+        {zero !== null ? <line className="finance-chart__zero" x1={VUE.padX} y1={zero} x2={VUE.w - VUE.padX} y2={zero} /> : null}
+        <path className="finance-chart__line" d={chemin} />
+      </svg>
+      {zero !== null ? <span className="finance-chart__label finance-chart__label--zero" aria-hidden="true" style={{ left: gauche(VUE.w - VUE.padX), top: haut(zero) }}>0</span> : null}
       {points.map((point, index) => (marques.has(index) ? (
-        <circle key={ordonnee[index].label} className="finance-chart__dot" cx={point.x} cy={point.y} r={5} />
+        <i key={ordonnee[index].label} className="finance-chart__dot" aria-hidden="true" style={{ left: gauche(point.x), top: haut(point.y) }} />
       ) : null))}
       {points.map((point, index) => (valeursVisibles.has(triees.indexOf(index)) ? (
-        <text
+        <span
           key={`v-${ordonnee[index].label}`}
-          className={`finance-chart__label ${index === ordonnee.length - 1 ? 'finance-chart__label--last' : ''}`}
-          x={point.x}
-          y={point.y - 12}
-          textAnchor={index === 0 ? 'start' : index === ordonnee.length - 1 ? 'end' : 'middle'}
-        >{formatCourt(ordonnee[index].cents)}</text>
+          aria-hidden="true"
+          className={`finance-chart__label finance-chart__label--valeur finance-chart__label--${ancre(index)}${index === ordonnee.length - 1 ? ' finance-chart__label--last' : ''}${extremite(index) ? '' : ' finance-chart__label--secondaire'}${dessous(index) ? ' finance-chart__label--dessous' : ''}`}
+          style={{ left: gauche(point.x), top: haut(point.y) }}
+        >{formatCourt(ordonnee[index].cents)}</span>
       ) : null))}
+    </div>
+    <div className="finance-chart__dates" aria-hidden="true">
       {points.map((point, index) => (datees.has(candidates.indexOf(index)) ? (
-        <text
+        <span
           key={`x-${ordonnee[index].label}`}
-          className={`finance-chart__label ${index === ordonnee.length - 1 ? 'finance-chart__label--last' : ''}`}
-          x={point.x}
-          y={VUE.h - 2}
-          textAnchor={index === 0 ? 'start' : index === ordonnee.length - 1 ? 'end' : 'middle'}
-        >{ordonnee[index].label}</text>
+          className={`finance-chart__label finance-chart__label--date finance-chart__label--${ancre(index)}${index === ordonnee.length - 1 ? ' finance-chart__label--last' : ''}${extremite(index) ? '' : ' finance-chart__label--secondaire'}`}
+          style={{ left: gauche(point.x) }}
+        >{ordonnee[index].label}</span>
       ) : null))}
-    </svg>
+    </div>
     {note ? <p className="finance-chart__note">{note}</p> : null}
     {/* Une donnée chiffrée doit rester atteignable sans lire un graphique :
         le tableau est l'équivalent textuel, pas un doublon. */}

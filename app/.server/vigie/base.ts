@@ -31,15 +31,27 @@ export interface BetterSqlite3 {
 }
 
 export function baseBetterSqlite3(db: BetterSqlite3): Base {
+  // Les textes SQL de Vigie forment un petit ensemble fixe : chaque instruction n'est préparée
+  // qu'une fois (la préparation coûtait plus que l'exécution). Le cache reste borné par prudence.
+  const preparees = new Map<string, ReturnType<BetterSqlite3["prepare"]>>();
+  const preparer = (sql: string) => {
+    let instruction = preparees.get(sql);
+    if (instruction === undefined) {
+      if (preparees.size >= 200) {
+        preparees.clear();
+      }
+      instruction = db.prepare(sql);
+      preparees.set(sql, instruction);
+    }
+    return instruction;
+  };
   return {
     async lot(instructions) {
-      const executer = db.transaction(() =>
-        instructions.map(({ sql, params }) => db.prepare(sql).run(...params).changes),
-      );
+      const executer = db.transaction(() => instructions.map(({ sql, params }) => preparer(sql).run(...params).changes));
       return executer();
     },
     async lire(sql, params) {
-      return db.prepare(sql).all(...params) as Ligne[];
+      return preparer(sql).all(...params) as Ligne[];
     },
   };
 }

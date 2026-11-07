@@ -10,6 +10,8 @@
  * 4. compression `gzip` / `deflate` seulement (sinon 415), décompressé ≤ 1 Mo, sinon 413 ;
  * 5. enveloppe lisible, sinon 400 ; clé du DSN égale à la clé de l'application, sinon 401 ;
  * 6. quota par IP et global (dans `capturer`), sinon 429 + `Retry-After`.
+ * Les refus d'origine, de taille et de clé sont comptés (`vigie.compter`) : une attaque absorbée
+ * par ces contrôles reste visible dans le résumé (ADR-0011, E7).
  *
  * La clé du DSN navigateur est publique par nature (lisible dans le JavaScript) : elle filtre le
  * bruit, elle ne protège rien. La protection, ce sont les limites.
@@ -68,10 +70,12 @@ export function creerPointEntree(options: OptionsPointEntree): (requete: Request
     }
     const origine = requete.headers.get("Origin");
     if (origine === null || !origines.has(origine)) {
+      await options.vigie.compter("refus_origine");
       return reponse(403);
     }
     const annoncee = Number(requete.headers.get("Content-Length") ?? "0");
     if (!Number.isFinite(annoncee) || annoncee > TAILLE_MAX) {
+      await options.vigie.compter("refus_taille");
       return reponse(413);
     }
     const encodage = (requete.headers.get("Content-Encoding") ?? "identity").trim().toLowerCase();
@@ -99,7 +103,11 @@ export function creerPointEntree(options: OptionsPointEntree): (requete: Request
         octets = await lireAuPlus(decompression.readable, TAILLE_DECOMPRESSEE_MAX);
       }
     } catch (erreur) {
-      return reponse(erreur instanceof TropGros ? 413 : 400);
+      if (erreur instanceof TropGros) {
+        await options.vigie.compter("refus_taille");
+        return reponse(413);
+      }
+      return reponse(400);
     }
 
     const enveloppe = lireEnveloppe(octets);
@@ -108,6 +116,7 @@ export function creerPointEntree(options: OptionsPointEntree): (requete: Request
     }
     const cle = cleDuDsn(enveloppe.entete["dsn"]);
     if (cle === undefined || !egaliteConstante(cle, options.cle)) {
+      await options.vigie.compter("refus_cle");
       return reponse(401);
     }
 

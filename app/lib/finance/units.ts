@@ -53,6 +53,16 @@ export function formatEuros(value: EuroCents): string {
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')},${fraction}\u00a0€`;
 }
 
+/**
+ * Montant affiché avec son signe. Le moins (U+2212, aligné en chiffres
+ * tabulaires) n'est jamais perdu ; le plus n'apparaît que si `plus` est demandé,
+ * pour un montant dont on montre la polarité.
+ */
+export function signedEuros(value: EuroCents, plus = false): string {
+  const mark = value < 0 ? '\u2212' : value > 0 && plus ? '+' : '';
+  return `${mark}${formatEuros(euroCents(Math.abs(value)))}`;
+}
+
 /** Contre-valeur historique arrondie au centime, avec le reliquat explicite. */
 export function bitcoinEuroValue(quantity: Satoshis, eurosPerBitcoin: string) {
   const rate = new ExactDecimal(parseDecimalInput(eurosPerBitcoin));

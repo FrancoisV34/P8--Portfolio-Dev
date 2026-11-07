@@ -5,12 +5,13 @@
 // Le dossier ./vigie est une copie versionnée, vérifiée par `npm run check` : on ne la modifie
 // jamais ici (corriger dans Vigie, puis recopier).
 import * as Sentry from '@sentry/node';
-import { readFile } from 'node:fs/promises';
-import { basename, join, resolve } from 'node:path';
+import { readFile, statfs } from 'node:fs/promises';
+import { basename, dirname, join, resolve } from 'node:path';
 import { siteOrigin } from '../lib/site.server.ts';
 import { VIGIE_CLE_NAVIGATEUR } from '../lib/vigie.ts';
 import { authIsConfigured } from './auth/config.ts';
 import { requireOwner } from './auth/owner.server.ts';
+import { databasePath } from './db/config.ts';
 import { openDatabase } from './db/connection.ts';
 import {
   baseBetterSqlite3,
@@ -27,6 +28,7 @@ import {
 // Les cartes du navigateur sont déplacées hors de build/client après le build
 // (scripts/assets/deplacer-cartes.ts) : elles restent sur le serveur, jamais servies.
 const DOSSIER_CARTES = resolve('build/sourcemaps/client');
+const BUDGET_VIGIE = 50_000_000;
 
 let instance: { vigie: Vigie; base: ReturnType<typeof baseBetterSqlite3> } | undefined;
 
@@ -37,6 +39,14 @@ function etat() {
     const base = baseBetterSqlite3(openDatabase().sqlite);
     const vigie = creerVigie({
       base,
+      // ADR-0011 de Vigie : les détails des erreurs ne dépassent jamais 50 Mo (volume de 1 Go
+      // partagé avec la base financière) ; au-delà, les plus anciens sont évincés.
+      limites: { budgetOctets: BUDGET_VIGIE },
+      // Sous 10 % d'espace libre sur le volume de la base, Vigie ne tient plus que des compteurs.
+      espaceLibre: async () => {
+        const volume = await statfs(dirname(databasePath()));
+        return { libres: volume.bavail * volume.bsize, total: volume.blocks * volume.bsize };
+      },
       symboliser: creerSymboliseur(async (nom) => {
         // Vigie ne transmet qu'un nom de fichier seul ; on le revérifie avant de lire le disque.
         if (basename(nom) !== nom) return undefined;
