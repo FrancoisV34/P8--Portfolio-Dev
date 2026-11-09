@@ -154,7 +154,7 @@ export function creerVigie(options: OptionsVigie): Vigie {
       return true;
     }
     if (instant - espace.verifieA >= ESPACE_VERIFIE_TOUTES_LES_MS) {
-      let details = true;
+      let details: boolean;
       try {
         const mesure = await options.espaceLibre();
         details = mesure === undefined || mesure.total <= 0 || mesure.libres / mesure.total >= ESPACE_LIBRE_MIN;

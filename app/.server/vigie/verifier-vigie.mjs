@@ -38,12 +38,16 @@ const empreinteSql = (chemin) => createHash("sha256").update(instructions(readFi
 const manifeste = JSON.parse(readFileSync(join(dossier, "vigie.json"), "utf8"));
 const attendus = new Map(Object.entries(manifeste.fichiers));
 const problemes = [];
+// Le cache que Python écrit de lui-même à l'import (`__pycache__/*.pyc`) n'est pas une retouche.
+// Seulement dans `__pycache__` : un `.pyc` posé ailleurs est importable sans sa source.
+// Même règle dans copier-vigie.mjs.
+const genere = (nom) => nom.split("/").includes("__pycache__") && nom.endsWith(".pyc");
 
 for (const entree of readdirSync(dossier, { recursive: true })) {
   const chemin = join(dossier, String(entree));
   if (!statSync(chemin).isFile()) continue;
   const nom = relative(dossier, chemin).split(sep).join("/");
-  if (nom === "vigie.json") continue;
+  if (nom === "vigie.json" || genere(nom)) continue;
   const attendu = attendus.get(nom);
   if (attendu === undefined) problemes.push(`ajouté : ${nom}`);
   else if (createHash("sha256").update(readFileSync(chemin)).digest("hex") !== attendu) problemes.push(`modifié : ${nom}`);

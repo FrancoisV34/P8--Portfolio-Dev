@@ -1,7 +1,7 @@
 {
   "brique": "ts",
-  "version": "ts-v0.2.0",
-  "commit": "576dc8aeab31d332d5ed6be5b5220cc8510ccdbc",
+  "version": "ts-v0.2.1",
+  "commit": "50c238bc5920cf00869d15d6beb656ac5f0a8cc1",
   "fichiers": {
     "base.ts": "a9b8bdd1c76024c15fa9b402c76651fee1e815d071441ee12118e5332326bfd0",
     "consultation.ts": "de84b07dde6c7f89da7bb1dc1f072852aa32569162ef2ab90a44363c31f8c8c6",
@@ -19,10 +19,10 @@
     "stockage.ts": "0181900f11be029f4d75ca9bc28922733420192a4208f4ba031897a8dc916dae",
     "symbolisation.ts": "29fe6f80a3da1caf346128a31ff15a5033d979fe738c2b1b6c10bc0fce0e26fd",
     "transport.ts": "dfac7422ef78d13feec352b59482a3fa41231b31d58001da13c1d5468bf8516a",
-    "vigie.ts": "ccfe0674c506d4cb399a88aea5889b3e5b57e90496902b38d7676e4e6a43e0de",
+    "vigie.ts": "6ff161516de795ad373fdad6ddff6634d762058ed07e87dae4ce4ebc2e2f6199",
     "0001_vigie.sql": "f3c9e6ba312a0c8a52d43be652bc561cd492d05b113bfaaa8a2e78c6e86a5ee4",
     "0002_vigie.sql": "d136f43334ae06ef6c90dfc198faace61a740b42abee9b86c2161825a5339b6f",
-    "verifier-vigie.mjs": "637c5c664f49bdf9fb7f2e9db5ec44be73ca4729f3a109ae8aa1e08b9f9c8077"
+    "verifier-vigie.mjs": "80b65df8292c954796fa4932f451c6c09b1582c0f92095c4193b29229c4de716"
   },
   "migrations": {
     "0001_vigie.sql": "e95b85e69fe096aefba8dae43aa465c987866717bd68ac3f6520c50db9fba7ed",
