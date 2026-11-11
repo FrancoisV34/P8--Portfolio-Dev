@@ -6,8 +6,24 @@ import { ServerRouter } from "react-router";
 import { isbot } from "isbot";
 import type { RenderToPipeableStreamOptions } from "react-dom/server";
 import { renderToPipeableStream } from "react-dom/server";
+import { isRouteErrorResponse } from "react-router";
+import { capturerErreurServeur, demarrerVigie } from "./.server/vigie.server.ts";
 
 export const streamTimeout = 5_000;
+
+// Vigie capte les erreurs du serveur dès le chargement du build.
+demarrerVigie();
+
+/**
+ * Erreurs des loaders, actions et du rendu serveur : journalisées comme avant, et envoyées à
+ * Vigie. Les réponses volontaires (404, 401, 403 levées par les gardes) n'en sont pas, et une
+ * requête abandonnée par le navigateur non plus.
+ */
+export function handleError(error: unknown, { request }: { request: Request }) {
+  if (request.signal.aborted || error instanceof Response || isRouteErrorResponse(error)) return;
+  console.error(error);
+  capturerErreurServeur(error);
+}
 
 // Le serveur de production remplace cet en-tête sur chaque requête avant
 // d'appeler React Router : la valeur ne vient jamais du navigateur. En
