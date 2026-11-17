@@ -343,11 +343,14 @@ function pageDetail(prefixe: string, detail: NonNullable<Awaited<ReturnType<type
   );
 }
 
-const FEUILLE_DE_STYLE = `body{font:15px/1.5 system-ui,sans-serif;margin:0;color:#1d1d1f;background:#fafafa}
+// La même feuille de style que Python et Go, octet pour octet : `spec/vigie.css` en est la
+// référence, vérifiée par les tests des trois briques.
+export const FEUILLE_DE_STYLE = `body{font:15px/1.5 system-ui,sans-serif;margin:0;color:#1d1d1f;background:#fafafa}
 header{padding:.75rem 1.5rem;background:#1d1d1f}header a{color:#fff;font-weight:600;text-decoration:none}
 main{max-width:70rem;margin:0 auto;padding:1.5rem}nav{margin:1rem 0}nav a{margin-right:1rem}
 nav a[aria-current]{font-weight:600;text-decoration:none}table{width:100%;border-collapse:collapse;background:#fff}
 th,td{text-align:left;padding:.5rem;border-bottom:1px solid #e5e5e5;vertical-align:top}.nombre{text-align:right}
 .lieu{color:#6e6e73;font-size:.85em;font-family:ui-monospace,monospace}.chiffres{color:#6e6e73}
 .actions form{display:inline-block;margin-right:.5rem}pre{overflow:auto;background:#fff;padding:1rem;border:1px solid #e5e5e5}
-dt{font-weight:600}dd{margin:0 0 .5rem}`;
+dt{font-weight:600}dd{margin:0 0 .5rem}
+`;
